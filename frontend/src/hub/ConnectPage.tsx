@@ -53,9 +53,9 @@ export function ConnectPage() {
         <Btn disabled={busy} onClick={() => void download()}>{busy ? '만드는 중…' : '스킬 ZIP 내려받기'}</Btn>
         <ErrorNote message={err} />
         <div className="space-y-3 mt-4">
-          <Cmd label="Claude Code · Windows (PowerShell)" text={'Expand-Archive .\cen-ai-hub-skills.zip -DestinationPath "$HOME\.claude\skills" -Force'} />
+          <Cmd label="Claude Code · Windows (PowerShell)" text={'Expand-Archive .\\cen-ai-hub-skills.zip -DestinationPath "$HOME\\.claude\\skills" -Force'} />
           <Cmd label="Claude Code · macOS / Linux" text="unzip -o cen-ai-hub-skills.zip -d ~/.claude/skills" />
-          <Cmd label="Codex · Windows (PowerShell)" text={'Expand-Archive .\cen-ai-hub-skills.zip -DestinationPath "$HOME\.codex\skills" -Force'} />
+          <Cmd label="Codex · Windows (PowerShell)" text={'Expand-Archive .\\cen-ai-hub-skills.zip -DestinationPath "$HOME\\.codex\\skills" -Force'} />
           <Cmd label="Codex · macOS / Linux" text="unzip -o cen-ai-hub-skills.zip -d ~/.codex/skills" />
         </div>
       </Card>

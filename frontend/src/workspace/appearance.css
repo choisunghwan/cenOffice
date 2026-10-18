@@ -58,3 +58,6 @@
 /* 라이트 테마: 활성 탭 글자(text-white)가 흰 배경에서 보이지 않던 문제 */
 [data-workspace-theme="light"] .hub-shell button.border-sky-400.text-white { color: #1a62d6; font-weight: 700; border-color: #1a62d6; }
 [data-workspace-theme="light"] .hub-shell button.border-transparent.text-slate-400 { color: #5d6b7e; }
+
+/* 라이트 테마: 연한 하늘색 안내 문구가 흰 배경에서 안 보이던 문제 */
+[data-workspace-theme="light"] .hub-shell .text-sky-200 { color: #1a62d6; }
