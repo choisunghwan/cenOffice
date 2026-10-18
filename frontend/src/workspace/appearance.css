@@ -1,0 +1,60 @@
+/* Theme changes only workspace surfaces. Brand images and the 3D scene are untouched. */
+.appearance-toggle { display: grid; place-items: center; min-width: 32px; min-height: 32px; border: 1px solid #ffffff30; border-radius: 8px; font-size: 19px; color: #e6ecff; }
+.appearance-toggle:hover { background: #ffffff12; }
+.appearance-toggle:focus-visible { outline: 2px solid #99cfff; outline-offset: 3px; }
+[data-workspace-theme="light"] .hub-shell { background: #f7f8fa; color: #203047; color-scheme: light; border-color: #dfe5ed; }
+[data-workspace-theme="light"] .hub-shell > nav { background: #fff; border-color: #dfe5ed; }
+[data-workspace-theme="light"] .hub-shell nav button { color: #5d6b7e; }
+[data-workspace-theme="light"] .hub-shell nav button:hover { background: #eff4fa; color: #203047; }
+[data-workspace-theme="light"] .hub-shell nav button[aria-current="page"] { background: #e7effa; color: #244f82; box-shadow: inset 3px 0 #5683ba; }
+[data-workspace-theme="light"] .hub-shell :is([class*="text-slate-"], .hub-page-heading > span, .hub-advanced, .tool-gallery-description, .tool-gallery-meta) { color: #5e6e82; }
+[data-workspace-theme="light"] .hub-shell :is([class*="text-slate-100"], [class*="text-slate-200"]) { color: #273b54; }
+[data-workspace-theme="light"] .hub-shell [class*="border-white/"] { border-color: #dfe5ed; }
+[data-workspace-theme="light"] .hub-shell :is([class*="bg-[#152238]"], [class*="bg-[#0e1a2e]"], [class*="bg-[#0d1626]"]) { background: #fff; }
+[data-workspace-theme="light"] .hub-shell [class*="bg-white/"] { background: #eaf0f6; }
+[data-workspace-theme="light"] .hub-shell :is(input, textarea, select) { background: #fff; color: #24364c; border-color: #ccd6e3; }
+[data-workspace-theme="light"] .hub-shell input::placeholder { color: #718198; }
+[data-workspace-theme="light"] .hub-shell [class*="bg-sky-500"] { background: #285f9d; color: #fff; }
+[data-workspace-theme="light"] .hub-shell [class*="text-emerald-"] { color: #137653; }
+[data-workspace-theme="light"] .hub-shell [class*="text-amber-"] { color: #90620c; }
+[data-workspace-theme="light"] .hub-shell .hub-page-heading > p { color: #52759b; }
+[data-workspace-theme="light"] .hub-shell .hub-advanced { border-color: #dfe5ed; }
+[data-workspace-theme="light"] .hub-shell :is(.tool-gallery-card, .hub-return-shelves > section, .tool-start-panel) { background: #fff; border-color: #dfe5ed; }
+[data-workspace-theme="light"] .hub-shell :is(.hub-return-shelves h3, .hub-hot-heading h3) { color: #294569; }
+[data-workspace-theme="light"] .hub-shell :is(.hub-return-shelves p, .hub-hot-heading > span) { color: #60738c; }
+[data-workspace-theme="light"] .hub-shell .hub-return-links button { background: #eff4fa; color: #294569; border-color: #dbe4ef; }
+[data-workspace-theme="light"] .hub-shell .hub-return-links span { color: #486c98; }
+[data-workspace-theme="light"] .hub-shell .tool-detail-button { color: #546b88; }
+[data-workspace-theme="light"] .hub-shell .tool-use-button { background: #285f9d; color: #fff; }
+[data-workspace-theme="light"] .hub-shell .tool-use-button:hover { background: #204f85; }
+[data-workspace-theme="light"] .hub-shell :is(.tool-benefit-hero, .builtin-file-input, .builtin-result) { background: #edf2f8; border-color: #d6e0ed; color: #243b57; }
+[data-workspace-theme="light"] .hub-shell :is(.tool-benefit-lead, .tool-benefit-path, .tool-intro-section > p, .tool-start-panel > p:not(.hub-section-label), .tool-start-panel > small) { color: #586f8b; }
+[data-workspace-theme="light"] .hub-shell :is(.hub-section-label, .hub-example-facts dt) { color: #4d709c; }
+[data-workspace-theme="light"] .hub-shell .hub-example-facts dd { color: #304867; }
+[data-workspace-theme="light"] .hub-shell .tool-start-status { border-color: #dfe5ed; }
+/* 밝은 테마의 히어로: 어두운 사진 대신 밝은 배경 + SVG 일러스트 */
+[data-workspace-theme="light"] .hub-shell .hub-hero:has(.hub-hero-photo) { background: linear-gradient(115deg, #e2eeff 0%, #f1f7ff 55%, #ffffff 100%); border-color: #cfe0f5; color: #14305a; box-shadow: 0 10px 30px #3b6fb81a; }
+[data-workspace-theme="light"] .hub-shell .hub-hero h1 { color: #0f2b55; }
+[data-workspace-theme="light"] .hub-shell .hub-hero h1 > span { color: #1a62d6; }
+[data-workspace-theme="light"] .hub-shell .hub-hero > p { color: #4a6283; }
+[data-workspace-theme="light"] .hub-shell .hub-hero .hub-eyebrow { color: #2a64b8; }
+[data-workspace-theme="light"] .hub-shell .hub-hero .hub-eyebrow-line { background: #9dbbe6; }
+[data-workspace-theme="light"] .hub-shell .hub-hero .hub-primary { background: #1a62d6; color: #fff; box-shadow: 0 6px 16px #1a62d63d; }
+[data-workspace-theme="light"] .hub-shell .hub-hero .hub-primary:hover { background: #144fb0; }
+[data-workspace-theme="light"] .hub-shell .hub-hero .hub-hero-note { border-top-color: #cfe0f5; color: #55709a; }
+[data-workspace-theme="light"] .hub-shell .hub-hero-photo::after { display: none; }
+[data-workspace-theme="light"] .hub-shell .hub-photo-caption { color: #1d3b66; }
+[data-workspace-theme="light"] .hub-shell .hub-photo-caption span { color: #5b7ca8; }
+[data-workspace-theme="light"] .skill-registration { background: #fff; border-color: #dce4ee; }
+[data-workspace-theme="light"] :is(.skill-register-tabs, .skill-register-footer, .skill-register-options) { border-color: #e0e6ee; }
+[data-workspace-theme="light"] .skill-register-tabs button { color: #6a7a90; }
+[data-workspace-theme="light"] .skill-register-tabs button[aria-pressed="true"] { color: #285f9d; border-color: #285f9d; }
+[data-workspace-theme="light"] .skill-upload-area { background: #f6f8fb; border-color: #b6c7dc; }
+[data-workspace-theme="light"] .skill-upload-symbol { background: #e6eef8; color: #285f9d; }
+[data-workspace-theme="light"] :is(.skill-upload-area > span:not(.skill-upload-symbol), .skill-upload-area small, .skill-register-sharing > p, .skill-register-options summary, .skill-register-options summary span, .skill-register-options p, .skill-register-footer span, .skill-editor > p) { color: #60738c; }
+[data-workspace-theme="light"] .skill-upload-area input { background: transparent; }
+[data-workspace-theme="light"] .skill-upload-area input::file-selector-button { background: #285f9d; color: #fff; }
+
+/* 라이트 테마: 활성 탭 글자(text-white)가 흰 배경에서 보이지 않던 문제 */
+[data-workspace-theme="light"] .hub-shell button.border-sky-400.text-white { color: #1a62d6; font-weight: 700; border-color: #1a62d6; }
+[data-workspace-theme="light"] .hub-shell button.border-transparent.text-slate-400 { color: #5d6b7e; }

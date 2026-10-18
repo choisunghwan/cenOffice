@@ -1,0 +1,33 @@
+# 도구/빌드 산출물
+.tools/
+node_modules/
+frontend/dist/
+backend/target/
+*.log
+backend/run.log
+backend/run.err
+
+# 비밀 정보 · 로컬 설정 (절대 커밋 금지)
+.env
+.env.*
+*.pem
+*.key
+backend/.local-credentials.txt
+**/.local-credentials*
+**/application-local*.yml
+**/application-local*.properties
+
+# 로컬 DB (사용자 계정/업무 데이터 포함)
+backend/data/
+*.mv.db
+*.trace.db
+*.bak-*
+
+# 에디터/에이전트 로컬 파일
+.codepilot/
+.vscode/
+.ignore
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+*.tsbuildinfo

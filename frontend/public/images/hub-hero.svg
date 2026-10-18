@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 480" fill="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a3fbf"/>
+      <stop offset="1" stop-color="#58a3ff"/>
+    </linearGradient>
+    <linearGradient id="halo" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#d3e5ff"/>
+      <stop offset="1" stop-color="#f5faff"/>
+    </linearGradient>
+    <linearGradient id="chatBlue" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1a62d6"/>
+      <stop offset="1" stop-color="#3f8bff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="13" flood-color="#1c4a96" flood-opacity=".2"/>
+    </filter>
+  </defs>
+
+  <!-- 배경: 부드러운 원 + 아이티센 심볼을 연상시키는 사분원 -->
+  <circle cx="500" cy="236" r="218" fill="url(#halo)"/>
+  <path d="M760 480V140A340 340 0 0 0 420 480Z" fill="url(#blue)"/>
+  <path d="M760 480V268A212 212 0 0 0 548 480Z" fill="#fff" fill-opacity=".2"/>
+  <path d="M760 480V372A108 108 0 0 0 652 480Z" fill="#fff" fill-opacity=".28"/>
+
+  <!-- 연결선 -->
+  <path d="M318 180C362 214 372 232 392 262" stroke="#7aa9e6" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round"/>
+  <path d="M250 330C292 352 330 350 372 336" stroke="#7aa9e6" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round"/>
+
+  <!-- 문서 카드: 결과 문서 -->
+  <g filter="url(#shadow)"><rect x="150" y="56" width="268" height="186" rx="20" fill="#fff"/></g>
+  <rect x="174" y="82" width="70" height="11" rx="5.5" fill="#1a62d6"/>
+  <rect x="174" y="108" width="214" height="8" rx="4" fill="#e3ebf6"/>
+  <rect x="174" y="126" width="188" height="8" rx="4" fill="#e3ebf6"/>
+  <rect x="174" y="144" width="205" height="8" rx="4" fill="#e3ebf6"/>
+  <rect x="174" y="170" width="150" height="26" rx="8" fill="#eaf2ff"/>
+  <rect x="186" y="179" width="90" height="8" rx="4" fill="#79a7ee"/>
+  <circle cx="386" cy="88" r="15" fill="#2fcf9b"/>
+  <path d="M379 88.5l5.2 5.2L394 83" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 차트 카드: 활용 현황 -->
+  <g filter="url(#shadow)"><rect x="352" y="228" width="266" height="168" rx="20" fill="#fff"/></g>
+  <rect x="376" y="252" width="84" height="10" rx="5" fill="#d7e4f6"/>
+  <rect x="380" y="338" width="30" height="36" rx="7" fill="#bcd5fa"/>
+  <rect x="424" y="316" width="30" height="58" rx="7" fill="#8dbbf8"/>
+  <rect x="468" y="296" width="30" height="78" rx="7" fill="#4f95f3"/>
+  <rect x="512" y="274" width="30" height="100" rx="7" fill="#1a62d6"/>
+  <path d="M388 326L436 304L482 284L548 258" stroke="#ffb84d" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 0"/>
+  <circle cx="548" cy="258" r="6.5" fill="#ffb84d" stroke="#fff" stroke-width="3"/>
+
+  <!-- 대화 카드: AI 도구에 요청 -->
+  <g filter="url(#shadow)"><rect x="70" y="262" width="244" height="132" rx="20" fill="#fff"/></g>
+  <rect x="92" y="284" width="112" height="26" rx="13" fill="#eef3fa"/>
+  <rect x="104" y="294" width="64" height="7" rx="3.5" fill="#b9c9de"/>
+  <rect x="124" y="322" width="170" height="52" rx="16" fill="url(#chatBlue)"/>
+  <rect x="140" y="337" width="110" height="8" rx="4" fill="#fff" fill-opacity=".9"/>
+  <rect x="140" y="352" width="76" height="8" rx="4" fill="#fff" fill-opacity=".6"/>
+  <path d="M104 340l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#ffb84d"/>
+
+  <!-- 반짝임 -->
+  <path d="M640 74l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5z" fill="#4f95f3"/>
+  <path d="M96 150l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#7aa9e6"/>
+  <path d="M700 200l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#fff" fill-opacity=".85"/>
+  <circle cx="470" cy="62" r="5" fill="#9cc3f5"/>
+  <circle cx="620" cy="410" r="4" fill="#fff" fill-opacity=".8"/>
+</svg>
