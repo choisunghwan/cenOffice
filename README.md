@@ -1,13 +1,71 @@
-﻿# CEN OFFICE
+# CEN OFFICE
 
-웹 기반 3D AI 스마트 오피스 플랫폼. 현재 **Phase 1(3D) + Phase 2(백엔드) + Phase 3(WORKSPACE, AI PM, 멀티플레이어/채팅)** 까지 구현되어 있습니다.
+**웹에서 일하는 3D AI 스마트 오피스.**
+브라우저로 접속해 가상 사무실을 걸어 다니며 동료와 대화하고, 사내 AI 도구를 골라 바로 쓰는 업무 플랫폼입니다.
+
+![3D 오피스](docs/images/office-3d.png)
+
+> 같은 사무실에 여러 명이 동시에 접속해 아바타로 움직이고, 실시간으로 채팅합니다. 조명·에어컨·회의실 같은 공간과 장비는 화면에서 직접 조작합니다.
+
+## 이런 프로젝트입니다
+
+| | |
+|---|---|
+| **3D 오피스** | 웹에서 걸어 다니는 가상 사무실. 멀티플레이어, 전체/1:1/AI 채팅, 장비·회의실 상호작용 |
+| **WORKSPACE** | 프로젝트·요구사항·작업 관리. 역할(관리자/일반)에 따른 권한 |
+| **AI PM '아리'** | 요구사항을 분석해 작업 계획 초안을 만들고, **사람이 승인한 뒤에만** 등록 |
+| **AI HUB** | 직원이 만든 업무 AI 도구를 등록·승인·공유하는 사내 허브. 바로 쓸 수 있는 도구 7종 내장 |
+
+## 화면으로 보기
+
+### AI HUB — 우리 회사의 AI 도구 모음
+![AI HUB 홈](docs/images/hub-home.png)
+
+### 붙여 넣고 누르면 끝
+SQL, 오류 로그, 회의 메모, 요구사항 등을 붙여 넣으면 결과가 표로 정리됩니다. 처리 방식은 규칙 기반(외부 전송 없음)과 AI 모델 중에서 고릅니다.
+
+![도구 입력](docs/images/tool-input.png)
+![도구 결과](docs/images/tool-result.png)
+
+결과는 **Excel · Word · PPT · PDF · 한글(HWPX)** 파일로 바로 받을 수 있습니다.
+
+### 내 AI 도구(Claude Code, Codex 등)에서 그대로 쓰기
+승인된 도구를 스킬 파일(SKILL.md)로 내려받아 설치하거나, MCP 서버로 연결해 서버의 도구를 직접 호출합니다.
+
+![AI 도구에서 쓰기](docs/images/connect-ai-tools.png)
+
+### 도구 만들기 — 업무 노하우를 도구로
+SKILL.md 파일을 올리거나 직접 작성해 등록하면 관리자 검토를 거쳐 동료에게 공개됩니다.
+
+![도구 만들기](docs/images/hub-register.png)
+
+## 바로 써 볼 수 있는 내장 도구 7종
+
+| 도구 | 하는 일 |
+|---|---|
+| 오류 로그 분석 | 스택 트레이스에서 근본 원인 후보와 확인 순서 정리 |
+| SQL 점검 | WHERE 없는 변경, `SELECT *` 등 위험 패턴 점검 |
+| 테스트 케이스 초안 | 요구사항에서 정상·예외·경계·권한 시나리오 표 생성 |
+| 회의록 정리 | 결정 사항, 액션 아이템(담당·기한), 이슈 분류 |
+| 주간 업무보고 정리 | 완료·진행·예정·이슈 분류와 진행률 요약 |
+| 제안서 작성 도우미 | 자료 기반 요구사항 대응표와 목차 초안 |
+| FP 산정 도우미 | 기능 목록의 EI/EO/EQ 유형 후보 분류 |
+
+내장 도구는 규칙 기반이라 정해 둔 패턴만 인식하며, 결과는 항상 '검토용 초안'입니다.
+
+## 기술 구성
 
 ```
-frontend/   React + Three.js(R3F) + Zustand + Tailwind
-backend/    Spring Boot 3 / Java 21 / JPA / WebSocket / JWT
+frontend/   React + TypeScript + Three.js(R3F) + Zustand + Tailwind
+backend/    Spring Boot 3 / Java 21 / JPA / Flyway / WebSocket / JWT
 scripts/    run-backend.ps1  (Windows 백엔드 실행 스크립트)
-.tools/     (선택) 로컬 JDK 21 + Maven — git 제외 권장
+docs/       AI HUB 설계·사용 문서
+.tools/     (선택) 로컬 JDK 21 + Maven — git 제외
 ```
+
+---
+
+# 개발자 문서
 
 ## 실행
 
@@ -40,6 +98,8 @@ npm run dev
 | `CORS_ORIGINS` | 허용 프론트 주소 | `http://localhost:5173` |
 | `DEVICE_COMMAND_TIMEOUT_SECONDS` | 장비 응답 대기 한도 | 10 |
 | `MOCK_MIN_LATENCY_MS` / `MOCK_MAX_LATENCY_MS` / `MOCK_FAILURE_RATE` | Mock 장비 지연/실패율(실패 처리 테스트용) | 300/900/0.0 |
+| `HUB_AI_ENGINE` | AI HUB 의 AI 모델 실행 허용(입력이 LLM 서비스로 전송됨) | false (개발 스크립트는 true) |
+| `LLM_PROVIDER` / `GEMINI_API_KEY` 등 | AI PM·AI HUB 의 LLM (키는 코드·저장소에 넣지 말고 로컬 설정으로) | mock |
 | `VITE_API_URL` (프론트) | 백엔드 주소 | `http://localhost:8080` |
 
 ## 조작
@@ -87,7 +147,9 @@ npm run dev
 직원이 만든 AI Skill(SKILL.md)과 Agent 를 등록·검색·승인·평가하는 사내 허브. WORKSPACE > AI HUB 또는 3D 의 **AI LAB 터미널**(북쪽 벽)에서 엽니다. 자세한 내용: [docs/AI_HUB.md](docs/AI_HUB.md), 분석/설계: [docs/AI_HUB_ANALYSIS.md](docs/AI_HUB_ANALYSIS.md)
 
 - 업로드(SKILL.md/ZIP)는 신뢰하지 않는 입력으로 검증(경로 탐색·심볼릭 링크·압축 폭탄·스크립트/실행 파일·API 키 거부). 등록만으로는 아무것도 실행되지 않고, 관리자 승인 후 공개됩니다.
-- **실행 런타임은 기본 없음**(`HUB_RUNTIME=none` → UI 에 "실행 연동 준비 중"). IntelliCEN Code 는 공식 API 미확인으로 연동하지 않았고, `mock`(테스트용·KPI 제외) / `llm`(승인된 LLM Provider, 외부 전송 주의) 어댑터만 선택 가능합니다.
+- **실행 방식**: 내장 도구 7종은 서버 안에서 규칙 기반으로 처리됩니다(외부 전송 없음). 직접 등록한 Skill 이나 'AI 모델' 선택은 `HUB_AI_ENGINE=true` 일 때 `app.llm.*` 의 LLM(Gemini/OpenAI/Anthropic)으로 실행되며 **입력이 해당 외부 서비스로 전송**됩니다(기본값 꺼짐, 운영 적용 전 보안 승인 필요). `HUB_RUNTIME` 은 `none`(기본) / `mock`(테스트용·KPI 제외) / `llm`. IntelliCEN Code 는 공식 API 미확인으로 직접 연동하지 않았습니다.
+- **외부 AI 도구 연동**: 승인된 Skill 을 `GET /api/hub/skills/export.zip` 으로 내려받아 Claude Code/Codex 스킬 폴더에 설치하거나, 개인 액세스 토큰(`cen_pat_…`)으로 `POST /mcp`(MCP 서버)에 연결합니다. 화면: 메뉴 'AI 도구에서 쓰기'.
+- **문서 내보내기**: 결과를 xlsx / docx / pptx / pdf / hwpx 로 변환(`POST /api/hub/documents/export`). PDF 는 한글 폰트가 필요합니다(`office.docs.pdf-font`).
 - DB 는 **Flyway** 로 관리하는 `hub_*` 테이블(`V2__ai_hub.sql`)을 추가했고 기존 테이블은 건드리지 않습니다. 기존 DB 는 자동으로 기준선(V1) 처리됩니다.
 - KPI 는 실제 이벤트만 집계(시뮬레이션·샘플·제작자 본인 실행 제외)하며 점수·보상은 산정하지 않습니다.
 
