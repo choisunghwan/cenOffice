@@ -84,7 +84,7 @@ function Browse({ categories, onOpen }: { categories: { code: string; name: stri
     const results = await Promise.allSettled(favorites.slice(-12).reverse().map(async (key) => {
       const [kind, value] = key.split(':'); const id = Number(value)
       if (!Number.isSafeInteger(id) || id <= 0) return null
-      if (kind === 'skill') { const d = await hub.skill(id); return { key, name: toolName(d.summary.name), view: { kind: 'skill' as const, id }, ready: d.summary.executionState === 'RUNTIME_AVAILABLE' && d.summary.status === 'APPROVED' } }
+      if (kind === 'skill') { const d = await hub.skill(id); return { key, name: toolName(d.summary.name, d.summary.title), view: { kind: 'skill' as const, id }, ready: d.summary.executionState === 'RUNTIME_AVAILABLE' && d.summary.status === 'APPROVED' } }
       if (kind === 'agent') { const d = await hub.agent(id); return { key, name: d.summary.name, view: { kind: 'agent' as const, id }, ready: d.summary.executionState === 'RUNTIME_AVAILABLE' && d.summary.status === 'APPROVED' } }
       return null
     }))

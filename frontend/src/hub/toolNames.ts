@@ -10,6 +10,7 @@ const NAMES: Record<string, string> = {
   'error-detective': '오류 원인 추적 도우미',
 }
 
-export function toolName(name: string) {
-  return NAMES[name] ?? name
+/** 화면 표시 이름: 직접 지정한 title > 내장 도구 이름 > 내부 이름 */
+export function toolName(name: string, title?: string | null) {
+  return title || NAMES[name] || name
 }

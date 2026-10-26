@@ -31,3 +31,6 @@ backend/data/
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
 *.tsbuildinfo
+
+# 내부 문서 (저장소에 올리지 않음)
+docs/

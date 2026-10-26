@@ -10,6 +10,8 @@ public class HubSkill {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
     public String name;
+    @Column(length = 100)
+    public String title;
     @Column(length = 1000)
     public String description;
     public String category;

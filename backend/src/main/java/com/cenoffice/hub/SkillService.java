@@ -109,7 +109,7 @@ public class SkillService {
 
         Instant now = Instant.now();
         HubSkill s = new HubSkill();
-        s.name = name; s.description = p.meta().description(); s.category = cat;
+        s.name = name; s.title = p.meta().title(); s.description = p.meta().description(); s.category = cat;
         s.icon = p.meta().icon() != null ? p.meta().icon() : "🧩";
         s.visibility = vis; s.team = team; s.status = "DRAFT"; s.owner = owner; s.sample = false;
         s.createdBy = owner; s.createdAt = now; s.updatedBy = owner; s.updatedAt = now;
@@ -132,6 +132,7 @@ public class SkillService {
         if (versions.findBySkillIdAndVersion(skillId, label).isPresent()) throw new ApiException(HttpStatus.CONFLICT, "이미 존재하는 버전입니다: " + label);
         HubSkillVersion v = newVersion(s, p, actor, submit ? "PENDING_REVIEW" : "DRAFT", label);
         s.description = p.meta().description();
+        if (p.meta().title() != null) s.title = p.meta().title();
         if (p.meta().icon() != null) s.icon = p.meta().icon();
         touch(s, actor);
         hist("SKILL", s.id, v.id, "VERSION_ADDED", actor, label);
@@ -536,7 +537,7 @@ public class SkillService {
             String exec = s.publishedVersionId == null ? "REGISTRY_ONLY" : BuiltinSkillSeeder.trusted(s) ? runtimeInfo(s).state() : state;
             out.add(new SkillSummary(s.id, s.name, s.description, s.category, catNames.getOrDefault(s.category, s.category), s.icon, s.visibility, s.team, s.status,
                     s.owner, names.computeIfAbsent(s.owner, this::displayName), vlabel.get(s.id), tagMap.getOrDefault(s.id, List.of()).stream().sorted().toList(),
-                    st[0], st[1], Math.round(r[0] * 10) / 10.0, (long) r[1], s.sample, s.updatedAt, exec));
+                    st[0], st[1], Math.round(r[0] * 10) / 10.0, (long) r[1], s.sample, s.updatedAt, exec, s.title));
         }
         return out;
     }

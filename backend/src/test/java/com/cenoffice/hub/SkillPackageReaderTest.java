@@ -49,6 +49,28 @@ class SkillPackageReaderTest {
     }
 
     @Test
+    void koreanNameBecomesTitleAndInternalNameIsGeneratedDeterministically() throws Exception {
+        String md = "---\nname: 기능 개선 정리\ndescription: 기능 개선 요청을 정리합니다\n---\n# 본문\n";
+        Parsed a = reader.read("SKILL.md", md(md)), b = reader.read("SKILL.md", md(md));
+        assertEquals("기능 개선 정리", a.meta().title());
+        assertTrue(a.meta().name().matches("skill-[0-9a-f]{8}"));
+        assertEquals(a.meta().name(), b.meta().name());
+    }
+
+    @Test
+    void explicitTitleIsKeptAndAsciiNameStaysAsIs() throws Exception {
+        Parsed p = reader.read("SKILL.md", md("---\nname: error-helper\ntitle: 오류 도우미\ndescription: d\n---\n본문"));
+        assertEquals("error-helper", p.meta().name());
+        assertEquals("오류 도우미", p.meta().title());
+    }
+
+    @Test
+    void rejectsMissingNameAndTooLongTitle() {
+        rejects(md("---\ndescription: d\n---\n본문"), "SKILL.md", "name 또는 title");
+        rejects(md("---\nname: ok-name\ntitle: " + "가".repeat(61) + "\ndescription: d\n---\n본문"), "SKILL.md", "title");
+    }
+
+    @Test
     void parsesFrontmatterIntoStructuredMetadataAndKeepsOriginal() throws Exception {
         Parsed p = reader.read("SKILL.md", md(GOOD));
         assertEquals("sample-skill", p.meta().name());
@@ -62,8 +84,7 @@ class SkillPackageReaderTest {
 
     @Test
     void rejectsInvalidSkillMd() {
-        rejects(md("# 제목만 있는 문서"), "SKILL.md", "Frontmatter");
-        rejects(md("---\nname: Bad Name\ndescription: x\n---\n"), "SKILL.md", "name");
+        rejects(md("---\ndescription: x\n---\n"), "SKILL.md", "name");
         rejects(md("---\nname: ok-name\n---\n본문"), "SKILL.md", "description");
         rejects(md("---\nname: ok-name\ndescription: d\nversion: v1\n---\n"), "SKILL.md", "version");
         rejects(md("---\nname: ok-name\ndescription: d\nname: dup\n---\n"), "SKILL.md", "YAML");

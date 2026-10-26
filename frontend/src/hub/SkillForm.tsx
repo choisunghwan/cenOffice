@@ -5,6 +5,7 @@ import { Field } from './shared'
 
 const TEMPLATE = `---
 name: my-skill
+title: 내 업무 도구
 description: 이 Skill 이 무엇을 하고 언제 쓰는지 한두 문장으로 설명하세요.
 version: 1.0.0
 category: dev

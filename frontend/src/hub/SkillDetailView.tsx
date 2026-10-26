@@ -26,7 +26,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
   return (
     <div>
       <button className="text-sm text-slate-400 hover:text-white mb-3" onClick={onBack}>← 목록으로</button>
-      {tab !== 'overview' && <h2 className="text-xl font-semibold mb-4">{toolName(s.name)}</h2>}
+      {tab !== 'overview' && <h2 className="text-xl font-semibold mb-4">{toolName(s.name, s.title)}</h2>}
       <details className="hub-advanced"><summary>도구 정보 · 파일 다운로드 · 관리</summary><div className="flex items-start gap-4 flex-wrap my-4">
         <div className="w-14 h-14 rounded-2xl bg-white/8 grid place-items-center text-3xl">{s.icon || '🧩'}</div>
         <div className="flex-1 min-w-[16rem]">
@@ -53,7 +53,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
         ))}
       </div>
 
-      {tab === 'overview' && <ToolIntroduction name={toolName(s.name)} description={s.description} owner={s.ownerName} category={s.categoryName} usage={current?.usage} example={current?.example} ready={runtime.state === 'RUNTIME_AVAILABLE' && s.status === 'APPROVED'} simulated={runtime.simulated} onUse={() => setTab('run')} />}
+      {tab === 'overview' && <ToolIntroduction name={toolName(s.name, s.title)} description={s.description} owner={s.ownerName} category={s.categoryName} usage={current?.usage} example={current?.example} ready={runtime.state === 'RUNTIME_AVAILABLE' && s.status === 'APPROVED'} simulated={runtime.simulated} onUse={() => setTab('run')} />}
 
       {tab === 'md' && current && (
         <div className="space-y-4">

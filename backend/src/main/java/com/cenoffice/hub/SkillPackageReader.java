@@ -71,7 +71,7 @@ public class SkillPackageReader {
         public InvalidSkillException(String message) { super(message); }
     }
 
-    public record Meta(String name, String description, String version, String category, List<String> tags, String icon, Map<String, Object> raw) {}
+    public record Meta(String name, String description, String version, String category, List<String> tags, String icon, Map<String, Object> raw, String title) {}
 
     public record Parsed(Meta meta, String skillMd, String packageKind, byte[] packageData, String fileListJson, List<String> riskFlags, String sha256) {}
 
@@ -300,7 +300,23 @@ public class SkillPackageReader {
         for (Map.Entry<?, ?> e : m.entrySet()) map.put(String.valueOf(e.getKey()), e.getValue());
 
         String name = str(map.get("name"));
-        if (name == null || !NAME.matcher(name).matches()) throw new InvalidSkillException("name 은 영문 소문자·숫자·하이픈 2~63자여야 합니다 (예: error-detective)");
+        String title = str(map.get("title"));
+        if (title != null) {
+            title = title.strip().replaceAll("\\s+", " ");
+            if (title.isEmpty()) title = null;
+            else if (title.codePointCount(0, title.length()) > 60 || title.chars().anyMatch(Character::isISOControl)) throw new InvalidSkillException("title 은 60자 이하의 한 줄 텍스트여야 합니다");
+        }
+        if (name != null && !NAME.matcher(name).matches()) {
+            // 영문 소문자·숫자·하이픈이 아닌 이름(예: 한글)은 화면 표시 이름(title)으로 쓰고, 내부 식별 이름은 자동으로 만든다
+            String shown = name.strip().replaceAll("\\s+", " ");
+            if (shown.isEmpty() || shown.codePointCount(0, shown.length()) > 60 || shown.chars().anyMatch(Character::isISOControl))
+                throw new InvalidSkillException("name 은 60자 이하의 한 줄 텍스트여야 합니다");
+            if (title == null) title = shown;
+            name = slugOf(title);
+        } else if (name == null && title != null) {
+            name = slugOf(title);
+        }
+        if (name == null || !NAME.matcher(name).matches()) throw new InvalidSkillException("name 또는 title 이 필요합니다 (예: name: error-detective, title: 오류 원인 분석)");
         String desc = str(map.get("description"));
         if (desc == null || desc.isBlank()) throw new InvalidSkillException("description 이 필요합니다");
         desc = desc.strip().replaceAll("\\s+", " ");
@@ -324,7 +340,15 @@ public class SkillPackageReader {
             if (v instanceof String || v instanceof Number || v instanceof Boolean) raw.put(e.getKey(), v);
             else if (v instanceof List<?> l && l.stream().allMatch(x -> x instanceof String || x instanceof Number)) raw.put(e.getKey(), l);
         }
-        return new Meta(name, desc, version, category, tags, icon, raw);
+        return new Meta(name, desc, version, category, tags, icon, raw, title);
+    }
+
+    /** 표시 이름에서 결정적으로 만드는 내부 이름 (같은 제목이면 같은 Skill 로 취급되어 새 버전 등록이 가능) */
+    static String slugOf(String title) {
+        try {
+            byte[] d = java.security.MessageDigest.getInstance("SHA-256").digest(title.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return "skill-" + java.util.HexFormat.of().formatHex(d).substring(0, 8);
+        } catch (java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
     }
 
     private static String str(Object o) { return o == null ? null : String.valueOf(o); }

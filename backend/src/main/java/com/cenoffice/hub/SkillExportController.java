@@ -48,7 +48,7 @@ public class SkillExportController {
                 if (!s.name.matches("[a-z0-9][a-z0-9-]{0,63}")) continue; // 폴더 이름으로 안전한 이름만
                 var v = versions.findById(s.publishedVersionId).orElse(null);
                 if (v == null || !"APPROVED".equals(v.status)) continue;
-                String md = BuiltinSkillSeeder.trusted(s) ? BuiltinSkillSeeder.bundledMd(s.name, v.skillMd) : v.skillMd;
+                String md = BuiltinSkillSeeder.trusted(s) ? BuiltinSkillSeeder.bundledMd(s.name, v.skillMd) : withInternalName(v.skillMd, s.name, s.title);
                 total += put(zip, s.name + "/SKILL.md", md.getBytes(StandardCharsets.UTF_8));
                 if ("ZIP".equals(v.packageKind) && v.packageData != null) total += extras(zip, s.name, v.packageData);
                 included.add(s.name);
@@ -61,6 +61,18 @@ public class SkillExportController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/zip"))
             .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("cen-ai-hub-skills.zip").build().toString())
             .header("X-Content-Type-Options", "nosniff").body(out.toByteArray());
+    }
+
+    /** frontmatter 의 name 이 내부 이름과 다르면(예: 한글 이름) 내부 이름으로 바꾸고 표시 이름은 title 로 남긴다. */
+    static String withInternalName(String md, String name, String title) {
+        if (!md.startsWith("---")) return md;
+        int end = md.indexOf("\n---", 3);
+        if (end < 0) return md;
+        String fm = md.substring(0, end), rest = md.substring(end);
+        var m = java.util.regex.Pattern.compile("(?m)^name:\\s*(.*)$").matcher(fm);
+        if (!m.find() || m.group(1).strip().replaceAll("^[\"']|[\"']$", "").equals(name)) return md;
+        String extra = title != null && !java.util.regex.Pattern.compile("(?m)^title:").matcher(fm).find() ? "\ntitle: " + title.replace("\n", " ") : "";
+        return fm.substring(0, m.start()) + "name: " + name + extra + fm.substring(m.end()) + rest;
     }
 
     private static long put(ZipOutputStream zip, String name, byte[] data) throws java.io.IOException {

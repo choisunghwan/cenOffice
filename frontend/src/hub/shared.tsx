@@ -49,21 +49,21 @@ export function RuntimeBanner({ runtime }: { runtime?: HubRuntime }) {
 }
 
 export function SkillCard({ s, onClick, onUse }: { s: HubSkillSummary; onClick: () => void; onUse?: () => void }) {
-  return <ToolCard id={s.id} kind="skill" name={s.name} description={s.description} category={s.categoryName} state={s.executionState} status={s.status} sample={s.sample} onClick={onClick} onUse={onUse} />
+  return <ToolCard id={s.id} kind="skill" name={s.name} title={s.title} description={s.description} category={s.categoryName} state={s.executionState} status={s.status} sample={s.sample} onClick={onClick} onUse={onUse} />
 }
 
 export function AgentCard({ a, onClick, onUse }: { a: HubAgentSummary; onClick: () => void; onUse?: () => void }) {
   return <ToolCard id={a.id} kind="agent" name={a.name} description={a.duties || a.description} category="업무 자동화" state={a.executionState} status={a.status} sample={a.sample} onClick={onClick} onUse={onUse} />
 }
 
-function ToolCard({ id, kind, name, description, category, state, status, sample, onClick, onUse }: {
-  id: number; kind: 'skill' | 'agent'; name: string; description: string; category: string; state: string; status: string; sample: boolean; onClick: () => void; onUse?: () => void
+function ToolCard({ id, kind, name, title: titleProp, description, category, state, status, sample, onClick, onUse }: {
+  id: number; kind: 'skill' | 'agent'; name: string; title?: string | null; description: string; category: string; state: string; status: string; sample: boolean; onClick: () => void; onUse?: () => void
 }) {
   const ready = state === 'RUNTIME_AVAILABLE' && status === 'APPROVED'
   const { favorites, toggle } = useToolFavorites()
   const favoriteKey = `${kind}:${id}`
   const saved = favorites.includes(favoriteKey)
-  const title = toolName(name)
+  const title = toolName(name, titleProp)
   return <article className="tool-gallery-card">
     <div className="relative"><button className="tool-preview-button" onClick={onClick} aria-label={`${title} 미리보기 및 상세 설명`}><ToolPreview id={id} kind={kind} name={title} /></button><button className="tool-favorite" aria-label={`${title} 즐겨찾기`} aria-pressed={saved} onClick={() => toggle(favoriteKey)}>{saved ? '★' : '☆'}</button></div>
     <div className="tool-gallery-body">

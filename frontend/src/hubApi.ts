@@ -8,7 +8,7 @@ export interface HubCategory { code: string; name: string }
 export interface HubSkillSummary {
   id: number; name: string; description: string; category: string; categoryName: string; icon?: string; visibility: 'PUBLIC' | 'TEAM'; team?: string
   status: string; owner: string; ownerName: string; version?: string; tags: string[]; executions: number; succeeded: number
-  ratingAvg: number; ratingCount: number; sample: boolean; updatedAt: string; executionState: string
+  ratingAvg: number; ratingCount: number; sample: boolean; updatedAt: string; executionState: string; title?: string | null
 }
 export interface HubVersion {
   id: number; version: string; status: string; createdBy: string; createdAt: string; sha256: string; packageKind: 'MD' | 'ZIP'; riskFlags: string[]; published: boolean

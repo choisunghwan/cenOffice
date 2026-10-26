@@ -216,7 +216,7 @@ class HubApiTest {
     void invalidAndMaliciousUploadsAreRejectedAndAudited() throws Exception {
         Acct a = account("개발팀"), admin = admin();
         call(post("/api/hub/skills"), a, "{\"skillMd\":\"# frontmatter 없음\"}").andExpect(status().isBadRequest());
-        call(post("/api/hub/skills"), a, "{\"skillMd\":\"---\\nname: Bad Name\\ndescription: d\\n---\\n\"}").andExpect(status().isBadRequest());
+        call(post("/api/hub/skills"), a, "{\"skillMd\":\"---\\ndescription: d\\n---\\n\"}").andExpect(status().isBadRequest());
         call(post("/api/hub/skills"), a, json.writeValueAsString(java.util.Map.of("skillMd", skillMd(uniq(), null, "no-such-category", null)))).andExpect(status().isBadRequest());
 
         for (String evil : new String[]{"../evil.md", "run.sh", "nested.zip"}) {

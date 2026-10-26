@@ -3,7 +3,7 @@
 **웹에서 일하는 3D AI 스마트 오피스.**
 브라우저로 접속해 가상 사무실을 걸어 다니며 동료와 대화하고, 사내 AI 도구를 골라 바로 쓰는 업무 플랫폼입니다.
 
-![3D 오피스](docs/images/office-3d.png)
+![3D 오피스](assets/readme/office-3d.png)
 
 > 같은 사무실에 여러 명이 동시에 접속해 아바타로 움직이고, 실시간으로 채팅합니다. 조명·에어컨·회의실 같은 공간과 장비는 화면에서 직접 조작합니다.
 
@@ -19,25 +19,25 @@
 ## 화면으로 보기
 
 ### AI HUB — 우리 회사의 AI 도구 모음
-![AI HUB 홈](docs/images/hub-home.png)
+![AI HUB 홈](assets/readme/hub-home.png)
 
 ### 붙여 넣고 누르면 끝
 SQL, 오류 로그, 회의 메모, 요구사항 등을 붙여 넣으면 결과가 표로 정리됩니다. 처리 방식은 규칙 기반(외부 전송 없음)과 AI 모델 중에서 고릅니다.
 
-![도구 입력](docs/images/tool-input.png)
-![도구 결과](docs/images/tool-result.png)
+![도구 입력](assets/readme/tool-input.png)
+![도구 결과](assets/readme/tool-result.png)
 
 결과는 **Excel · Word · PPT · PDF · 한글(HWPX)** 파일로 바로 받을 수 있습니다.
 
 ### 내 AI 도구(Claude Code, Codex 등)에서 그대로 쓰기
 승인된 도구를 스킬 파일(SKILL.md)로 내려받아 설치하거나, MCP 서버로 연결해 서버의 도구를 직접 호출합니다.
 
-![AI 도구에서 쓰기](docs/images/connect-ai-tools.png)
+![AI 도구에서 쓰기](assets/readme/connect-ai-tools.png)
 
 ### 도구 만들기 — 업무 노하우를 도구로
 SKILL.md 파일을 올리거나 직접 작성해 등록하면 관리자 검토를 거쳐 동료에게 공개됩니다.
 
-![도구 만들기](docs/images/hub-register.png)
+![도구 만들기](assets/readme/hub-register.png)
 
 ## 바로 써 볼 수 있는 내장 도구 7종
 
@@ -59,7 +59,6 @@ SKILL.md 파일을 올리거나 직접 작성해 등록하면 관리자 검토�
 frontend/   React + TypeScript + Three.js(R3F) + Zustand + Tailwind
 backend/    Spring Boot 3 / Java 21 / JPA / Flyway / WebSocket / JWT
 scripts/    run-backend.ps1  (Windows 백엔드 실행 스크립트)
-docs/       AI HUB 설계·사용 문서
 .tools/     (선택) 로컬 JDK 21 + Maven — git 제외
 ```
 
@@ -68,6 +67,11 @@ docs/       AI HUB 설계·사용 문서
 # 개발자 문서
 
 ## 실행
+
+### 가장 쉬운 방법 (Windows)
+`start-local.bat` 을 더블클릭하면 백엔드(8080)와 프론트엔드(5173)를 띄우고 준비되면 브라우저를 엽니다. 종료는 `stop-local.bat`. (JDK 21·Node.js 필요, 처음 한 번은 의존성 설치로 시간이 걸립니다.)
+
+### 직접 실행
 
 ### 1) 백엔드 (포트 8080)
 ```powershell
@@ -144,7 +148,7 @@ npm run dev
 
 ## AI HUB (Skill / Agent 허브)
 
-직원이 만든 AI Skill(SKILL.md)과 Agent 를 등록·검색·승인·평가하는 사내 허브. WORKSPACE > AI HUB 또는 3D 의 **AI LAB 터미널**(북쪽 벽)에서 엽니다. 자세한 내용: [docs/AI_HUB.md](docs/AI_HUB.md), 분석/설계: [docs/AI_HUB_ANALYSIS.md](docs/AI_HUB_ANALYSIS.md)
+직원이 만든 AI Skill(SKILL.md)과 Agent 를 등록·검색·승인·평가하는 사내 허브. WORKSPACE > AI HUB 또는 3D 의 **AI LAB 터미널**(북쪽 벽)에서 엽니다.
 
 - 업로드(SKILL.md/ZIP)는 신뢰하지 않는 입력으로 검증(경로 탐색·심볼릭 링크·압축 폭탄·스크립트/실행 파일·API 키 거부). 등록만으로는 아무것도 실행되지 않고, 관리자 승인 후 공개됩니다.
 - **실행 방식**: 내장 도구 7종은 서버 안에서 규칙 기반으로 처리됩니다(외부 전송 없음). 직접 등록한 Skill 이나 'AI 모델' 선택은 `HUB_AI_ENGINE=true` 일 때 `app.llm.*` 의 LLM(Gemini/OpenAI/Anthropic)으로 실행되며 **입력이 해당 외부 서비스로 전송**됩니다(기본값 꺼짐, 운영 적용 전 보안 승인 필요). `HUB_RUNTIME` 은 `none`(기본) / `mock`(테스트용·KPI 제외) / `llm`. IntelliCEN Code 는 공식 API 미확인으로 직접 연동하지 않았습니다.
