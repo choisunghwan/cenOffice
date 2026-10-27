@@ -12,8 +12,10 @@ interface ChatState {
   currentId: string | null
   rev: number
   loadList: () => Promise<void>
-  /** 첫 말을 보낼 때 방이 없으면 만든다(제목은 첫 말) */
-  ensureSession: (firstText: string) => Promise<void>
+  /** 첫 말을 보낼 때 방이 없으면 만든다(제목은 첫 말). 이 말이 속한 방의 id 를 돌려준다. */
+  ensureSession: (firstText: string) => Promise<string>
+  /** 지금 열려 있지 않은 방에 뒤늦게 도착한 대화를 그 방에 이어 붙인다(답을 기다리는 사이 다른 방으로 옮긴 경우) */
+  appendTurns: (id: string, f: (cur: unknown[]) => unknown[]) => Promise<void>
   /** 대화가 바뀔 때마다 부른다. 잠깐 모아서 서버에 저장한다. */
   saveSoon: () => void
   startNew: () => void
@@ -55,9 +57,20 @@ export const useChat = create<ChatState>((set, get) => {
     rev: 0,
     loadList: async () => { try { set({ sessions: await assistantApi.sessions.list() }) } catch { /* 목록은 보조 정보 */ } },
     ensureSession: async (firstText) => {
-      if (get().currentId) return
+      const cur = get().currentId
+      if (cur) return cur
+      const rev0 = get().rev
       const s = await assistantApi.sessions.create(firstText.replace(/\s+/g, ' ').trim().slice(0, 30))
-      set((st) => ({ currentId: s.id, sessions: [s, ...st.sessions] }))
+      // 만드는 사이에 사용자가 다른 방으로 옮겼다면 그 방을 열어 두지 않는다(방은 목록에만 추가)
+      set((st) => ({ currentId: st.rev === rev0 ? s.id : st.currentId, sessions: [s, ...st.sessions] }))
+      return s.id
+    },
+    appendTurns: async (id, f) => {
+      try {
+        const d = await assistantApi.sessions.get(id)
+        await assistantApi.sessions.save(id, { turns: f(Array.isArray(d.turns) ? d.turns : []) })
+        await get().loadList()
+      } catch { /* 저장하지 못해도 다른 방의 대화에는 영향이 없다 */ }
     },
     saveSoon: () => {
       const id = get().currentId

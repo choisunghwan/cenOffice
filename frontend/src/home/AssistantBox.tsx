@@ -104,12 +104,14 @@ export function AssistantBox() {
   // 사이드바에서 다른 방을 열거나 새 채팅을 시작하면 메모리의 대화로 다시 시작한다
   const rev = useChat((s) => s.rev)
   const seenRev = useRef(rev)
+  const seq = useRef(0) // 요청 번호. 방을 옮기면 이전 요청은 더 이상 이 화면의 '처리 중'이 아니다
   useEffect(() => {
     if (seenRev.current === rev) return
     seenRev.current = rev
     setTurnsState(assistantMemory.turns as Turn[])
     nextId.current = assistantMemory.nextId
     previous.current = null
+    seq.current++; setBusy(false)
     setText(''); setEditor(null)
   }, [rev])
 
@@ -123,24 +125,29 @@ export function AssistantBox() {
     const value = (raw ?? text).trim()
     if (!value || busy) return
     setText('')
+    const mySeq = ++seq.current
     setBusy(true)
-    try { await useChat.getState().ensureSession(value) } catch { /* 방을 못 만들어도 대화는 계속한다(저장만 안 된다) */ }
+    let sid: string | null = null
+    try { sid = await useChat.getState().ensureSession(value) } catch { /* 방을 못 만들어도 대화는 계속한다(저장만 안 된다) */ }
+    // 이 말은 보낸 방에 속한다. 답을 기다리는 사이 다른 방으로 옮겨도 답은 보낸 방에 붙는다.
+    const here = () => useChat.getState().currentId === sid
+    const commit = (f: (cur: Turn[]) => Turn[]) => { if (here()) setTurns(f); else if (sid) void useChat.getState().appendTurns(sid, (cur) => f(cur as Turn[])) }
     const mine: Turn = { id: nextId.current++, role: 'user', text: value }
-    setTurns((cur) => [...cur, mine].slice(-30))
+    commit((cur) => [...cur, mine].slice(-30))
     try {
       // 최근 대화를 함께 보내서 "그건 뭔데", "왜 못해"처럼 앞 이야기를 가리키는 말을 이해하게 한다
       const history: HistoryTurn[] = turns.slice(-8).map((t) => ({ role: t.role, text: (t.role === 'user' ? t.text : t.reply.message).slice(0, 800) })).filter((h) => h.text.trim())
       const reply = await assistantApi.interpret(value, previous.current ?? undefined, history)
-      previous.current = reply.intent === 'CLARIFY' ? `${previous.current ? previous.current + ' ' : ''}${value}`.slice(-480) : null
+      if (here()) previous.current = reply.intent === 'CLARIFY' ? `${previous.current ? previous.current + ' ' : ''}${value}`.slice(-480) : null
       setAi(reply.ai || ai)
       const bot: Turn = { id: nextId.current++, role: 'assistant', reply, input: value, draft: reply.draft, ambiguous: reply.ambiguous, tool: reply.tool, room: reply.room ?? null, rooms: reply.rooms ?? [], target: reply.target ?? null, candidates: reply.candidates ?? [], state: 'open' }
-      setTurns((cur) => [...cur, bot].slice(-30))
+      commit((cur) => [...cur, bot].slice(-30))
     } catch (e) {
-      previous.current = null
+      if (here()) previous.current = null
       const failed: Turn = { id: nextId.current++, role: 'assistant', input: value, draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open',
         reply: { intent: 'UNSUPPORTED', message: (e as Error).message, draft: null, ambiguous: [], unresolved: [], entries: [], ai: false, source: '', tool: null, alternatives: [] } }
-      setTurns((cur) => [...cur, failed])
-    } finally { setBusy(false) }
+      commit((cur) => [...cur, failed])
+    } finally { if (seq.current === mySeq) setBusy(false) }
   }
 
   const confirm = async (t: Extract<Turn, { role: 'assistant' }>) => {
