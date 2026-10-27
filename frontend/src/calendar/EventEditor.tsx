@@ -3,7 +3,9 @@ import { useOffice } from '../store'
 import { calendarApi, type Entry, type EventBody, type Person, type Scope } from './api'
 import { addDays, fromInputs, toDateInput, toTimeInput } from './dates'
 
-export interface EditorInit { entry?: Entry; day: Date; scope: Scope }
+/** 입력창(AI)이 만든 초안으로 미리 채워서 열 때 쓴다 */
+export interface EditorDraft { scope: 'PERSONAL' | 'SHARED'; title: string; description: string; location: string; startAt: string; endAt: string; allDay: boolean; attendees: string[] }
+export interface EditorInit { entry?: Entry; draft?: EditorDraft; day: Date; scope: Scope }
 
 /** 일정 만들기/고치기. 개인 일정은 참석자를 초대할 수 있고, 전체 일정은 관리자·일정 관리자만 만든다. */
 export function EventEditor({ init, canManageShared, onClose, onSaved }: { init: EditorInit; canManageShared: boolean; onClose: () => void; onSaved: (message: string) => void }) {
@@ -18,13 +20,18 @@ export function EventEditor({ init, canManageShared, onClose, onSaved }: { init:
         endDate: toDateInput(editing.allDay ? addDays(e, -1) : e), endTime: toTimeInput(e), location: editing.location ?? '', description: editing.description ?? '',
         attendees: editing.attendees.map((p) => p.username) }
     }
+    if (init.draft) {
+      const s = new Date(init.draft.startAt), e = new Date(init.draft.endAt)
+      return { scope: init.draft.scope, title: init.draft.title, allDay: init.draft.allDay, startDate: toDateInput(s), startTime: toTimeInput(s),
+        endDate: toDateInput(init.draft.allDay ? addDays(e, -1) : e), endTime: toTimeInput(e), location: init.draft.location, description: init.draft.description, attendees: init.draft.attendees }
+    }
     const now = new Date()
     const start = new Date(init.day.getFullYear(), init.day.getMonth(), init.day.getDate(), 9, 0)
     if (toDateInput(init.day) === toDateInput(now)) { start.setHours(Math.min(now.getHours() + 1, 22), 0) }
     const end = new Date(start.getTime() + 3600_000)
     return { scope: (init.scope === 'shared' && canManageShared ? 'SHARED' : 'PERSONAL') as 'PERSONAL' | 'SHARED', title: '', allDay: false,
       startDate: toDateInput(start), startTime: toTimeInput(start), endDate: toDateInput(end), endTime: toTimeInput(end), location: '', description: '', attendees: [] as string[] }
-  }, [editing, init.day, init.scope, canManageShared])
+  }, [editing, init.day, init.draft, init.scope, canManageShared])
 
   const [scope, setScope] = useState(defaults.scope)
   const [title, setTitle] = useState(defaults.title)

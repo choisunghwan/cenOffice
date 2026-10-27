@@ -24,3 +24,27 @@
 .home-list.compact li:has(.home-date) button{grid-template-columns:78px 1fr auto}
 .home-list.compact li:has(.home-date) small{grid-column:auto}
 @media(max-width:900px){.home-grid{grid-template-columns:1fr}.home-card.wide{grid-row:auto}.home-hero{padding:20px}}
+
+/* 홈 입력창 */
+.home-assistant{margin:0 0 16px;max-width:760px}
+.ha-thread{max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 12px}
+.ha-user{align-self:flex-end;max-width:85%;background:#2a6db2;color:#fff;border-radius:16px 16px 4px 16px;padding:9px 14px;font-size:13px;margin:0;overflow-wrap:anywhere}
+.ha-bot{align-self:flex-start;max-width:100%;font-size:13px;line-height:1.7;margin:0}
+.ha-bot>p{margin:0 0 8px;background:var(--c-panel);border:1px solid var(--c-border);border-radius:16px 16px 16px 4px;padding:9px 14px;display:inline-block;max-width:100%}
+.ha-wait{color:var(--c-muted)}
+.ha-card{border:1px solid var(--c-border);border-radius:14px;background:var(--c-panel);padding:14px 16px;max-width:520px}
+.ha-card.done{opacity:.8}.ha-card.cancelled{opacity:.5}
+.ha-title{width:100%;font-size:14px;font-weight:650;padding:8px 10px;border:1px solid var(--c-border);border-radius:9px;background:var(--c-bg);color:var(--c-text);outline:none;margin-bottom:8px}
+.ha-title:focus{border-color:var(--c-accent)}
+.ha-card dl{display:grid;grid-template-columns:54px 1fr;gap:4px 10px;font-size:12.5px;margin:0 0 8px}.ha-card dt{color:var(--c-muted)}.ha-card dd{margin:0}
+.ha-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px;margin:6px 0}
+.ha-pick button{border:1px solid var(--c-border);border-radius:20px;padding:4px 11px;color:var(--c-text);background:var(--c-bg)}.ha-pick button:hover{border-color:var(--c-accent)}.ha-pick small{color:var(--c-muted)}
+.ha-actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.ha-done{font-size:12.5px;color:#2f9a80;margin:8px 0 0}.ha-error{font-size:12px;color:#d4565c;margin:6px 0 0}
+.ha-list{margin-top:4px;max-width:520px}
+.ha-form{display:flex;gap:8px;align-items:flex-end;border:1px solid var(--c-border);border-radius:16px;background:var(--c-panel);padding:8px 8px 8px 14px}
+.ha-form:focus-within{border-color:var(--c-accent);box-shadow:0 0 0 3px #6098d122}
+.ha-form textarea{flex:1;border:0;outline:none;background:transparent;color:var(--c-text);font-size:14px;resize:none;padding:8px 0;font-family:inherit;min-width:0}
+.ha-examples{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.ha-examples button{font-size:12px;border:1px solid var(--c-border);border-radius:20px;padding:5px 12px;color:var(--c-muted);background:transparent}.ha-examples button:hover{color:var(--c-text);border-color:var(--c-accent)}
+.ha-note{font-size:11px;color:var(--c-muted);margin:8px 2px 14px}

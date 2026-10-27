@@ -3,6 +3,7 @@ import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { addDays, dowLabel, formatRange, isAllDayLike, KIND_LABEL, overlapsDay, pad, startOfDay } from '../calendar/dates'
 import { formatDue, isoDate, minutesApi, type MyItem, type PendingMinutes } from '../meeting/minutesApi'
+import { AssistantBox } from './AssistantBox'
 import '../calendar/calendar.css'
 import './home.css'
 
@@ -47,7 +48,8 @@ export function HomePage() {
     void load()
     const t = setInterval(() => void load(), 60_000)
     window.addEventListener('cen-notification', load)
-    return () => { clearInterval(t); window.removeEventListener('cen-notification', load) }
+    window.addEventListener('cen-calendar-changed', load) // 입력창으로 일정을 등록하면 바로 반영
+    return () => { clearInterval(t); window.removeEventListener('cen-notification', load); window.removeEventListener('cen-calendar-changed', load) }
   }, [load])
 
   const todays = useMemo(() => (entries ?? []).filter((e) => overlapsDay(e, today)).sort((a, b) => Number(isAllDayLike(b)) - Number(isAllDayLike(a)) || a.startAt.localeCompare(b.startAt)), [entries, today])
@@ -64,6 +66,7 @@ export function HomePage() {
         <p className="cal-eyebrow">HOME</p>
         <h1>{user?.displayName}님, {greeting(now)}</h1>
         <p>{now.getMonth() + 1}월 {now.getDate()}일 {dowLabel(now.getDay())}요일 · 오늘 일정 {entries === null ? '…' : `${todays.length}건`}{todo.length > 0 ? ` · 할 일 ${todo.length}건` : ''}</p>
+        <AssistantBox />
         <div className="home-quick">
           <button type="button" className="cal-primary" onClick={() => go('meetings')}>◉ 회의 시작·참여</button>
           <button type="button" className="cal-ghost" onClick={() => go('calendar')}>▦ 일정 보기</button>
