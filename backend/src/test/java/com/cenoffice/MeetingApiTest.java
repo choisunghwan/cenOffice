@@ -45,6 +45,23 @@ class MeetingApiTest {
         for(var x:read(req(get("/api/meetings"),guest,null)))assertNotEquals(id,x.path("id").asText());
         verify(media,never()).grant(anyString(),anyString(),anyString());
     }
+    @Test void meetingPageSearchesByTitleAndPages() throws Exception {
+        String tag = "검색" + UUID.randomUUID().toString().substring(0, 6);
+        for (int i = 0; i < 7; i++) { // 진행 중 회의는 최대 10개라서 만든 뒤 바로 끝낸다
+            String id = read(req(post("/api/meetings"), host, Map.of("title", tag + " 회의 " + i)).andExpect(status().isCreated())).path("id").asText();
+            req(post("/api/meetings/" + id + "/end"), host, Map.of()).andExpect(status().isNoContent());
+        }
+        req(post("/api/meetings"), host, Map.of("title", "다른 모임 " + UUID.randomUUID())).andExpect(status().isCreated());
+        var p0 = read(req(get("/api/meetings/page").param("q", tag.toUpperCase()).param("page", "0").param("size", "3"), host, null).andExpect(status().isOk())); // 대소문자는 구분하지 않는다
+        assertEquals(7, p0.path("total").asInt(), p0.toString());
+        assertEquals(3, p0.path("items").size());
+        assertEquals(0, p0.path("page").asInt());
+        assertEquals(1, read(req(get("/api/meetings/page").param("q", tag).param("page", "2").param("size", "3"), host, null)).path("items").size()); // 7개 = 3+3+1
+        assertEquals(0, read(req(get("/api/meetings/page").param("q", tag).param("size", "3"), guest, null)).path("total").asInt()); // 남의 회의는 보이지 않는다
+        assertEquals(0, read(req(get("/api/meetings/page").param("q", "%"), host, null)).path("total").asInt()); // % 는 글자 그대로 찾는다
+        assertEquals(50, read(req(get("/api/meetings/page").param("size", "1000"), host, null)).path("size").asInt()); // 한 번에 가져오는 수에는 상한이 있다
+    }
+
     @Test void codeAdmissionIsIdempotentAndGrantUsesLoggedInIdentity() throws Exception {
         var m=create();String id=m.path("id").asText();
         for(int i=0;i<2;i++)req(post("/api/meetings/join"),guest,Map.of("code",m.path("code").asText())).andExpect(status().isOk());

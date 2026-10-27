@@ -166,6 +166,14 @@ body { font-family: "Pretendard", "Segoe UI", "Malgun Gothic", system-ui, sans-s
 .hub-hero-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
 .hub-primary, .hub-secondary { padding: 12px 18px; border-radius: 10px; font-size: 12px; font-weight: 600; display: flex; gap: 20px; align-items: center; transition: background .18s; }
 .hub-primary { background: #cae4ff; color: #15283e; }.hub-primary:hover { background: #e2f0ff; }
+/* 도구 화면 위쪽의 큼직한 화면 선택 버튼: 둘러보기 / 내 도구 / 도구 만들기 */
+.hub-switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.hub-switch button { display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px 18px; border-radius: 14px; border: 1px solid rgba(127,127,127,.28); background: rgba(127,127,127,.07); color: inherit; transition: border-color .15s, background .15s, transform .15s; }
+.hub-switch button:hover { border-color: #3b8bff; background: rgba(59,139,255,.1); transform: translateY(-1px); }
+.hub-switch button[aria-current="page"] { border-color: #3b8bff; background: rgba(59,139,255,.16); box-shadow: 0 0 0 1px #3b8bff inset; }
+.hub-switch-icon { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: rgba(59,139,255,.18); color: #3b8bff; }
+.hub-switch b { display: block; font-size: 15px; font-weight: 700; }
+.hub-switch small { display: block; margin-top: 2px; font-size: 12px; opacity: .7; line-height: 1.4; }
 .hub-secondary { border: 1px solid #ffffff20; color: #c1cfe0; }.hub-secondary:hover { background: #ffffff08; }
 .hub-orbit { position: absolute; right: 5%; top: 55px; width: 240px; height: 240px; pointer-events: none; }
 .hub-orbit-ring { position: absolute; inset: 10px; border: 1px solid #91b8ee25; border-radius: 50%; transform: rotate(-30deg) scaleY(.7); }
@@ -176,3 +184,13 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 @media (max-width: 1100px) { .hub-orbit { right: 0; opacity: .25; transform: scale(.8); } .hub-hero > p { max-width: 80%; } }
 @media (max-width: 640px) { .hub-hero { padding: 28px 24px; } .hub-orbit { display: none; } .hub-hero > p { max-width: 100%; font-size: 13px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* 숫자 페이지 이동 */
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 18px 0 8px; font-size: 13px; }
+.pager button { min-width: 36px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(127,127,127,.28); background: rgba(127,127,127,.07); color: inherit; transition: border-color .15s, background .15s; }
+.pager button:hover:not(:disabled) { border-color: #3b8bff; background: rgba(59,139,255,.1); }
+.pager button.on { border-color: #3b8bff; background: #1a62d6; color: #fff; font-weight: 700; }
+.pager button:disabled { opacity: .4; cursor: default; }
+.pager-item { display: inline-flex; align-items: center; gap: 6px; }
+.pager-gap { opacity: .5; padding: 0 2px; }
+.pager-total { margin-left: 10px; opacity: .65; }

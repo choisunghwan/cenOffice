@@ -12,3 +12,9 @@
 .meeting-alert{background:#a8473c;color:#fff}
 .meeting-notice{animation:meeting-toast-out .4s ease 6s forwards}
 @keyframes meeting-toast-out{to{opacity:0;visibility:hidden}}
+
+/* 회의 제목 검색 */
+.meeting-search { display: flex; gap: 8px; margin: 0 0 14px; }
+.meeting-search input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.07); color: inherit; font-size: 14px; }
+.meeting-search button { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.1); color: inherit; font-size: 13px; font-weight: 600; }
+.meeting-search button:hover { border-color: #3b8bff; }

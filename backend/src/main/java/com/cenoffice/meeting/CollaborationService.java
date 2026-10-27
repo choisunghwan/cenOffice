@@ -34,6 +34,16 @@ public class CollaborationService {
     public List<Meeting> list(String actor) {
         return db.query("select m.* from collaboration_meetings m join collaboration_members p on p.meeting_id=m.id where p.username=? order by m.created_at desc limit 50",this::row,actor);
     }
+    public record Page(List<Meeting> items,long total,int page,int size) {}
+    /** 내 회의를 제목으로 찾고 쪽 단위로 가져온다. 진행 중인 회의를 먼저, 그다음 최근 순. */
+    public Page search(String actor,String q,int page,int size) {
+        int sz=Math.max(1,Math.min(50,size)),pg=Math.max(0,page);
+        String like="%"+(q==null?"":q.strip().toLowerCase().replace("\\","\\\\").replace("%","\\%").replace("_","\\_"))+"%";
+        String from=" from collaboration_meetings m join collaboration_members p on p.meeting_id=m.id where p.username=? and lower(m.title) like ? escape '\\'";
+        Long total=db.queryForObject("select count(*)"+from,Long.class,actor,like);
+        List<Meeting> items=db.query("select m.*"+from+" order by case when m.state='OPEN' then 0 else 1 end, m.created_at desc limit ? offset ?",this::row,actor,like,sz,(long)pg*sz);
+        return new Page(items,total==null?0:total,pg,sz);
+    }
     public Meeting detail(String id,String actor) {
         member(id,actor);
         return db.query("select * from collaboration_meetings where id=?",this::row,id).stream().findFirst().orElseThrow(this::notFound);

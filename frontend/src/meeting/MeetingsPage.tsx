@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useOffice } from '../store'
 import { meetingsApi, type Meeting, type MediaGrant } from './api'
+import { Pager } from '../hub/Pager'
 import { MeetingCall } from './MeetingCall'
 import { MeetingMinutes } from './MeetingMinutes'
-import { minutesApi, formatDue, type MyItem } from './minutesApi'
 import './meeting.css'
+
+const PAGE_SIZE = 10
 
 export function MeetingsPage() {
   const user = useOffice(s => s.user)
   const [list, setList] = useState<Meeting[]>([])
+  const [total, setTotal] = useState(0)
+  const [openCount, setOpenCount] = useState(0)
+  const [query, setQuery] = useState('')
+  const [applied, setApplied] = useState('')
+  const [pageNo, setPageNo] = useState(0)
+  const view = useRef({ q: '', page: 0 }) // 10초마다 새로고침할 때 지금 보고 있는 검색어·쪽을 그대로 쓴다
+  view.current = { q: applied, page: pageNo }
   const [selected, setSelected] = useState<Meeting | null>(null)
   const [grant, setGrant] = useState<MediaGrant | null>(null)
   const [title, setTitle] = useState('팀 협업 회의')
@@ -20,14 +29,18 @@ export function MeetingsPage() {
   const [camera, setCamera] = useState(false)
   const [notice, setNotice] = useState('')
   const [minutesFor, setMinutesFor] = useState<Meeting | null>(null)
-  const [myItems, setMyItems] = useState<MyItem[]>([])
   const preview = useRef<HTMLVideoElement>(null)
   const stream = useRef<MediaStream | null>(null)
   const stopPreview = useCallback(() => { stream.current?.getTracks().forEach(t => t.stop()); stream.current = null }, [])
   const refresh = useCallback(async () => {
-    try { setList(await meetingsApi.list()) } catch (e) { setError((e as Error).message) }
-    try { setMyItems(await minutesApi.myItems()) } catch { /* 할 일 목록은 보조 정보 */ }
+    try {
+      const r = await meetingsApi.page(view.current.q, view.current.page, PAGE_SIZE)
+      setList(r.items); setTotal(r.total)
+      if (r.items.length === 0 && r.total > 0 && view.current.page > 0) setPageNo(Math.max(0, Math.ceil(r.total / PAGE_SIZE) - 1)) // 마지막 쪽이 비었으면 앞 쪽으로
+    } catch (e) { setError((e as Error).message) }
+    try { setOpenCount((await meetingsApi.page('', 0, 50)).items.filter((m) => m.state === 'OPEN').length) } catch { /* 진행 중 개수는 보조 정보 */ }
   }, [])
+  useEffect(() => { void refresh() }, [applied, pageNo, refresh])
   // 알림에서 넘어온 회의록 열기
   useEffect(() => {
     const open = () => {
@@ -97,11 +110,10 @@ export function MeetingsPage() {
           <button className="meeting-secondary" disabled={busy || code.trim().length !== 32}>참여하기 <span>→</span></button>
         </form>
       </div>
-      <div className="meeting-list-heading"><h2>내 회의</h2><span>{list.filter(m => m.state === 'OPEN').length}개 진행 중</span></div>
-      {!list.length ? <div className="meeting-empty"><span>◎</span><h3>첫 회의를 시작해 보세요</h3><p>만들거나 참여한 회의가 여기에 모입니다.</p></div> : <div className="meeting-list">{list.map(m => <button key={m.id} disabled={busy} onClick={() => (m.state === 'ENDED' ? setMinutesFor(m) : void action(() => meetingsApi.detail(m.id)))} className="meeting-list-row"><div className="meeting-row-icon">{m.state === 'OPEN' ? '◉' : '✓'}</div><div><strong>{m.title}</strong><p>{new Date(m.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · 참여 멤버 {m.memberCount}명 {m.host === user?.username ? '· 내가 만든 회의' : ''}</p></div><span className={m.state === 'OPEN' ? 'meeting-open' : ''}>{m.state === 'OPEN' ? '참여하기 ↗' : '회의록 보기 →'}</span></button>)}</div>}
-      {myItems.length > 0 && <div className="my-items"><h2>내가 맡은 할 일</h2>{myItems.map((it) => <label key={it.id} className={`my-item ${it.done ? 'done' : ''}`}>
-        <input type="checkbox" checked={it.done} onChange={() => { void minutesApi.setDone(it.id, !it.done).then(refresh).catch((e) => setError((e as Error).message)) }} />
-        <span><span className="t">{it.content}</span><br /><small className="minutes-muted">{it.meetingTitle}{it.dueText ? ` · ${formatDue(it.dueText)}` : ''}</small></span></label>)}</div>}
+      <div className="meeting-list-heading"><h2>내 회의</h2><span>{openCount}개 진행 중</span></div>
+      <form className="meeting-search" role="search" onSubmit={e => { e.preventDefault(); setPageNo(0); setApplied(query.trim()) }}><input value={query} onChange={e => setQuery(e.target.value)} placeholder="회의 제목으로 검색" aria-label="회의 제목 검색" maxLength={120} /><button type="submit">검색</button>{applied && <button type="button" className="meeting-search-clear" onClick={() => { setQuery(''); setApplied(''); setPageNo(0) }}>전체 보기</button>}</form>
+      {!list.length ? (applied ? <div className="meeting-empty"><span>◎</span><h3>‘{applied}’에 맞는 회의가 없습니다</h3><p>제목의 일부만 입력해 보세요.</p></div> : <div className="meeting-empty"><span>◎</span><h3>첫 회의를 시작해 보세요</h3><p>만들거나 참여한 회의가 여기에 모입니다.</p></div>) : <div className="meeting-list">{list.map(m => <button key={m.id} disabled={busy} onClick={() => (m.state === 'ENDED' ? setMinutesFor(m) : void action(() => meetingsApi.detail(m.id)))} className="meeting-list-row"><div className="meeting-row-icon">{m.state === 'OPEN' ? '◉' : '✓'}</div><div><strong>{m.title}</strong><p>{new Date(m.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · 참여 멤버 {m.memberCount}명 {m.host === user?.username ? '· 내가 만든 회의' : ''}</p></div><span className={m.state === 'OPEN' ? 'meeting-open' : ''}>{m.state === 'OPEN' ? '참여하기 ↗' : '회의록 보기 →'}</span></button>)}</div>}
+      <Pager page={pageNo} pages={Math.max(1, Math.ceil(total / PAGE_SIZE))} total={total} onChange={setPageNo} />
       <footer className="meeting-page-note">영상·음성은 로컬 회의 서버로 연결되며 녹음하지 않습니다. 회의록은 회의 채팅과 메모를 기준으로 만들어집니다.</footer>
     </>}
   </section>
