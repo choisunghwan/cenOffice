@@ -133,9 +133,44 @@ class AssistantApiTest {
         assertEquals("UNSUPPORTED", ask(admin, "오늘 날씨 어때").path("intent").asText());
     }
 
+    JsonNode builtinTool(String name) throws Exception {
+        var page = read(req(get("/api/hub/skills?status=APPROVED&size=100"), admin, null).andExpect(status().isOk()));
+        for (var s : page.path("items")) if (s.path("owner").asText().equals("hub-builtin") && s.path("name").asText().equals(name)) return s;
+        fail("기본 제공 도구가 없습니다: " + name);
+        return null;
+    }
+
+    @Test void approvedHubToolIsRecommendedAndThenRunThroughTheNormalHubApi() throws Exception {
+        var tool = builtinTool("cen-sql-reviewer");
+        String sample = "SELECT * FROM orders WHERE customer_name LIKE '%kim';";
+        var r = ask(admin, "SQL 점검 부탁해\n" + sample);
+        assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
+        assertEquals("SQL 점검", r.path("tool").path("title").asText()); // 영문 식별자가 아니라 한글 제목
+        assertEquals(tool.path("id").asLong(), r.path("tool").path("skillId").asLong());
+        assertEquals("rule", r.path("tool").path("engine").asText()); // 기본 제공 도구는 서버 안에서 처리 → 외부 전송 없음
+        assertFalse(r.path("tool").path("external").asBoolean());
+        assertFalse(r.path("ai").asBoolean());
+        // 추천만으로는 아무 것도 실행되지 않는다. 카드의 [실행]은 기존 허브 실행 API 를 같은 사용자 권한으로 호출한다.
+        var exec = read(req(post("/api/hub/executions"), admin, Map.of("skillId", r.path("tool").path("skillId").asLong(), "input", sample, "engine", r.path("tool").path("engine").asText())).andExpect(status().isAccepted()));
+        String id = exec.path("id").asText();
+        String state = "";
+        for (int i = 0; i < 50 && !state.equals("SUCCEEDED") && !state.equals("FAILED"); i++) { Thread.sleep(200); state = read(req(get("/api/hub/executions/" + id), admin, null)).path("status").asText(); }
+        assertEquals("SUCCEEDED", state);
+    }
+
+    @Test void textWithNoRelatedToolIsNotForcedOntoOne() throws Exception {
+        assertEquals("UNSUPPORTED", ask(admin, "오늘 점심 뭐 먹을까 고민이야").path("intent").asText());
+    }
+
+    @Test void longPastedTextIsAcceptedForTools() throws Exception {
+        String longText = "회의록 정리 부탁해\n" + "회의 내용입니다. ".repeat(200);
+        assertTrue(longText.length() > 500 && longText.length() <= 4000);
+        assertEquals("USE_TOOL", ask(admin, longText).path("intent").asText());
+    }
+
     @Test void inputIsValidatedAndRequiresLogin() throws Exception {
         req(post("/api/assistant/interpret"), admin, Map.of("text", "  ")).andExpect(status().isBadRequest());
-        req(post("/api/assistant/interpret"), admin, Map.of("text", "가".repeat(501))).andExpect(status().isBadRequest());
+        req(post("/api/assistant/interpret"), admin, Map.of("text", "가".repeat(4001))).andExpect(status().isBadRequest());
         mvc.perform(post("/api/assistant/interpret").contentType(MediaType.APPLICATION_JSON).content("{\"text\":\"내일 일정\"}")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/assistant/status")).andExpect(status().isUnauthorized());
         assertFalse(read(req(get("/api/assistant/status"), admin, null).andExpect(status().isOk())).path("ai").asBoolean());

@@ -48,3 +48,7 @@
 .ha-examples{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .ha-examples button{font-size:12px;border:1px solid var(--c-border);border-radius:20px;padding:5px 12px;color:var(--c-muted);background:transparent}.ha-examples button:hover{color:var(--c-text);border-color:var(--c-accent)}
 .ha-note{font-size:11px;color:var(--c-muted);margin:8px 2px 14px}
+.ha-toolname{display:flex;align-items:center;gap:8px;font-size:14px;margin:0 0 6px!important;background:none!important;border:0!important;padding:0!important}
+.ha-toolname small{color:var(--c-muted);font-size:11px;border:1px solid var(--c-border);border-radius:20px;padding:1px 8px}
+.ha-card .cal-muted{margin:4px 0}
+.ha-output{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:12.5px;line-height:1.7;background:var(--c-bg);border:1px solid var(--c-border);border-radius:10px;padding:12px 14px;margin:8px 0;max-height:320px;overflow:auto}

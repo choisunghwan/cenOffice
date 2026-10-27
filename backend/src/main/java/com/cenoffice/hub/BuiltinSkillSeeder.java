@@ -28,7 +28,8 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
             return in == null ? fallback : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
         } catch (java.io.IOException e) { return fallback; }
     }
-    public static boolean trusted(HubSkill s) { return OWNER.equals(s.owner) && NAMES.contains(s.name); }
+    public static boolean trusted(HubSkill s) { return trusted(s.owner, s.name); }
+    public static boolean trusted(String owner, String name) { return OWNER.equals(owner) && NAMES.contains(name); }
     @Override @Transactional
     public void run(String... args) throws Exception {
         for (String name : NAMES) {

@@ -86,6 +86,33 @@ class AssistantLlmTest {
         assertFalse(userText.getValue().contains("@")); // 이메일 주소는 보내지 않는다
     }
 
+    JsonNode builtinTool() throws Exception {
+        var page = read(req(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/hub/skills?status=APPROVED&size=100"), admin, null).andExpect(status().isOk()));
+        for (var s : page.path("items")) if (s.path("owner").asText().equals("hub-builtin")) return s;
+        fail("기본 제공 도구가 없습니다");
+        return null;
+    }
+
+    @Test void aiPicksAToolFromTheCatalogAndTheServerAcceptsOnlyListedIds() throws Exception {
+        var tool = builtinTool();
+        when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"use_tool\",\"tool\":{\"skillId\":" + tool.path("id").asLong() + "}}");
+        var r = ask(admin, "이 내용 좀 처리해줘");
+        assertEquals("USE_TOOL", r.path("intent").asText());
+        assertEquals("fake/m1", r.path("source").asText());
+        assertEquals(tool.path("id").asLong(), r.path("tool").path("skillId").asLong());
+        var userText = ArgumentCaptor.forClass(String.class);
+        verify(llm, atLeastOnce()).generateJson(anyString(), userText.capture());
+        assertTrue(userText.getValue().contains("도구 목록"));
+        assertTrue(userText.getValue().contains(tool.path("id").asText() + " | "));
+
+        // AI 가 목록에 없는 번호를 지어내면 받아들이지 않는다
+        when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"use_tool\",\"tool\":{\"skillId\":987654321}}");
+        assertEquals("UNSUPPORTED", ask(admin, "이 내용 좀 처리해줘").path("intent").asText());
+        // 숫자가 아닌 값이나 음수도 마찬가지
+        when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"use_tool\",\"tool\":{\"skillId\":\"drop table\"}}");
+        assertNotEquals("USE_TOOL", ask(admin, "이 내용 좀 처리해줘").path("intent").asText());
+    }
+
     @Test void unknownOrDestructiveIntentsAreTreatedAsUnsupported() throws Exception {
         when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"delete_all_events\",\"message\":\"전부 삭제했습니다\"}");
         var r = ask(admin, "다 지워줘");
