@@ -16,6 +16,12 @@ if (-not ($env:OFFICE_ADMIN_PASSWORD -and $env:OFFICE_USER_PASSWORD)) {
   Get-Content $cred | ForEach-Object { $k, $v = $_ -split '=', 2; Set-Item "env:$k" $v }
   Write-Host "계정 정보: $cred  (admin / user)"
 }
+# PostgreSQL 접속 정보(scripts\setup-postgres.ps1 이 만든 파일)가 있으면 H2 대신 PostgreSQL 사용
+$dbFile = "$root\backend\.local-db.txt"
+if ((Test-Path $dbFile) -and -not $env:DB_URL) {
+  Get-Content $dbFile | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k) { Set-Item "env:$k" $v } }
+  Write-Host "DB: PostgreSQL ($env:DB_URL)"
+} elseif ($env:DB_URL) { Write-Host "DB: $env:DB_URL" } else { Write-Host 'DB: H2 로컬 파일 (backend\data)' }
 # 이메일 알림 SMTP 설정(scripts\setup-mail.ps1 이 만든 파일)이 있으면 읽는다. 없으면 이메일 알림은 꺼진 채 화면 알림만 동작.
 $mailFile = "$root\backend\.local-mail.txt"
 if (Test-Path $mailFile) {
