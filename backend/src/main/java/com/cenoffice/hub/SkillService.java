@@ -402,6 +402,13 @@ public class SkillService {
         return s;
     }
 
+    /** 볼 수 있고 수정할 수도 있는 스킬(제작자 또는 관리자). 양식 등록처럼 스킬을 고치는 다른 기능이 쓴다. */
+    public HubSkill editable(Long id, String actor, boolean admin) {
+        HubSkill s = visible(id, actor, admin);
+        requireEdit(s, actor, admin);
+        return s;
+    }
+
     private void requireEdit(HubSkill s, String actor, boolean admin) {
         if (!(admin || s.owner.equals(actor))) throw new ApiException(HttpStatus.FORBIDDEN, "제작자 또는 관리자만 수정할 수 있습니다");
     }
