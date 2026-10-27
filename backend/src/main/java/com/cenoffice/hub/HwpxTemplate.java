@@ -136,6 +136,128 @@ final class HwpxTemplate {
         }
     }
 
+    // ───────────────────────── 채우기 ─────────────────────────
+
+    /** 값이 있는 항목만 채운 새 hwpx. 값이 없는 항목·서식·그림 등 나머지는 원본 그대로. */
+    static byte[] fill(byte[] hwpx, Map<String, String> values) {
+        Loaded doc = load(hwpx);
+        apply(doc, slots(doc), values);
+        return pack(doc);
+    }
+
+    /** 줄바꿈은 공백으로, 제어 문자는 뺀다(문단 구조를 건드리지 않으려는 선택) */
+    private static String clean(String v) { return v.replaceAll("[\\r\\n]+", " ").replaceAll("\\p{Cntrl}", "").strip(); }
+
+    private static void apply(Loaded doc, List<Slot> slots, Map<String, String> values) {
+        Set<Element> done = new HashSet<>();
+        for (Slot s : slots) {
+            if (s.field().kind().equals("placeholder")) {
+                if (!done.add(s.target())) continue;
+                Matcher m = PLACEHOLDER.matcher(paraText(s.target()));
+                StringBuilder b = new StringBuilder();
+                boolean changed = false;
+                while (m.find()) {
+                    String v = values.get(m.group(1).strip());
+                    if (v != null) changed = true;
+                    m.appendReplacement(b, Matcher.quoteReplacement(v == null ? m.group(0) : clean(v)));
+                }
+                m.appendTail(b);
+                if (changed) setParaText(s.target(), b.toString());
+            } else {
+                String v = values.get(s.field().key());
+                if (v == null) continue;
+                List<Element> subs = children(s.target(), "subList");
+                List<Element> paras = subs.isEmpty() ? List.of() : children(subs.get(0), "p");
+                if (!paras.isEmpty()) setParaText(paras.get(0), clean(v));
+            }
+        }
+    }
+
+    /** 문단 글자를 통째로 바꾼다. 첫 hp:t 에 넣고 나머지 hp:t 는 비운다(런 서식은 첫 런을 따른다). */
+    private static void setParaText(Element p, String text) {
+        List<Element> ts = new ArrayList<>();
+        for (Element run : children(p, "run")) ts.addAll(children(run, "t"));
+        if (ts.isEmpty()) {
+            Element run = children(p, "run").isEmpty() ? null : children(p, "run").get(0);
+            if (run == null) {
+                run = p.getOwnerDocument().createElementNS(p.getNamespaceURI(), p.getPrefix() + ":run");
+                run.setAttribute("charPrIDRef", "0");
+                p.appendChild(run);
+            }
+            Element t = p.getOwnerDocument().createElementNS(p.getNamespaceURI(), p.getPrefix() + ":t");
+            run.appendChild(t);
+            ts.add(t);
+        }
+        ts.get(0).setTextContent(text);
+        for (int i = 1; i < ts.size(); i++) ts.get(i).setTextContent("");
+    }
+
+    private static byte[] pack(Loaded doc) {
+        try {
+            var bos = new ByteArrayOutputStream();
+            try (var zip = new java.util.zip.ZipOutputStream(bos)) {
+                for (var en : doc.entries().entrySet()) {
+                    byte[] data = doc.sections().containsKey(en.getKey()) ? serialize(doc.sections().get(en.getKey())) : en.getValue();
+                    var e = new ZipEntry(en.getKey());
+                    if (en.getKey().equals("mimetype")) { // 한글이 형식을 알아보도록 첫 항목에 압축 없이 둔다
+                        e.setMethod(ZipEntry.STORED); e.setSize(data.length); e.setCompressedSize(data.length);
+                        var crc = new java.util.zip.CRC32(); crc.update(data); e.setCrc(crc.getValue());
+                    }
+                    zip.putNextEntry(e); zip.write(data); zip.closeEntry();
+                }
+            }
+            return bos.toByteArray();
+        } catch (Exception e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "문서를 만들지 못했습니다.");
+        }
+    }
+
+    private static byte[] serialize(Document d) throws Exception {
+        d.setXmlStandalone(true);
+        var tf = javax.xml.transform.TransformerFactory.newInstance();
+        tf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        var t = tf.newTransformer();
+        t.setOutputProperty(javax.xml.transform.OutputKeys.ENCODING, "UTF-8");
+        var out = new ByteArrayOutputStream();
+        t.transform(new javax.xml.transform.dom.DOMSource(d), new javax.xml.transform.stream.StreamResult(out));
+        return out.toByteArray();
+    }
+
+    // ───────────────────────── 미리보기 ─────────────────────────
+
+    record PreviewCell(String text, String fieldKey) {}
+
+    /** type: "p"(문단; 자리표시자 문단이면 fieldKey) | "table"(rows) */
+    record PreviewBlock(String type, String text, List<List<PreviewCell>> rows, String fieldKey) {}
+
+    /** 값을 반영한 문서 내용을 문서 순서대로 돌려준다. 채울 자리는 fieldKey 로 표시되고, 값이 없는 자리표시자는 {{항목}} 그대로 보인다. */
+    static List<PreviewBlock> preview(byte[] hwpx, Map<String, String> values) {
+        Loaded doc = load(hwpx);
+        List<Slot> slots = slots(doc);
+        Map<Element, String> keyOf = new IdentityHashMap<>();
+        for (Slot s : slots) keyOf.putIfAbsent(s.target(), s.field().key());
+        apply(doc, slots, values);
+        var out = new ArrayList<PreviewBlock>();
+        for (Document d : doc.sections().values()) {
+            for (Element p : children(d.getDocumentElement(), "p")) {
+                for (Element run : children(p, "run")) for (Element tbl : children(run, "tbl")) out.add(previewTable(tbl, keyOf));
+                String text = paraText(p);
+                if (!text.isBlank()) out.add(new PreviewBlock("p", text, null, keyOf.get(p)));
+            }
+        }
+        return out;
+    }
+
+    private static PreviewBlock previewTable(Element tbl, Map<Element, String> keyOf) {
+        var rows = new ArrayList<List<PreviewCell>>();
+        for (Element tr : children(tbl, "tr")) {
+            var cells = new ArrayList<PreviewCell>();
+            for (Element tc : children(tr, "tc")) cells.add(new PreviewCell(cellText(tc), keyOf.get(tc)));
+            rows.add(cells);
+        }
+        return new PreviewBlock("table", null, rows, null);
+    }
+
     // ───────────────────────── DOM 도우미 ─────────────────────────
 
     /** 문단 글자: 이 문단의 런(hp:run) 바로 아래 hp:t 만 이어 붙인다(안에 든 표의 글자는 제외) */
