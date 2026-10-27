@@ -116,4 +116,58 @@ class TemplateApiTest {
     @Test void requiresLogin() throws Exception {
         mvc.perform(get(url())).andExpect(status().isUnauthorized());
     }
+
+    // ───────────── 채우기 계획·초안·미리보기·파일 생성 ─────────────
+
+    JsonNode postJson(String path, String token, Object body) throws Exception { return read(req(post(url() + path), token, body).andExpect(status().isOk())); }
+
+    JsonNode item(JsonNode plan, String key) {
+        for (var i : plan.path("items")) if (i.path("key").asText().equals(key)) return i;
+        fail("항목이 없습니다: " + key);
+        return null;
+    }
+
+    @Test void planFillsFromLabelLinesWithoutAi() throws Exception {
+        upload(admin, "a.hwpx", form("성명", "소속")).andExpect(status().isOk());
+        var plan = postJson("/plan", admin, Map.of("result", "# 사업명\nAI 업무 도우미\n\n성명: 홍길동\n"));
+        assertFalse(plan.path("aiUsed").asBoolean());
+        assertEquals("AI 업무 도우미", item(plan, "사업명").path("value").asText());
+        assertEquals("RESULT", item(plan, "사업명").path("source").asText());
+        assertEquals("홍길동", item(plan, "성명").path("value").asText());
+        assertEquals("MISSING", item(plan, "소속").path("source").asText());
+        assertTrue(item(plan, "소속").path("value").isMissingNode() || item(plan, "소속").path("value").isNull()); // 서버는 null 필드를 빼고 보낸다
+    }
+
+    @Test void planNeverInventsValues() throws Exception {
+        upload(admin, "a.hwpx", form("성명", "소속")).andExpect(status().isOk());
+        var plan = postJson("/plan", admin, Map.of("result", "오늘 날씨가 좋습니다. 관련 없는 문장입니다."));
+        for (var i : plan.path("items")) assertEquals("MISSING", i.path("source").asText(), i.toString());
+    }
+
+    @Test void previewReflectsValues() throws Exception {
+        upload(admin, "a.hwpx", form("성명")).andExpect(status().isOk());
+        var res = postJson("/preview", admin, Map.of("values", Map.of("성명", "홍")));
+        boolean found = false;
+        for (var b : res.path("blocks")) if (b.path("type").asText().equals("table")) found = b.path("rows").get(1).get(1).path("text").asText().equals("홍");
+        assertTrue(found, res.toString());
+    }
+
+    @Test void renderReturnsValidHwpxWithValues() throws Exception {
+        upload(admin, "a.hwpx", form("성명")).andExpect(status().isOk());
+        var r = req(post(url() + "/render"), admin, Map.of("values", Map.of("성명", "홍길동"), "title", "사업계획서")).andExpect(status().isOk()).andReturn().getResponse();
+        assertTrue(r.getHeader("Content-Disposition").contains("filename"));
+        var blocks = HwpxTemplate.preview(r.getContentAsByteArray(), Map.of());
+        boolean found = false;
+        for (var b : blocks) if (b.type().equals("table")) found = b.rows().get(1).get(1).text().equals("홍길동");
+        assertTrue(found);
+    }
+
+    @Test void draftNeedsAnAiConnection() throws Exception {
+        upload(admin, "a.hwpx", form("성명")).andExpect(status().isOk());
+        req(post(url() + "/draft"), admin, Map.of("result", "내용", "key", "성명")).andExpect(status().isBadRequest());
+    }
+
+    @Test void planWithoutTemplateGets404() throws Exception {
+        req(post(url() + "/plan"), admin, Map.of("result", "내용")).andExpect(status().isNotFound());
+    }
 }
