@@ -5,7 +5,7 @@ import type { MyItem, PendingMinutes } from '../meeting/minutesApi'
 export interface Draft { scope: 'PERSONAL' | 'SHARED'; title: string; description: string | null; location: string | null; startAt: string; endAt: string; allDay: boolean; attendees: Person[] }
 export interface Ambiguity { name: string; candidates: Person[] }
 /** 추천한 AI 허브 도구. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
-export interface ToolPick { skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean }
+export interface ToolPick { skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean; /** 결과물 양식이 등록된 도구면 'hwpx' */ templateFormat?: string | null }
 export interface ChatSummary { id: string; title: string; updatedAt: string }
 export interface Room { id: number; name: string; capacity: number }
 /**

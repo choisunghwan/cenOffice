@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useChat } from './chatStore'
 import { TurnRail, type RailItem } from './TurnRail'
+import { TemplateFill } from './TemplateFill'
 import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { formatRange, KIND_LABEL } from '../calendar/dates'
@@ -353,7 +354,7 @@ export function AssistantBox() {
                 )}
                 {t.reply.intent === 'USE_TOOL' && t.tool && (
                   <div className={`ha-card ${t.state}`}>
-                    <p className="ha-toolname"><span aria-hidden="true">{t.tool.icon ?? '🧰'}</span> <b>{t.tool.title}</b>{t.tool.category && <small>{t.tool.category}</small>}</p>
+                    <p className="ha-toolname"><span aria-hidden="true">{t.tool.icon ?? '🧰'}</span> <b>{t.tool.title}</b>{t.tool.category && <small>{t.tool.category}</small>}{t.tool.templateFormat && <small className="ha-tpl-badge">양식 포함 · 한글(HWPX)</small>}</p>
                     {t.tool.description && <p className="cal-muted">{t.tool.description}</p>}
                     <p className="cal-muted">{t.tool.external ? '이 도구는 AI 서비스로 처리하며, 입력한 내용이 AI 서비스로 전송됩니다.' : '서버 안에서 처리하며 입력한 내용이 밖으로 나가지 않습니다.'}</p>
                     {t.error && <p className="ha-error" role="alert">{t.error}</p>}
@@ -364,6 +365,7 @@ export function AssistantBox() {
                       <div className="ha-actions">
                         <button type="button" className="cal-ghost" onClick={() => void navigator.clipboard?.writeText(t.output ?? '')}>복사</button>
                         {t.output && <ExportButtons title={t.tool.title} markdown={t.output} />}
+                        {t.output && t.tool.templateFormat && <TemplateFill skillId={t.tool.skillId} title={t.tool.title} result={t.output} />}
                       </div>
                     </>}
                     {t.state === 'cancelled' && <p className="cal-muted">취소했습니다.</p>}
