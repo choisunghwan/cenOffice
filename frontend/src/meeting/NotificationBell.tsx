@@ -19,6 +19,10 @@ export function NotificationBell() {
 
   const go = (n: NotificationItem) => {
     void minutesApi.markRead(n.id).then(reload).catch(() => undefined)
+    if (n.link?.startsWith('calendar:')) {
+      const s = useOffice.getState()
+      s.setMode('workspace'); s.setWorkspacePage('calendar')
+    }
     if (n.link?.startsWith('meeting:')) {
       sessionStorage.setItem('cenOpenMinutes', n.link.slice(8))
       const s = useOffice.getState()

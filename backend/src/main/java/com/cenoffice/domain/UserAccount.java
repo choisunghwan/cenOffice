@@ -22,6 +22,8 @@ public class UserAccount {
     private String email;
     /** 메일 알림 수신 여부. null 이면 수신(기존 계정 호환). */
     private Boolean emailNotify;
+    /** 전체(공통) 일정을 등록·수정할 수 있는 일정 관리자(팀장 등). null 이면 아님(기존 계정 호환). 관리자는 이 값과 무관하게 가능. */
+    private Boolean calendarManager;
 
     protected UserAccount() {}
 
@@ -39,6 +41,9 @@ public class UserAccount {
     public void setEmail(String email) { this.email = email; }
     public boolean isEmailNotify() { return emailNotify == null || emailNotify; }
     public void setEmailNotify(boolean emailNotify) { this.emailNotify = emailNotify; }
+
+    public boolean isCalendarManager() { return calendarManager != null && calendarManager; }
+    public void setCalendarManager(boolean calendarManager) { this.calendarManager = calendarManager; }
 
     public void changePasswordHash(String hash) { this.passwordHash = hash; }
 

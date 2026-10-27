@@ -7,7 +7,11 @@ import { ConnectPage } from '../hub/ConnectPage'
 import { lazy, Suspense } from 'react'
 const MeetingsPage = lazy(() => import('../meeting/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
 
+const CalendarPage = lazy(() => import('../calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
+
+
 const MENU = [
+  { key: 'calendar', label: '일정', icon: '▦' },
   { key: 'meetings', label: '회의', icon: '◉' },
   { key: 'home', label: '도구 둘러보기', icon: '✧' },
   { key: 'hub-mine', label: '내 도구', icon: '▤' },
@@ -25,6 +29,7 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
 
   const body = () => {
     switch (page) {
+      case 'calendar': return <Suspense fallback={<p role="status">일정을 준비하고 있습니다…</p>}><CalendarPage /></Suspense>
       case 'home': return <HubPage key="browse" />
       case 'meetings': return <Suspense fallback={<p role="status">회의 화면을 준비하고 있습니다…</p>}><MeetingsPage /></Suspense>
       case 'hub-mine': return <HubPage key="mine" initialTab="mine" />
