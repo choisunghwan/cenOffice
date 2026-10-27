@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { assistantMemory, clearAssistantMemory } from './assistantMemory'
+import { useChat } from './chatStore'
 import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { formatRange, KIND_LABEL } from '../calendar/dates'
@@ -94,11 +95,23 @@ export function AssistantBox() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false; assistantMemory.nextId = nextId.current; assistantMemory.previous = previous.current } }, [])
-  // 화면이 닫힌 뒤에 도착한 답도 잃지 않도록, 화면이 없으면 메모리에 바로 쌓는다
+  // 화면이 닫힌 뒤에 도착한 답도 잃지 않도록, 화면이 없으면 메모리에 바로 쌓는다. 바뀔 때마다 서버에 저장도 맡긴다.
   const setTurns = (f: (cur: Turn[]) => Turn[]) => {
     assistantMemory.turns = f(assistantMemory.turns as Turn[])
     if (alive.current) setTurnsState(assistantMemory.turns as Turn[])
+    useChat.getState().saveSoon()
   }
+  // 사이드바에서 다른 방을 열거나 새 채팅을 시작하면 메모리의 대화로 다시 시작한다
+  const rev = useChat((s) => s.rev)
+  const seenRev = useRef(rev)
+  useEffect(() => {
+    if (seenRev.current === rev) return
+    seenRev.current = rev
+    setTurnsState(assistantMemory.turns as Turn[])
+    nextId.current = assistantMemory.nextId
+    previous.current = null
+    setText(''); setEditor(null)
+  }, [rev])
 
   useEffect(() => { assistantApi.status().then((s) => setAi(s.ai)).catch(() => setAi(null)) }, [])
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }) }, [turns, busy])
@@ -111,6 +124,7 @@ export function AssistantBox() {
     if (!value || busy) return
     setText('')
     setBusy(true)
+    try { await useChat.getState().ensureSession(value) } catch { /* 방을 못 만들어도 대화는 계속한다(저장만 안 된다) */ }
     const mine: Turn = { id: nextId.current++, role: 'user', text: value }
     setTurns((cur) => [...cur, mine].slice(-30))
     try {

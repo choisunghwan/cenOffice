@@ -6,6 +6,7 @@ export interface Draft { scope: 'PERSONAL' | 'SHARED'; title: string; descriptio
 export interface Ambiguity { name: string; candidates: Person[] }
 /** 추천한 AI 허브 도구. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
 export interface ToolPick { skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean }
+export interface ChatSummary { id: string; title: string; updatedAt: string }
 export interface Room { id: number; name: string; capacity: number }
 /**
  * CREATE_EVENT: 등록 확인 카드 · LIST_EVENTS: 조회 결과 · USE_TOOL: 도구 추천 카드 · BOOK_ROOM: 회의실 예약 카드 ·
@@ -33,10 +34,18 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   })
   if (!response.ok) { const r = await response.json().catch(() => ({})); throw new Error(r.error ?? '요청을 처리하지 못했습니다') }
-  return response.json()
+  return response.status === 204 ? undefined as T : response.json()
 }
 
 export const assistantApi = {
+  /** 홈 입력창 채팅방(대화 세션) */
+  sessions: {
+    list: () => call<ChatSummary[]>('GET', '/sessions'),
+    create: (title?: string) => call<ChatSummary>('POST', '/sessions', { title: title ?? '' }),
+    get: (id: string) => call<{ id: string; title: string; turns: unknown[] }>('GET', `/sessions/${id}`),
+    save: (id: string, body: { title?: string; turns?: unknown[] }) => call<void>('PUT', `/sessions/${id}`, body),
+    remove: (id: string) => call<void>('DELETE', `/sessions/${id}`),
+  },
   status: () => call<{ ai: boolean }>('GET', '/status'),
   interpret: (text: string, previous?: string, history?: HistoryTurn[]) =>
     call<Reply>('POST', '/interpret', { text, ...(previous ? { previous } : {}), ...(history && history.length ? { history } : {}) }),

@@ -194,3 +194,20 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .pager-item { display: inline-flex; align-items: center; gap: 6px; }
 .pager-gap { opacity: .5; padding: 0 2px; }
 .pager-total { margin-left: 10px; opacity: .65; }
+
+/* 사이드바 채팅방 목록 */
+.chat-history { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(127,127,127,.2); display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.chat-new { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(59,139,255,.5); background: rgba(59,139,255,.12); color: inherit; font-size: 13px; font-weight: 600; }
+.chat-new:hover { background: rgba(59,139,255,.22); }
+.chat-new.icon { justify-content: center; padding: 9px 0; font-size: 16px; }
+.chat-history-title { margin: 14px 12px 6px; font-size: 10px; letter-spacing: .14em; opacity: .55; }
+.chat-history ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; }
+.chat-history li { display: flex; align-items: center; border-radius: 8px; }
+.chat-history li:hover, .chat-history li.on { background: rgba(127,127,127,.14); }
+.chat-history li.on { background: rgba(59,139,255,.16); }
+.chat-item { flex: 1; min-width: 0; text-align: left; padding: 8px 12px; font-size: 13px; color: inherit; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-history li.on .chat-item { opacity: 1; font-weight: 600; }
+.chat-del { flex: none; width: 26px; height: 26px; margin-right: 4px; border-radius: 6px; font-size: 11px; color: inherit; opacity: 0; }
+.chat-history li:hover .chat-del, .chat-del:focus-visible { opacity: .6; }
+.chat-del:hover { opacity: 1 !important; background: rgba(239,68,68,.2); }
+.chat-empty { padding: 8px 12px; font-size: 12px; opacity: .5; }
