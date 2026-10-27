@@ -27,9 +27,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 class MinutesApiTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate db;
     String host, guest;
 
     @BeforeEach void setup() throws Exception {
+        // 확정 테스트들이 남긴 알림·할 일이 다른 테스트의 "없음"/"첫 항목" 확인에 섞이지 않게 한다
+        db.update("delete from notifications");
+        db.update("delete from meeting_action_items");
         host = login("admin", "test-admin-pw-1234");
         guest = login("user", "test-user-pw-1234");
     }
@@ -66,6 +70,23 @@ class MinutesApiTest {
         req(post("/api/meetings/" + id + "/end"), host, Map.of()).andExpect(status().isNoContent());
         req(post("/api/meetings/" + id + "/minutes/generate"), guest, Map.of("notes", "메모")).andExpect(status().isForbidden());
         req(get("/api/meetings/" + id + "/minutes"), host, null).andExpect(status().isNotFound()); // 아직 없음
+    }
+
+    boolean pendingHas(String token, String id) throws Exception {
+        for (var p : read(req(get("/api/minutes/pending"), token, null).andExpect(status().isOk()))) if (p.path("meetingId").asText().equals(id)) return true;
+        return false;
+    }
+
+    @Test void pendingListShowsOnlyTheHostsUnconfirmedEndedMeetings() throws Exception {
+        String id = endedMeetingWithChat();
+        assertTrue(pendingHas(host, id));
+        assertFalse(pendingHas(guest, id)); // 참석자는 확정 권한이 없으므로 대기 목록에 나오지 않는다
+        req(post("/api/meetings/" + id + "/minutes/generate"), host, Map.of("notes", "메모")).andExpect(status().isOk());
+        assertTrue(pendingHas(host, id)); // 초안만 있어도 아직 대기
+        req(post("/api/meetings/" + id + "/minutes/confirm"), host, Map.of()).andExpect(status().isOk());
+        assertFalse(pendingHas(host, id));
+        var open = read(req(post("/api/meetings"), host, Map.of("title", "진행 중 " + UUID.randomUUID())).andExpect(status().isCreated()));
+        assertFalse(pendingHas(host, open.path("id").asText())); // 진행 중인 회의는 제외
     }
 
     @Test void draftReviewConfirmCreatesActionItemsAndNotifiesOnlyAfterConfirm() throws Exception {

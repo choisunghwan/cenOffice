@@ -21,6 +21,7 @@ export const formatDue = (s: string): string => {
   const [y, m, d] = iso.split('-').map(Number)
   return `${iso} (${'일월화수목금토'[new Date(y, m - 1, d).getDay()]})`
 }
+export interface PendingMinutes { meetingId: string; meetingTitle: string; endedAt: string; status: 'NONE' | 'DRAFT' }
 export interface MyItem{ id: number; meetingId: string; meetingTitle: string; content: string; dueText?: string | null; done: boolean }
 export interface NotificationItem { id: number; type: string; title: string; body?: string | null; link?: string | null; createdAt: string; read: boolean }
 
@@ -46,6 +47,7 @@ export const minutesApi = {
   save: (id: string, m: { summary: string; decisions: string[]; issues: string[]; actionItems: ActionItem[] }) => call<Minutes>('PUT', `/meetings/${id}/minutes`, m),
   confirm: (id: string) => call<Minutes>('POST', `/meetings/${id}/minutes/confirm`, {}),
   myItems: () => call<MyItem[]>('GET', '/action-items/mine'),
+  pending: () => call<PendingMinutes[]>('GET', '/minutes/pending'),
   setDone: (id: number, done: boolean) => call<void>('POST', `/action-items/${id}/done`, { done }),
   notifications: () => call<{ items: NotificationItem[]; unread: number }>('GET', '/notifications'),
   markRead: (id: number) => call<void>('POST', `/notifications/${id}/read`, {}),

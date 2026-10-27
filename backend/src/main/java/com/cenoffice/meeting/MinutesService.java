@@ -32,6 +32,8 @@ public class MinutesService {
     public record MemberRef(String username, String displayName) {}
     public record Draft(String summary, List<String> decisions, List<String> issues, List<ItemDraft> actionItems) {}
     public record ItemDraft(String content, String assigneeUsername, String assigneeText, String dueText) {}
+    /** status: NONE(초안 전) | DRAFT(검토 중) */
+    public record PendingMinutes(String meetingId, String meetingTitle, Instant endedAt, String status) {}
     public record MyItem(long id, String meetingId, String meetingTitle, String content, String dueText, boolean done) {}
 
     static final int MAX_LIST = 30, MAX_ITEMS = 50, MAX_CHAT_LINES = 400, MAX_INPUT_CHARS = 24000;
@@ -153,6 +155,18 @@ public class MinutesService {
     }
 
     // ───────────────────────── 내 할 일 ─────────────────────────
+
+    /** 내가 진행했고 끝난 지 30일 안인 회의 중 회의록이 아직 확정되지 않은 것(초안 전이면 NONE). 홈 화면의 "확정 대기"에 쓴다. */
+    @Transactional(readOnly = true)
+    public List<PendingMinutes> pending(String actor) {
+        return db.query("""
+            select m.id, m.title, m.ended_at, coalesce(mm.status, 'NONE') from collaboration_meetings m
+            left join meeting_minutes mm on mm.meeting_id=m.id
+            where m.host_username=? and m.state='ENDED' and m.ended_at>? and (mm.status is null or mm.status<>'CONFIRMED')
+            order by m.ended_at desc limit 10""",
+            (r, i) -> new PendingMinutes(r.getString(1), r.getString(2), r.getTimestamp(3).toInstant(), r.getString(4)),
+            actor, Timestamp.from(Instant.now().minus(java.time.Duration.ofDays(30))));
+    }
 
     @Transactional(readOnly = true)
     public List<MyItem> myItems(String actor) {

@@ -30,6 +30,8 @@ public class MinutesController {
     @PostMapping("/meetings/{id}/minutes/confirm")
     public MinutesService.Minutes confirm(@PathVariable String id, Authentication a) { return minutes.confirm(id, a.getName()); }
 
+    @GetMapping("/minutes/pending") public List<MinutesService.PendingMinutes> pending(Authentication a) { return minutes.pending(a.getName()); }
+
     @GetMapping("/action-items/mine") public List<MinutesService.MyItem> mine(Authentication a) { return minutes.myItems(a.getName()); }
 
     @PostMapping("/action-items/{id}/done") @ResponseStatus(HttpStatus.NO_CONTENT)

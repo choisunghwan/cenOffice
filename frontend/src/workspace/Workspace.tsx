@@ -9,8 +9,10 @@ const MeetingsPage = lazy(() => import('../meeting/MeetingsPage').then(m => ({ d
 
 const CalendarPage = lazy(() => import('../calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
 
+const HomePage = lazy(() => import('../home/HomePage').then(m => ({ default: m.HomePage })))
 
 const MENU = [
+  { key: 'dashboard', label: '홈', icon: '⌂' },
   { key: 'calendar', label: '일정', icon: '▦' },
   { key: 'meetings', label: '회의', icon: '◉' },
   { key: 'home', label: '도구 둘러보기', icon: '✧' },
@@ -29,6 +31,7 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
 
   const body = () => {
     switch (page) {
+      case 'dashboard': return <Suspense fallback={<p role="status">홈을 준비하고 있습니다…</p>}><HomePage /></Suspense>
       case 'calendar': return <Suspense fallback={<p role="status">일정을 준비하고 있습니다…</p>}><CalendarPage /></Suspense>
       case 'home': return <HubPage key="browse" />
       case 'meetings': return <Suspense fallback={<p role="status">회의 화면을 준비하고 있습니다…</p>}><MeetingsPage /></Suspense>

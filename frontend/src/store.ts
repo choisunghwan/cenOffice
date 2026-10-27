@@ -142,7 +142,7 @@ export const useOffice = create<OfficeState>((set, get) => {
   return {
     mode: 'workspace',
     setMode: (mode) => set({ mode, panel: 'none' }),
-    workspacePage: 'calendar',
+    workspacePage: 'dashboard',
     setWorkspacePage: (workspacePage) => set({ workspacePage }),
     lightOn: true,
     panel: 'none',
