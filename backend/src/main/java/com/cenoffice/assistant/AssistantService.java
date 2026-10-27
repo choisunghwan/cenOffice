@@ -121,6 +121,11 @@ public class AssistantService {
         List<ToolCatalog.Tool> catalog = List.of();
         try { catalog = tools.runnable(me, admin); } catch (RuntimeException e) { log.warn("도구 목록을 불러오지 못했습니다: {}", e.toString()); }
         List<Room> allRooms = roomRepo.findAll().stream().map(r -> new Room(r.getId(), r.getName(), r.getCapacity())).toList();
+        if (TOOL_ASK.matcher(text).find()) {
+            Reply listed = toolListReply(text, catalog, source);
+            audit.log(me, "ASSISTANT", null, listed.intent() + "/" + source);
+            return listed;
+        }
         Parsed parsed = null;
         if (llm.isReal()) {
             try {
@@ -164,6 +169,21 @@ public class AssistantService {
         if (ranked.isEmpty() || ranked.get(0).score() < ToolCatalog.PICK_THRESHOLD) return null;
         List<ToolPick> alts = ranked.stream().skip(1).filter(r -> r.score() >= ToolCatalog.ALT_THRESHOLD).limit(2).map(r -> pick(r.tool())).toList();
         return toolCard(ranked.get(0).tool(), alts, false, source);
+    }
+
+    /** "어떤 도구 있어?", "보고서 관련 도구 알려줘" 같은 도구 탐색 말. 도구를 쓰라는 말("도구로 정리해줘")과 구분하려고 묻는 표현이 도구 바로 곁에 있을 때만 잡는다. */
+    private static final java.util.regex.Pattern TOOL_ASK = java.util.regex.Pattern.compile(
+        "(어떤|무슨|뭐\\s*있|뭐가)\\s*(AI\\s*)?(도구|툴|스킬)|(도구|툴|스킬)\\s*(목록|추천|뭐|있어|있나|있는지|알려|보여|찾아)");
+
+    private Reply toolListReply(String text, List<ToolCatalog.Tool> catalog, String source) {
+        if (catalog.isEmpty()) return reply("UNSUPPORTED", "지금 쓸 수 있는 도구가 없습니다. 도구 둘러보기에서 승인된 도구를 확인해 주세요.", false, source);
+        var ranked = ToolCatalog.rank(text, catalog).stream().filter(r -> r.score() >= ToolCatalog.ALT_THRESHOLD).limit(3).map(ToolCatalog.Ranked::tool).toList();
+        boolean matched = !ranked.isEmpty();
+        List<ToolCatalog.Tool> shown = matched ? ranked : catalog.stream().limit(3).toList();
+        List<ToolPick> alts = shown.stream().skip(1).map(this::pick).toList();
+        Reply card = toolCard(shown.get(0), alts, false, source);
+        String head = matched ? "찾은 도구입니다. " : "쓸 수 있는 도구 중 일부입니다. 더 보려면 도구 둘러보기를 열어 보세요. ";
+        return new Reply("USE_TOOL", head + card.message(), null, List.of(), List.of(), List.of(), false, source, card.tool(), alts);
     }
 
     private Reply toolCard(ToolCatalog.Tool t, List<ToolPick> alts, boolean ai, String source) {

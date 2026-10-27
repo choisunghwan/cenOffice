@@ -298,6 +298,15 @@ class AssistantApiTest {
         assertEquals("SUCCEEDED", state);
     }
 
+    @Test void askingWhichToolsExistShowsToolCandidates() throws Exception {
+        var r = ask(admin, "쓸 만한 도구 뭐 있어?");
+        assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
+        assertTrue(r.path("tool").path("skillId").asLong() > 0);
+        var sql = ask(admin, "SQL 관련 도구 알려줘");
+        assertEquals("USE_TOOL", sql.path("intent").asText(), sql.toString());
+        assertEquals("SQL 점검", sql.path("tool").path("title").asText());
+    }
+
     @Test void textWithNoRelatedToolIsNotForcedOntoOne() throws Exception {
         assertEquals("UNSUPPORTED", ask(admin, "오늘 점심 뭐 먹을까 고민이야").path("intent").asText());
     }
