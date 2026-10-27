@@ -3,7 +3,7 @@ import { useOffice } from '../store'
 import { meetingsApi, type Meeting, type MediaGrant } from './api'
 import { MeetingCall } from './MeetingCall'
 import { MeetingMinutes } from './MeetingMinutes'
-import { minutesApi, type MyItem } from './minutesApi'
+import { minutesApi, formatDue, type MyItem } from './minutesApi'
 import './meeting.css'
 
 export function MeetingsPage() {
@@ -101,7 +101,7 @@ export function MeetingsPage() {
       {!list.length ? <div className="meeting-empty"><span>◎</span><h3>첫 회의를 시작해 보세요</h3><p>만들거나 참여한 회의가 여기에 모입니다.</p></div> : <div className="meeting-list">{list.map(m => <button key={m.id} disabled={busy} onClick={() => (m.state === 'ENDED' ? setMinutesFor(m) : void action(() => meetingsApi.detail(m.id)))} className="meeting-list-row"><div className="meeting-row-icon">{m.state === 'OPEN' ? '◉' : '✓'}</div><div><strong>{m.title}</strong><p>{new Date(m.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · 참여 멤버 {m.memberCount}명 {m.host === user?.username ? '· 내가 만든 회의' : ''}</p></div><span className={m.state === 'OPEN' ? 'meeting-open' : ''}>{m.state === 'OPEN' ? '참여하기 ↗' : '회의록 보기 →'}</span></button>)}</div>}
       {myItems.length > 0 && <div className="my-items"><h2>내가 맡은 할 일</h2>{myItems.map((it) => <label key={it.id} className={`my-item ${it.done ? 'done' : ''}`}>
         <input type="checkbox" checked={it.done} onChange={() => { void minutesApi.setDone(it.id, !it.done).then(refresh).catch((e) => setError((e as Error).message)) }} />
-        <span><span className="t">{it.content}</span><br /><small className="minutes-muted">{it.meetingTitle}{it.dueText ? ` · ${it.dueText}` : ''}</small></span></label>)}</div>}
+        <span><span className="t">{it.content}</span><br /><small className="minutes-muted">{it.meetingTitle}{it.dueText ? ` · ${formatDue(it.dueText)}` : ''}</small></span></label>)}</div>}
       <footer className="meeting-page-note">영상·음성은 로컬 회의 서버로 연결되며 녹음하지 않습니다. 회의록은 회의 채팅과 메모를 기준으로 만들어집니다.</footer>
     </>}
   </section>

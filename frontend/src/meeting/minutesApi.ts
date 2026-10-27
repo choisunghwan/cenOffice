@@ -7,7 +7,21 @@ export interface Minutes {
   extraNotes?: string | null; source: string; generatedBy: string; generatedAt: string; confirmedBy?: string | null; confirmedAt?: string | null
   canEdit: boolean; members: MemberRef[]; markdown: string
 }
-export interface MyItem { id: number; meetingId: string; meetingTitle: string; content: string; dueText?: string | null; done: boolean }
+/** 기한이 달력으로 고른 날짜(yyyy-mm-dd)면 그 값, 아니면 null (AI 가 적은 "금요일까지" 같은 글은 날짜가 아님) */
+export const isoDate = (s?: string | null): string | null => {
+  const m = s ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) : null
+  if (!m) return null
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return d.getFullYear() === Number(m[1]) && d.getMonth() === Number(m[2]) - 1 && d.getDate() === Number(m[3]) ? s! : null
+}
+/** 날짜면 "2026-10-31 (토)" 로, 글이면 그대로 보여 준다 */
+export const formatDue = (s: string): string => {
+  const iso = isoDate(s)
+  if (!iso) return s
+  const [y, m, d] = iso.split('-').map(Number)
+  return `${iso} (${'일월화수목금토'[new Date(y, m - 1, d).getDay()]})`
+}
+export interface MyItem{ id: number; meetingId: string; meetingTitle: string; content: string; dueText?: string | null; done: boolean }
 export interface NotificationItem { id: number; type: string; title: string; body?: string | null; link?: string | null; createdAt: string; read: boolean }
 
 export class NotFound extends Error {}

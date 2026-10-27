@@ -8,6 +8,12 @@
 .minutes-card h3{font-size:14px;font-weight:700;margin:0 0 12px}
 .minutes-card textarea,.minutes-card input,.minutes-card select{width:100%;padding:10px 12px;border:1px solid var(--meet-border);border-radius:10px;background:var(--meet-bg);color:var(--meet-text);font-size:13px;outline:none;font-family:inherit}
 .minutes-card textarea{min-height:90px;resize:vertical;line-height:1.6}
+.minutes-due{display:flex;gap:6px;align-items:center}
+.minutes-due input:first-child{flex:1;min-width:0}
+/* 날짜 칸은 글자 입력을 숨기고 달력 아이콘 버튼만 보이게 한다 */
+.minutes-card input.minutes-datepick{width:42px;flex:none;padding:10px 0;color-scheme:light dark;cursor:pointer;text-indent:-9999px;overflow:hidden}
+.minutes-datepick::-webkit-datetime-edit{display:none}
+.minutes-datepick::-webkit-calendar-picker-indicator{display:block;margin:0 auto;cursor:pointer;opacity:.75;text-indent:0}
 .minutes-card textarea:focus,.minutes-card input:focus,.minutes-card select:focus{border-color:var(--meet-accent);box-shadow:0 0 0 3px #6098d122}
 .minutes-card ul{list-style:disc;margin:0;padding-left:18px;font-size:13.5px;line-height:1.8}
 .minutes-card p{font-size:13.5px;line-height:1.7;margin:0}

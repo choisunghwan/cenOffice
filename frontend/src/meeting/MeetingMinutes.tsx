@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useOffice } from '../store'
 import { ExportButtons } from '../hub/ExportButtons'
 import { transcriptApi, type Segment } from './transcriptApi'
-import { minutesApi, NotFound, type ActionItem, type Minutes } from './minutesApi'
+import { minutesApi, NotFound, isoDate, formatDue, type ActionItem, type Minutes } from './minutesApi'
 import './minutes.css'
 import './stt.css'
 
@@ -87,20 +87,23 @@ export function MeetingMinutes({ meetingId, title, host, onBack }: { meetingId: 
 
       <div className="minutes-card"><h3>액션 아이템</h3>
         {editing ? <>
-          <table className="minutes-items"><thead><tr><th>내용</th><th style={{ width: 160 }}>담당</th><th style={{ width: 140 }}>기한</th><th style={{ width: 40 }} /></tr></thead><tbody>
+          <table className="minutes-items"><thead><tr><th>내용</th><th style={{ width: 160 }}>담당</th><th style={{ width: 210 }}>기한</th><th style={{ width: 40 }} /></tr></thead><tbody>
             {items.map((it, i) => <tr key={i}>
               <td><input aria-label={`할 일 ${i + 1}`} value={it.content} maxLength={500} onChange={(e) => setItem(i, { content: e.target.value })} /></td>
               <td><select aria-label={`담당 ${i + 1}`} value={it.assigneeUsername ?? ''} onChange={(e) => setItem(i, { assigneeUsername: e.target.value || null, assigneeText: null })}>
                 <option value="">{it.assigneeText ? `${it.assigneeText} (참석자 아님)` : '미지정'}</option>
                 {minutes.members.map((m) => <option key={m.username} value={m.username}>{m.displayName}</option>)}</select></td>
-              <td><input aria-label={`기한 ${i + 1}`} value={it.dueText ?? ''} maxLength={60} placeholder="예: 금요일까지" onChange={(e) => setItem(i, { dueText: e.target.value })} /></td>
+              <td><div className="minutes-due">
+                <input aria-label={`기한 ${i + 1}`} value={it.dueText ?? ''} maxLength={60} placeholder="예: 금요일까지" onChange={(e) => setItem(i, { dueText: e.target.value })} />
+                <input type="date" className="minutes-datepick" aria-label={`기한 ${i + 1} 달력`} title="달력에서 날짜 고르기" value={isoDate(it.dueText) ?? ''} onChange={(e) => setItem(i, { dueText: e.target.value || null })} />
+              </div></td>
               <td><button className="minutes-link" aria-label={`할 일 ${i + 1} 삭제`} onClick={() => setItems((cur) => cur.filter((_, k) => k !== i))}>삭제</button></td>
             </tr>)}
           </tbody></table>
           <button className="minutes-link" style={{ marginTop: 10 }} onClick={() => setItems((cur) => [...cur, { content: '' }])}>＋ 할 일 추가</button>
-          <p className="minutes-hint">담당자를 참석자로 지정하면 확정할 때 그 사람에게 알림이 갑니다. 기한은 날짜로 바꾸지 않고 적은 그대로 보존합니다.</p></>
+          <p className="minutes-hint">담당자를 참석자로 지정하면 확정할 때 그 사람에게 알림이 갑니다. 기한은 오른쪽 달력 버튼으로 날짜를 고르거나, AI가 적은 표현(예: 금요일까지)을 그대로 둘 수 있습니다.</p></>
           : minutes.actionItems.length ? <table className="minutes-items"><thead><tr><th>내용</th><th>담당</th><th>기한</th></tr></thead><tbody>
-            {minutes.actionItems.map((a, i) => <tr key={a.id ?? i}><td style={a.done ? { textDecoration: 'line-through' } : undefined}>{a.content}</td><td>{a.assigneeName ?? a.assigneeText ?? '미지정'}</td><td>{a.dueText ?? '미지정'}</td></tr>)}</tbody></table>
+            {minutes.actionItems.map((a, i) => <tr key={a.id ?? i}><td style={a.done ? { textDecoration: 'line-through' } : undefined}>{a.content}</td><td>{a.assigneeName ?? a.assigneeText ?? '미지정'}</td><td>{a.dueText ? formatDue(a.dueText) : '미지정'}</td></tr>)}</tbody></table>
             : <p className="minutes-muted">없음</p>}</div>
 
       <div className="minutes-card"><h3>이슈 · 확인 필요</h3>
