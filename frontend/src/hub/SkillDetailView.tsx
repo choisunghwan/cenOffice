@@ -1,5 +1,6 @@
 import { askConfirm } from '../ui/confirm'
 import { BusinessTools } from './BusinessTools'
+import { TemplateUploader } from './TemplateUploader'
 import { TextTool, TEXT_TOOLS } from './TextTool'
 import { toolName } from './toolNames'
 import { ToolIntroduction } from './ToolIntroduction'
@@ -55,6 +56,8 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       </div>
 
       {tab === 'overview' && <ToolIntroduction name={toolName(s.name, s.title)} description={s.description} owner={s.ownerName} category={s.categoryName} usage={current?.usage} example={current?.example} ready={runtime.state === 'RUNTIME_AVAILABLE' && s.status === 'APPROVED'} simulated={runtime.simulated} onUse={() => setTab('run')} />}
+
+      {tab === 'overview' && canEdit && s.status !== 'ARCHIVED' && <div className="mt-4"><TemplateUploader skillId={id} /></div>}
 
       {tab === 'md' && current && (
         <div className="space-y-4">
