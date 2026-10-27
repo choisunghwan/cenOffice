@@ -16,20 +16,41 @@ import java.util.regex.Pattern;
 final class RuleParser {
     private RuleParser() {}
 
-    enum Kind { CREATE_EVENT, LIST_EVENTS, UNSUPPORTED }
+    /** BOOK_ROOM: 회의실 예약 · DELETE_ITEM: 일정/예약 삭제 · MOVE_EVENT: 일정 시간·제목 변경 */
+    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, UNSUPPORTED }
 
-    /** start/end 가 null 이면 모르는 것. timeKnown=false 면 날짜만 알고 시각은 모름(시작 칸에는 그날 0시가 들어 있음). */
+    /** 변경할 값. 비어 있는(null) 칸은 "그대로 둔다". */
+    record MoveSpec(LocalDate date, LocalTime start, LocalTime end, String title) {
+        boolean empty() { return date == null && start == null && end == null && (title == null || title.isBlank()); }
+    }
+
+    /**
+     * start/end 가 null 이면 모르는 것. timeKnown=false 면 날짜만 알고 시각은 모름(시작 칸에는 그날 0시가 들어 있음).
+     * roomName: 회의실 이름, 또는 "@large"/"@small"(큰/작은 방 선호). targetQuery: 삭제·변경할 일정을 찾을 제목 일부.
+     */
     record Intent(Kind kind, String title, LocalDateTime start, LocalDateTime end, boolean timeKnown, boolean allDay, String location,
-                  boolean shared, List<String> attendeeNames, LocalDate rangeFrom, LocalDate rangeTo, String message) {
+                  boolean shared, List<String> attendeeNames, LocalDate rangeFrom, LocalDate rangeTo, String message,
+                  String roomName, String targetQuery, MoveSpec move) {
+        Intent(Kind kind, String title, LocalDateTime start, LocalDateTime end, boolean timeKnown, boolean allDay, String location,
+               boolean shared, List<String> attendeeNames, LocalDate rangeFrom, LocalDate rangeTo, String message) {
+            this(kind, title, start, end, timeKnown, allDay, location, shared, attendeeNames, rangeFrom, rangeTo, message, null, null, null);
+        }
         static Intent unsupported(String message) { return new Intent(Kind.UNSUPPORTED, null, null, null, false, false, null, false, List.of(), null, null, message); }
+        /** 별다른 값이 필요 없는 읽기 전용 요청(할 일·확정할 회의록·오늘 브리핑) */
+        static Intent of(Kind kind) { return new Intent(kind, null, null, null, false, false, null, false, List.of(), null, null, null); }
     }
 
     private static final Pattern CREATE = Pattern.compile("등록|잡아|추가|만들|넣어|예약|스케줄|저장|생성");
     private static final Pattern STRONG_CREATE = Pattern.compile("등록|추가|만들|넣어|생성|저장|잡아\\s*(?:줘|주|줄|라|요)|잡자|예약\\s*(?:해|좀|할)");
     private static final Pattern TOPIC = Pattern.compile("일정|약속|스케줄|회의|미팅|예정|뭐\\s*(?:있|해|하)|바[쁘빠]");
     private static final Pattern LIST = Pattern.compile("뭐|뭘|있어|있나|알려|보여|확인|조회|어때|몇\\s*개|언제");
-    /** "회의실 예약해줘"는 아직 지원하지 않는 요청이고, "A회의실에서 회의 잡아줘"의 회의실은 장소다 */
-    private static final Pattern ROOM_BOOKING = Pattern.compile("회의실\\s*(?:하나|한\\s*개|을|를|좀)?\\s*(?:예약|잡|빌|확보)");
+    /** "회의실 예약해줘"는 방을 잡는 요청이고, "A회의실에서 회의 잡아줘"의 회의실은 장소다 */
+    private static final Pattern ROOM_BOOKING = Pattern.compile("회의실\\s*(?:[A-Za-z0-9가-힣]\\s*)?(?:하나|한\\s*개|을|를|좀|도)?\\s*(?:예약|잡|빌|확보)");
+    private static final Pattern BRIEF = Pattern.compile("브리핑|오늘\\s*(?:뭐|무엇)\\s*(?:해야|할|있)|오늘\\s*(?:해야|할\\s*일)|오늘\\s*현황|하루\\s*요약");
+    private static final Pattern TASKS = Pattern.compile("할\\s*일|할일|해야\\s*(?:할|돼|되|하)|투두|todo");
+    private static final Pattern PENDING_MINUTES = Pattern.compile("회의록.*(?:확정|대기|남은|남았|미확정|검토|안\\s*된)|(?:확정|대기|남은|미확정).*회의록");
+    private static final Pattern DELETE =Pattern.compile("삭제|지워|지우|취소|없애");
+    private static final Pattern MOVE = Pattern.compile("옮겨|옮기|미뤄|미루|당겨|앞당|연기|변경|바꿔|바꾸|수정");
     private static final Pattern ISO_DATE = Pattern.compile("(\\d{4})[-./](\\d{1,2})[-./](\\d{1,2})");
     private static final Pattern MD_DATE = Pattern.compile("(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일");
     private static final Pattern REL_DAY = Pattern.compile("오늘|내일|모레|글피");
@@ -43,21 +64,48 @@ final class RuleParser {
     private static final Pattern ALL_DAY = Pattern.compile("하루\\s*종일|종일");
     private static final Pattern SHARED = Pattern.compile("전체\\s*일정|전사|회사\\s*(?:공통|일정)|공통\\s*일정");
     private static final Pattern LOCATION = Pattern.compile("([가-힣A-Za-z0-9]+(?:실|룸|층|관))\\s*에서");
+    private static final Pattern LARGE_ROOM = Pattern.compile("(?:큰|넓은|대)\\s*회의실");
+    private static final Pattern SMALL_ROOM = Pattern.compile("(?:작은|좁은|소)\\s*회의실");
 
-    static Intent parse(String text, LocalDate today, List<String> directoryNames) {
+    static Intent parse(String text, LocalDate today, List<String> directoryNames) { return parse(text, today, directoryNames, List.of()); }
+
+    static Intent parse(String text, LocalDate today, List<String> directoryNames, List<String> roomNames) {
         String t = text == null ? "" : text.strip();
         if (t.isEmpty()) return Intent.unsupported("무엇을 도와드릴까요? 예: “내일 오후 3시에 팀 회의 잡아줘”");
         boolean create = CREATE.matcher(t).find();
         boolean list = LIST.matcher(t).find();
-        if (ROOM_BOOKING.matcher(t).find()) return Intent.unsupported("회의실 예약은 아직 입력창에서 할 수 없습니다. 3D 오피스의 회의실 예약 화면을 이용해 주세요. 일정은 입력창으로 등록할 수 있습니다.");
-
-        Dated d = findDate(t, today);
-        // 분명한 등록 말(등록·추가·잡아줘…)이 있으면 등록. 묻는 말(뭐 있어·알려줘…)만 있으면 조회. "잡아둔 일정 보여줘"처럼 섞이면 묻는 쪽을 따른다
         boolean strongCreate = STRONG_CREATE.matcher(t).find();
+        Dated d = findDate(t, today);
+
+        // 삭제·변경은 등록 말이 없을 때만. "회의실 예약 취소해줘"는 삭제, "회의 3시로 옮겨줘"는 변경
+        boolean booking = ROOM_BOOKING.matcher(t).find() || (t.contains("예약") && mentionsRoom(t, roomNames)); // "A회의실 내일 3시 예약"처럼 말이 떨어져 있어도
+        if (DELETE.matcher(t).find() && !strongCreate) return deleteIntent(t, d);
+        if (MOVE.matcher(t).find() && !strongCreate && !booking) return moveIntent(t, d, directoryNames);
+        if (booking) return bookRoomIntent(t, d, directoryNames, roomNames);
+
+        // 내 상황을 묻는 말: 오늘 브리핑 · 확정할 회의록 · 할 일 (읽기 전용 답변)
+        if (!strongCreate) {
+            if (BRIEF.matcher(t).find()) return Intent.of(Kind.BRIEFING);
+            if (PENDING_MINUTES.matcher(t).find()) return Intent.of(Kind.LIST_PENDING);
+            if (TASKS.matcher(t).find()) return Intent.of(Kind.LIST_TASKS);
+        } else if (TASKS.matcher(t).find() && !TOPIC.matcher(t).find()) {
+            return Intent.unsupported("할 일은 회의록을 확정할 때 담당자로 지정되어 생깁니다. 개인 할 일을 직접 등록하는 기능은 아직 없습니다. 날짜가 있는 일은 일정으로 등록해 드릴 수 있어요.");
+        }
+
+        // 분명한 등록 말(등록·추가·잡아줘…)이 있으면 등록. 묻는 말(뭐 있어·알려줘…)만 있으면 조회. "잡아둔 일정 보여줘"처럼 섞이면 묻는 쪽을 따른다
         if (create && (strongCreate || !list)) return createIntent(t, d, directoryNames);
         // 일정과 관련된 말이 없으면 "오늘 날씨 어때"처럼 상관없는 질문을 일정 조회로 오해하지 않는다
         if (TOPIC.matcher(t).find() && (list || d != null)) return listIntent(t, d, today);
-        return Intent.unsupported("지금은 일정 등록과 조회만 도와드릴 수 있습니다. 예: “내일 오후 3시에 팀 회의 잡아줘”, “이번 주 내 일정 알려줘”");
+        return Intent.unsupported(""); // 안내 문구는 서비스가 상황(AI 연결 여부)에 맞게 붙인다
+    }
+
+    private static boolean mentionsRoom(String t, List<String> roomNames) {
+        if (LARGE_ROOM.matcher(t).find() || SMALL_ROOM.matcher(t).find()) return true;
+        for (String rn : roomNames) {
+            String key = rn == null ? "" : rn.replace("회의실", "").strip();
+            if (!key.isEmpty() && Pattern.compile("(?i)(?:회의실\\s*" + Pattern.quote(key) + "|" + Pattern.quote(key) + "\\s*회의실)").matcher(t).find()) return true;
+        }
+        return false;
     }
 
     // ───────────────────────── 조회 ─────────────────────────
@@ -69,9 +117,59 @@ final class RuleParser {
         return new Intent(Kind.LIST_EVENTS, null, null, null, false, false, null, SHARED.matcher(t).find(), List.of(), from, to, null);
     }
 
-    // ───────────────────────── 등록 ─────────────────────────
+    // ───────────────────────── 삭제·변경 ─────────────────────────
+
+    private static final Pattern DELETE_WORDS = Pattern.compile("(?<![가-힣A-Za-z0-9])(?:삭제|지워|지우|취소|없애)\\S*|(?<![가-힣])(?:일정|예약|전부|모두|다)(?![가-힣])|(?:해줘|해주세요|해|줘|주세요)(?=\\s|$)");
+
+    private static Intent deleteIntent(String t, Dated d) {
+        String rest = d != null ? t.replace(d.matched, " ") : t;
+        rest = DELETE_WORDS.matcher(rest).replaceAll(" ");
+        String query = cleanTitle(KOR_TIME.matcher(CLOCK.matcher(rest).replaceAll(" ")).replaceAll(" "));
+        return new Intent(Kind.DELETE_ITEM, null, null, null, false, false, null, SHARED.matcher(t).find(), List.of(), d == null ? null : d.from, d == null ? null : d.to, null, null, query, null);
+    }
+
+    private static final Pattern MOVE_WORDS = Pattern.compile("(?<![가-힣A-Za-z0-9])(?:옮겨|옮기|미뤄|미루|당겨|앞당|연기|변경|바꿔|바꾸|수정)\\S*|(?<![가-힣])(?:일정|으로|로)(?![가-힣])");
+
+    private static Intent moveIntent(String t, Dated d, List<String> names) {
+        Parts p = parts(t, d, names, List.of(), false);
+        // 새 값은 문장 속 날짜·시각. 나머지 낱말이 일정을 찾는 제목이다
+        String rest = MOVE_WORDS.matcher(p.rest).replaceAll(" ");
+        String query = cleanTitle(rest);
+        LocalTime s = p.times.isEmpty() ? null : p.times.get(0), e = p.times.size() >= 2 ? p.times.get(1) : null;
+        MoveSpec move = new MoveSpec(p.date, s, e, null);
+        return new Intent(Kind.MOVE_EVENT, null, null, null, false, p.allDay, null, false, List.of(), null, null, null, null, query, move);
+    }
+
+    // ───────────────────────── 등록·회의실 ─────────────────────────
 
     private static Intent createIntent(String t, Dated d, List<String> names) {
+        Parts p = parts(t, d, names, List.of(), true);
+        return build(Kind.CREATE_EVENT, p, null);
+    }
+
+    private static Intent bookRoomIntent(String t, Dated d, List<String> names, List<String> roomNames) {
+        Parts p = parts(t, d, names, roomNames, true);
+        return build(Kind.BOOK_ROOM, p, p.room);
+    }
+
+    private static Intent build(Kind kind, Parts p, String room) {
+        LocalDateTime start = null, end = null;
+        boolean timeKnown = false;
+        if (p.date != null) {
+            if (p.allDay) { start = p.date.atStartOfDay(); end = p.date.plusDays(1).atStartOfDay(); timeKnown = true; }
+            else if (!p.times.isEmpty()) {
+                start = p.date.atTime(p.times.get(0)); timeKnown = true;
+                if (p.times.size() >= 2) { end = p.date.atTime(p.times.get(1)); if (!end.isAfter(start)) end = start.plusHours(1); }
+                else end = start.plusHours(p.durationH > 0 ? p.durationH : 1);
+            } else { start = p.date.atStartOfDay(); end = start.plusHours(1); }
+        }
+        return new Intent(kind, p.title, start, end, timeKnown, p.allDay, p.location, p.shared, p.attendees, null, null, null, room, null, null);
+    }
+
+    /** 문장에서 뽑아낸 조각들 */
+    private record Parts(LocalDate date, boolean allDay, List<LocalTime> times, int durationH, String location, boolean shared, List<String> attendees, String room, String title, String rest) {}
+
+    private static Parts parts(String t, Dated d, List<String> names, List<String> roomNames, boolean wantTitle) {
         String rest = t;
         LocalDate date = d != null && !d.range ? d.from : null;
         if (d != null) rest = rest.replace(d.matched, " ");
@@ -83,7 +181,7 @@ final class RuleParser {
         StringBuilder cleaned = new StringBuilder();
         List<int[]> spans = new ArrayList<>();
         Matcher c = CLOCK.matcher(rest);
-        while (c.find()) { int h = Integer.parseInt(c.group(1)), m = Integer.parseInt(c.group(2)); if (h < 24 && m < 60) { spans.add(new int[]{c.start(), c.end(), h * 60 + m}); } }
+        while (c.find()) { int h = Integer.parseInt(c.group(1)), m = Integer.parseInt(c.group(2)); if (h < 24 && m < 60) spans.add(new int[]{c.start(), c.end(), h * 60 + m}); }
         Matcher k = KOR_TIME.matcher(rest);
         while (k.find()) {
             int h = Integer.parseInt(k.group(2)); if (h > 24) continue;
@@ -100,6 +198,20 @@ final class RuleParser {
         Matcher du = DURATION.matcher(rest);
         if (du.find()) { durationH = Integer.parseInt(du.group(1)); rest = du.replaceFirst(" "); }
 
+        // 회의실: 이름이 문장에 있으면 방을 가리키는 말, 큰/작은 방 선호도 읽는다
+        String room = null;
+        for (String rn : roomNames) {
+            String key = rn == null ? "" : rn.replace("회의실", "").strip();
+            if (key.isEmpty()) continue;
+            Matcher rm = Pattern.compile("(?i)(?:회의실\\s*" + Pattern.quote(key) + "|" + Pattern.quote(key) + "\\s*회의실)").matcher(rest);
+            if (rm.find()) { room = rn; rest = rm.replaceFirst(" "); break; }
+        }
+        if (room == null) {
+            Matcher lg = LARGE_ROOM.matcher(rest), sm = SMALL_ROOM.matcher(rest);
+            if (lg.find()) { room = "@large"; rest = lg.replaceFirst(" "); }
+            else if (sm.find()) { room = "@small"; rest = sm.replaceFirst(" "); }
+        }
+
         String location = null;
         Matcher lo = LOCATION.matcher(rest);
         if (lo.find()) { location = lo.group(1); rest = lo.replaceFirst(" "); }
@@ -114,19 +226,7 @@ final class RuleParser {
             Matcher nm = Pattern.compile(Pattern.quote(n.strip()) + "\\s*(님|씨)?").matcher(rest);
             if (nm.find()) { attendees.add(n.strip()); rest = nm.replaceAll(" "); }
         }
-
-        String title = cleanTitle(rest);
-        LocalDateTime start = null, end = null;
-        boolean timeKnown = false;
-        if (date != null) {
-            if (allDay) { start = date.atStartOfDay(); end = date.plusDays(1).atStartOfDay(); timeKnown = true; }
-            else if (!times.isEmpty()) {
-                start = date.atTime(times.get(0)); timeKnown = true;
-                if (times.size() >= 2) { end = date.atTime(times.get(1)); if (!end.isAfter(start)) end = start.plusHours(1); }
-                else end = start.plusHours(durationH > 0 ? durationH : 1);
-            } else { start = date.atStartOfDay(); end = start.plusHours(1); }
-        }
-        return new Intent(Kind.CREATE_EVENT, title, start, end, timeKnown, allDay, location, shared, attendees, null, null, null);
+        return new Parts(date, allDay, times, durationH, location, shared, attendees, room, wantTitle ? cleanTitle(rest) : null, rest);
     }
 
     /** 오전/오후 표시가 없으면 업무 시간 기준으로 본다: 1~6시는 오후, 7~11시는 오전 */
@@ -139,7 +239,7 @@ final class RuleParser {
         };
     }
 
-    private static final Pattern COMMAND = Pattern.compile("일정\\s*(?:을|를|좀)?\\s*(?:등록|추가|잡|만들|넣|생성|저장)\\w*|(?:등록|추가|잡아|만들어|넣어|예약|저장|생성)\\s*(?:해|하|줘|주세요|줄래|좀|해줘|해주세요|해줄래|해라)?\\w*|(?:^|\\s)일정(?=\\s|$)|초대\\w*|참석\\w*|함께|같이");
+    private static final Pattern COMMAND = Pattern.compile("일정\\s*(?:을|를|좀)?\\s*(?:등록|추가|잡|만들|넣|생성|저장)\\w*|(?<![가-힣A-Za-z0-9])(?:(?:등록|추가|잡아|만들어|넣어|예약|저장|생성)\\s*(?:해|하|줘|주세요|줄래|좀|해줘|해주세요|해줄래|해라)?\\w*|초대\\w*|참석\\w*)|(?:^|\\s)일정(?=\\s|$)|함께|같이|회의실(?:을|를|도|은|는|이)?|(?<![가-힣])(?:하나|한\\s*개)(?![가-힣])");
 
     private static String cleanTitle(String s) {
         String r = COMMAND.matcher(s).replaceAll(" ");

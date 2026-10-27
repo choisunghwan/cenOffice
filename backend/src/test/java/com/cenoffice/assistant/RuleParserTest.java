@@ -100,11 +100,79 @@ class RuleParserTest {
     }
 
     @Test void unsupportedRequestsGetHonestAnswers() {
-        var room = p("내일 오후 3시에 회의실 예약해줘");
-        assertEquals(Kind.UNSUPPORTED, room.kind());
-        assertTrue(room.message().contains("3D 오피스"));
         assertEquals(Kind.UNSUPPORTED, p("안녕").kind());
         assertEquals(Kind.UNSUPPORTED, p("   ").kind());
+    }
+
+    static final List<String> ROOMS = List.of("회의실 A", "회의실 B");
+    Intent r(String s) { return RuleParser.parse(s, TODAY, NAMES, ROOMS); }
+
+    @Test void roomBookingWithoutARoomNameLeavesTheChoiceToTheServer() {
+        var i = r("내일 오후 2시에 회의실 예약해줘");
+        assertEquals(Kind.BOOK_ROOM, i.kind());
+        assertEquals(at(10, 28, 14, 0), i.start());
+        assertNull(i.roomName());
+        assertTrue(i.title().isBlank());
+    }
+
+    @Test void roomNameTitleAndDurationAreRead() {
+        var i = r("내일 오후 2시 회의실 A 예약해줘 팀 주간회의");
+        assertEquals("회의실 A", i.roomName());
+        assertEquals("팀 주간회의", i.title());
+        var j = r("A회의실 모레 오전 10시 2시간 예약");
+        assertEquals("회의실 A", j.roomName());
+        assertEquals(at(10, 29, 12, 0), j.end());
+        assertEquals("@large", r("큰 회의실 모레 오전 10시 예약해줘").roomName());
+        assertEquals("@small", r("작은 회의실 모레 오전 10시 예약해줘").roomName());
+    }
+
+    @Test void roomAsAPlaceStillCreatesAnEventNotAReservation() {
+        var i = r("내일 A회의실에서 3시 주간회의 잡아줘");
+        assertEquals(Kind.CREATE_EVENT, i.kind());
+        assertEquals("A회의실", i.location());
+    }
+
+    @Test void deleteFindsTheTargetByTitleAndDate() {
+        var i = r("내일 팀 회의 삭제해줘");
+        assertEquals(Kind.DELETE_ITEM, i.kind());
+        assertEquals("팀 회의", i.targetQuery());
+        assertEquals(LocalDate.of(2026, 10, 28), i.rangeFrom());
+        var res = r("회의실 예약 취소해줘");
+        assertEquals(Kind.DELETE_ITEM, res.kind());
+        assertTrue(res.targetQuery().isBlank());
+        assertEquals("주간 보고", r("주간 보고 일정 지워줘").targetQuery());
+    }
+
+    @Test void moveReadsTheNewTimeAndKeepsTheTitleAsTheSearchText() {
+        var i = r("팀 회의 4시로 옮겨줘");
+        assertEquals(Kind.MOVE_EVENT, i.kind());
+        assertEquals("팀 회의", i.targetQuery());
+        assertEquals(java.time.LocalTime.of(16, 0), i.move().start());
+        assertNull(i.move().date());
+        var j = r("팀 회의 모레 오후 3시로 미뤄줘");
+        assertEquals(LocalDate.of(2026, 10, 29), j.move().date());
+        assertEquals(java.time.LocalTime.of(15, 0), j.move().start());
+        assertTrue(r("팀 회의 옮겨줘").move().empty()); // 언제로 옮길지 없으면 되묻는다
+    }
+
+    @Test void deleteAndMoveWordsDoNotHijackNormalCreation() {
+        assertEquals(Kind.CREATE_EVENT, r("내일 오후 3시에 취소 정책 검토 회의 잡아줘").kind()); // 등록 말이 있으면 등록
+    }
+
+    @Test void statusQuestionsAreAnsweredReadOnly() {
+        assertEquals(Kind.LIST_TASKS, r("내 할 일 보여줘").kind());
+        assertEquals(Kind.LIST_TASKS, r("해야 할 일 알려줘").kind());
+        assertEquals(Kind.LIST_PENDING, r("확정할 회의록 있어?").kind());
+        assertEquals(Kind.LIST_PENDING, r("아직 확정 안 된 회의록 보여줘").kind());
+        assertEquals(Kind.BRIEFING, r("오늘 브리핑 해줘").kind());
+        assertEquals(Kind.BRIEFING, r("오늘 뭐 해야 돼?").kind());
+        assertEquals(Kind.LIST_EVENTS, r("오늘 일정 알려줘").kind()); // 일정만 물으면 일정 조회
+    }
+
+    @Test void addingAPersonalTaskIsAnsweredHonestly() {
+        var i = r("할 일 추가해줘 견적서 작성");
+        assertEquals(Kind.UNSUPPORTED, i.kind());
+        assertTrue(i.message().contains("회의록"));
     }
 
     @Test void invalidDatesDoNotCrash() {

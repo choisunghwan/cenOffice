@@ -78,8 +78,8 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
           {[...MENU, ...MORE, ...(user?.role === 'ADMIN' ? [{ key: 'hub-review', label: '공개 승인' }] : [])].map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
         </select>
       </div>
-      <main className="flex-1 overflow-y-auto p-6 md:pt-6 pt-16" onKeyDown={(e) => e.stopPropagation()}>
-        {user ? <div className="max-w-[1200px] mx-auto">{body()}</div> : (
+      <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden md:pt-0 pt-14' : 'overflow-y-auto p-6 md:pt-6 pt-16'}`} onKeyDown={(e) => e.stopPropagation()}>
+        {user ? <div className={user && page === 'dashboard' ? 'h-full' : 'max-w-[1200px] mx-auto'}>{body()}</div> : (
           <div className="h-full grid place-items-center">
             <div className="text-center space-y-3">
               <h2 className="text-3xl font-semibold">우리 팀의 AI를 만나보세요</h2>

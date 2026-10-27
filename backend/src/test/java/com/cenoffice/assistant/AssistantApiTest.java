@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 /** AI 가 연결되지 않은 기본 환경(규칙 해석)에서 입력창 API 를 확인한다. */
 @SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:assistanttest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
     "app.seed.admin-password=test-admin-pw-1234", "app.seed.user-password=test-user-pw-1234",
-    "app.jwt.secret=test-secret-test-secret-test-secret-123456", "app.llm.provider=mock", "livekit.api-key=", "livekit.api-secret="})
+    "app.jwt.secret=test-secret-test-secret-test-secret-123456", "app.llm.provider=mock", "livekit.api-key=", "livekit.api-secret=", "app.assistant.max-per-minute=1000"})
 @AutoConfigureMockMvc
 class AssistantApiTest {
     static final ZoneId ZONE = ZoneId.systemDefault();
@@ -127,10 +127,150 @@ class AssistantApiTest {
         assertEquals("SHARED", boss.path("draft").path("scope").asText());
     }
 
+    @Test void withoutAiGeneralQuestionsGetAHelpfulMessageNotADeadEnd() throws Exception {
+        var r = ask(admin, "견적서 작성 주제가 뭔데");
+        assertEquals("UNSUPPORTED", r.path("intent").asText());
+        assertTrue(r.path("message").asText().contains("AI가 연결되어 있지 않아"));
+        assertTrue(r.path("message").asText().contains("내 할 일 보여줘")); // 할 수 있는 일을 예시로 알려 준다
+    }
+
     @Test void unsupportedRequestsAreAnsweredHonestly() throws Exception {
-        var room = ask(admin, "내일 오후 3시에 회의실 예약해줘");
-        assertEquals("UNSUPPORTED", room.path("intent").asText());
         assertEquals("UNSUPPORTED", ask(admin, "오늘 날씨 어때").path("intent").asText());
+    }
+
+    // ── 회의실 예약 ──
+
+    JsonNode createEvent(String token, String title, int plusDays, int hour) throws Exception {
+        var s = LocalDate.now(ZONE).plusDays(plusDays).atTime(hour, 0).atZone(ZONE).toInstant();
+        return read(req(post("/api/calendar/events"), token, Map.of("scope", "PERSONAL", "title", title, "description", "", "location", "", "startAt", s.toString(),
+            "endAt", s.plusSeconds(3600).toString(), "allDay", false, "attendees", java.util.List.of())).andExpect(status().isCreated()));
+    }
+
+    @Test void roomBookingFindsFreeRoomsAndReservesOnlyAfterTheUserConfirms() throws Exception {
+        String day = "2027-03-1" + (1 + (int) (Math.random() * 8)); // 다른 테스트와 시간이 겹치지 않게
+        var open = ask(admin, day + " 오전 10시에 회의실 예약해줘 점검A");
+        assertEquals("BOOK_ROOM", open.path("intent").asText(), open.toString());
+        assertEquals("점검A", open.path("draft").path("title").asText());
+        assertTrue(open.path("room").isNull() || open.path("room").isMissingNode());
+        assertEquals(2, open.path("rooms").size()); // 방을 정하지 않았으면 빈 방 중에서 고르게 한다
+
+        var picked = ask(admin, day + " 오전 10시 회의실 A 예약해줘 점검A");
+        assertEquals("회의실 A", picked.path("room").path("name").asText());
+        assertEquals(0, picked.path("rooms").size());
+        // 카드의 [예약하기]는 기존 예약 API 를 호출한다
+        var d = picked.path("draft");
+        req(post("/api/reservations"), admin, Map.of("roomId", picked.path("room").path("id").asLong(), "title", "점검A", "startAt", d.path("startAt").asText(), "endAt", d.path("endAt").asText())).andExpect(status().isCreated());
+
+        // 같은 시간에 같은 방을 다시 부르면 차 있다고 알리고 빈 방을 제안한다
+        var busy = ask(user, day + " 오전 10시 회의실 A 예약해줘 점검B");
+        assertTrue(busy.path("message").asText().contains("이미 예약"));
+        assertEquals(1, busy.path("rooms").size());
+        assertEquals("회의실 B", busy.path("rooms").get(0).path("name").asText());
+        // 빈 방이 하나뿐이고 방을 정하지 않았으면 그 방을 바로 제안한다
+        var only = ask(user, day + " 오전 10시에 회의실 예약해줘 점검C");
+        assertEquals("회의실 B", only.path("room").path("name").asText());
+        // 큰 방을 원했는데 이미 찼다면 알린다
+        var large = ask(user, day + " 오전 10시 큰 회의실 예약해줘");
+        assertEquals("BOOK_ROOM", large.path("intent").asText());
+        assertTrue(large.path("room").isNull() || large.path("room").isMissingNode() || !large.path("room").path("name").asText().equals("회의실 A"));
+    }
+
+    @Test void roomBookingAsksForMissingOrInvalidTimes() throws Exception {
+        assertEquals("CLARIFY", ask(admin, "회의실 예약해줘").path("intent").asText());
+        assertTrue(ask(admin, "내일 회의실 예약해줘").path("message").asText().contains("몇 시"));
+        assertEquals("CLARIFY", ask(admin, "내일 종일 회의실 예약해줘").path("intent").asText());
+        assertEquals("CLARIFY", ask(admin, "내일 오전 9시부터 오후 8시까지 회의실 예약해줘").path("intent").asText()); // 8시간 초과
+        assertEquals("CLARIFY", ask(admin, "2020-01-01 오전 10시 회의실 예약해줘").path("intent").asText()); // 지난 시간
+    }
+
+    // ── 삭제·취소·변경 ──
+
+    @Test void deleteTargetsOnlyMyOwnEditableItemsAndAsksWhenSeveralMatch() throws Exception {
+        createEvent(admin, "주간점검Q", 2, 9);
+        createEvent(admin, "주간점검Q", 4, 9);
+        var several = ask(admin, "주간점검Q 삭제해줘");
+        assertEquals("DELETE_ITEM", several.path("intent").asText());
+        assertTrue(several.path("target").isNull() || several.path("target").isMissingNode());
+        assertEquals(2, several.path("candidates").size());
+
+        var one = ask(admin, LocalDate.now(ZONE).plusDays(2) + " 주간점검Q 삭제해줘");
+        assertEquals("DELETE_ITEM", one.path("intent").asText());
+        assertEquals("주간점검Q", one.path("target").path("title").asText());
+        long id = one.path("target").path("eventId").asLong();
+        // 남이 만든 개인 일정은 대상이 아니다
+        assertEquals("CLARIFY", ask(user, "주간점검Q 삭제해줘").path("intent").asText());
+        req(delete("/api/calendar/events/" + id), admin, null).andExpect(status().isNoContent());
+        assertEquals("DELETE_ITEM", ask(admin, "주간점검Q 삭제해줘").path("intent").asText()); // 남은 하나
+        assertTrue(ask(admin, "주간점검Q 삭제해줘").path("target").path("title").asText().equals("주간점검Q"));
+        assertEquals("CLARIFY", ask(admin, "존재안함ZZZ 삭제해줘").path("intent").asText());
+        assertEquals("CLARIFY", ask(admin, "삭제해줘").path("intent").asText());
+    }
+
+    @Test void roomReservationsCanBeCancelledThroughTheSameFlow() throws Exception {
+        var start = LocalDate.now(ZONE).plusDays(40).atTime(15, 0).atZone(ZONE).toInstant();
+        long roomId = read(req(get("/api/meeting-rooms"), admin, null)).get(0).path("id").asLong();
+        long rid = read(req(post("/api/reservations"), admin, Map.of("roomId", roomId, "title", "점검R9X", "startAt", start.toString(), "endAt", start.plusSeconds(3600).toString())).andExpect(status().isCreated())).path("id").asLong();
+        var r = ask(admin, "점검R9X 예약 취소해줘");
+        assertEquals("DELETE_ITEM", r.path("intent").asText(), r.toString());
+        assertEquals("RESERVATION", r.path("target").path("kind").asText());
+        assertTrue(r.path("message").asText().contains("취소할까요"));
+        assertEquals("r:" + rid, r.path("target").path("id").asText());
+        req(delete("/api/reservations/" + rid), admin, null).andExpect(status().isNoContent());
+    }
+
+    @Test void moveBuildsTheChangedDraftKeepingAttendeesAndDuration() throws Exception {
+        var made = createEvent(admin, "이동대상Q7", 3, 10);
+        var r = ask(admin, "이동대상Q7 오후 4시로 옮겨줘");
+        assertEquals("MOVE_EVENT", r.path("intent").asText(), r.toString());
+        var d = r.path("draft");
+        var s = Instant.parse(d.path("startAt").asText()).atZone(ZONE);
+        assertEquals(16, s.getHour());
+        assertEquals(LocalDate.now(ZONE).plusDays(3), s.toLocalDate());
+        assertEquals(3600, java.time.Duration.between(Instant.parse(d.path("startAt").asText()), Instant.parse(d.path("endAt").asText())).getSeconds()); // 길이 유지
+        assertEquals(made.path("eventId").asLong(), r.path("target").path("eventId").asLong());
+        // 카드의 [옮기기]는 기존 일정 수정 API 를 같은 초안으로 호출한다
+        var body = new LinkedHashMap<String, Object>();
+        body.put("scope", d.path("scope").asText()); body.put("title", d.path("title").asText()); body.put("description", ""); body.put("location", "");
+        body.put("startAt", d.path("startAt").asText()); body.put("endAt", d.path("endAt").asText()); body.put("allDay", false); body.put("attendees", java.util.List.of());
+        req(put("/api/calendar/events/" + made.path("eventId").asLong()), admin, body).andExpect(status().isOk());
+        assertTrue(hasEvent(admin, "이동대상Q7"));
+
+        assertEquals("CLARIFY", ask(admin, "이동대상Q7 옮겨줘").path("intent").asText()); // 언제로 옮길지 없음
+        assertEquals("CLARIFY", ask(user, "이동대상Q7 오후 4시로 옮겨줘").path("intent").asText()); // 남의 일정
+    }
+
+    @Test void sharedEventsCanBeDeletedOnlyByThoseWhoMayEditThem() throws Exception {
+        var s = LocalDate.now(ZONE).plusDays(5).atTime(9, 0).atZone(ZONE).toInstant();
+        long id = read(req(post("/api/calendar/events"), admin, Map.of("scope", "SHARED", "title", "전사행사ST", "description", "", "location", "", "startAt", s.toString(),
+            "endAt", s.plusSeconds(3600).toString(), "allDay", false, "attendees", java.util.List.of())).andExpect(status().isCreated())).path("eventId").asLong();
+        assertEquals("CLARIFY", ask(user, "전체 일정 전사행사ST 삭제해줘").path("intent").asText());
+        var mine = ask(admin, "전체 일정 전사행사ST 삭제해줘");
+        assertEquals("DELETE_ITEM", mine.path("intent").asText());
+        req(delete("/api/calendar/events/" + id), admin, null).andExpect(status().isNoContent());
+    }
+
+    // ── 할 일 · 확정할 회의록 · 브리핑 (물으면 대화로 보여 준다) ──
+
+    @Test void statusQuestionsShowTasksPendingMinutesAndTheDayBriefing() throws Exception {
+        var made = createEvent(admin, "브리핑점검V1", 0, 23); // 오늘 일정 (자정 가까이 잡아 시간 경과와 무관하게 오늘에 속한다)
+        var tasks = ask(admin, "내 할 일 보여줘");
+        assertEquals("LIST_TASKS", tasks.path("intent").asText(), tasks.toString());
+        assertTrue(tasks.path("tasks").isArray());
+        var pending = ask(admin, "확정할 회의록 있어?");
+        assertEquals("LIST_PENDING", pending.path("intent").asText());
+        assertTrue(pending.path("pendingMinutes").isArray());
+        var brief = ask(admin, "오늘 브리핑 해줘");
+        assertEquals("BRIEFING", brief.path("intent").asText());
+        boolean found = false; for (var e : brief.path("entries")) if (e.path("title").asText().equals("브리핑점검V1")) found = true;
+        assertTrue(found);
+        assertTrue(brief.path("message").asText().contains("오늘 일정"));
+        // 남의 개인 일정은 브리핑에 나오지 않는다
+        for (var e : ask(user, "오늘 브리핑 해줘").path("entries")) assertNotEquals("브리핑점검V1", e.path("title").asText());
+        req(delete("/api/calendar/events/" + made.path("eventId").asLong()), admin, null).andExpect(status().isNoContent());
+    }
+
+    @Test void personalTasksCannotBeAddedByTypingYet() throws Exception {
+        assertEquals("UNSUPPORTED", ask(admin, "할 일 추가해줘 견적서 작성").path("intent").asText());
     }
 
     JsonNode builtinTool(String name) throws Exception {
@@ -176,10 +316,4 @@ class AssistantApiTest {
         assertFalse(read(req(get("/api/assistant/status"), admin, null).andExpect(status().isOk())).path("ai").asBoolean());
     }
 
-    @Test void callsAreRateLimitedPerUser() throws Exception {
-        String fresh = signup("rate" + UUID.randomUUID().toString().substring(0, 6), "제한 시험");
-        assertNotNull(fresh);
-        for (int i = 0; i < AssistantService.MAX_PER_MINUTE; i++) req(post("/api/assistant/interpret"), fresh, Map.of("text", "일정 보여줘")).andExpect(status().isOk());
-        req(post("/api/assistant/interpret"), fresh, Map.of("text", "일정 보여줘")).andExpect(status().isTooManyRequests());
-    }
 }

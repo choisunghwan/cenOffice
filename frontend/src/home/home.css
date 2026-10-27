@@ -52,3 +52,25 @@
 .ha-toolname small{color:var(--c-muted);font-size:11px;border:1px solid var(--c-border);border-radius:20px;padding:1px 8px}
 .ha-card .cal-muted{margin:4px 0}
 .ha-output{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:12.5px;line-height:1.7;background:var(--c-bg);border:1px solid var(--c-border);border-radius:10px;padding:12px 14px;margin:8px 0;max-height:320px;overflow:auto}
+
+.ha-pick button.on{border-color:var(--c-accent);background:#2a6db226}
+.ha-pick button b{font-weight:600}
+
+/* 입력창 중심 홈 (ChatGPT·Codex 같은 구성): 스크롤 영역은 화면 전체 폭, 내용은 가운데 열, 입력창은 아래에 고정 */
+.calendar-page.chat-home{max-width:none;margin:0;padding:0;height:100%}
+.chat-home .home-assistant{width:100%;max-width:none;margin:0;height:100%;display:flex;flex-direction:column}
+.chat-home .ha-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable}
+.chat-home .ha-thread{max-width:780px;min-height:100%;margin:0 auto;padding:28px 20px 12px;box-sizing:border-box;max-height:none;overflow:visible;display:flex;flex-direction:column;gap:10px}
+.ha-empty{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding-bottom:6vh}
+.ha-hello{font-size:clamp(24px,3vw,34px);font-weight:650;letter-spacing:-1px;text-align:center;margin:0 0 22px}
+.chat-home .ha-dock{flex:none;width:100%;max-width:780px;margin:0 auto;padding:6px 20px 14px;box-sizing:border-box}
+.chat-home .ha-form{border-radius:22px;padding:12px 12px 12px 18px;box-shadow:0 6px 24px #0002}
+.chat-home .ha-form textarea{font-size:15px;min-height:46px}
+.chat-home .ha-examples{justify-content:center;margin-top:0}
+.chat-home .ha-note{text-align:center;margin:8px 2px 0;min-height:16px}
+.ha-bot>p.ha-sub{display:block;font-size:12px;font-weight:650;color:var(--c-muted);margin:12px 0 4px;background:none;border:0;padding:0}
+@media(max-width:768px){.chat-home .ha-thread{padding:16px 12px 8px}.chat-home .ha-dock{padding:6px 12px 10px}}
+
+/* 일반 답변: 줄바꿈을 살리고 근거로 쓴 정보를 작게 보여 준다 */
+.ha-bot>p.ha-answer{white-space:pre-wrap;display:block;line-height:1.8;overflow-wrap:anywhere}
+.ha-bot>p.ha-refs{display:block;background:none;border:0;padding:0;margin:-2px 0 8px 4px;font-size:11px;color:var(--c-muted)}
