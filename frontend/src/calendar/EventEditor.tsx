@@ -1,3 +1,4 @@
+import { askConfirm } from '../ui/confirm'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOffice } from '../store'
 import { calendarApi, type Entry, type EventBody, type Person, type Scope } from './api'
@@ -93,7 +94,8 @@ export function EventEditor({ init, canManageShared, onClose, onSaved }: { init:
   }
 
   const remove = async () => {
-    if (!editing?.eventId || busy || !window.confirm('이 일정을 삭제할까요?')) return
+    if (!editing?.eventId || busy) return
+    if (!await askConfirm({ title: '일정을 삭제할까요?', message: '삭제한 일정은 되돌릴 수 없습니다.', okText: '삭제', danger: true })) return
     setBusy(true); setError('')
     try { await calendarApi.remove(editing.eventId); onSaved('일정을 삭제했습니다.') } catch (e) { setError((e as Error).message); setBusy(false) }
   }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useOffice } from '../store'
+import { askConfirm } from '../ui/confirm'
 import { useChat } from './chatStore'
 
 /** 사이드바의 채팅방 목록: 새 채팅 + 지난 대화. 목록이 길면 이 영역만 스크롤된다. */
@@ -21,7 +22,7 @@ export function ChatHistory({ collapsed }: { collapsed: boolean }) {
         {sessions.map((s) => (
           <li key={s.id} className={s.id === currentId && page === 'dashboard' ? 'on' : ''}>
             <button type="button" className="chat-item" onClick={() => void useChat.getState().open(s.id)} title={s.title}>{s.title}</button>
-            <button type="button" className="chat-del" aria-label={`‘${s.title}’ 대화 삭제`} title="삭제" onClick={() => { if (window.confirm(`‘${s.title}’ 대화를 삭제할까요?`)) void useChat.getState().remove(s.id) }}>✕</button>
+            <button type="button" className="chat-del" aria-label={`‘${s.title}’ 대화 삭제`} title="삭제" onClick={() => { void askConfirm({ title: '대화를 삭제할까요?', message: `‘${s.title}’ 대화가 사라지며 되돌릴 수 없습니다.`, okText: '삭제', danger: true }).then((ok) => { if (ok) void useChat.getState().remove(s.id) }) }}>✕</button>
           </li>
         ))}
         {!sessions.length && <li className="chat-empty">아직 대화가 없습니다.</li>}

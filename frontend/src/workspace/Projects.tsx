@@ -1,3 +1,4 @@
+import { askConfirm } from '../ui/confirm'
 import { useState } from 'react'
 import {
   api, type AiTaskType, type Environment, type Priority, type RequirementItem, type RequirementStatus, type TaskItem, type TaskStatus,
@@ -36,7 +37,8 @@ export function ProjectsPage({ initialProjectId }: { initialProjectId?: number }
   const current = projects.data?.find((p) => p.id === selected) ?? null
 
   const remove = async () => {
-    if (!current || !window.confirm(`'${current.name}' 프로젝트와 모든 하위 데이터를 삭제할까요?`)) return
+    if (!current) return
+    if (!await askConfirm({ title: '프로젝트를 삭제할까요?', message: `'${current.name}' 프로젝트와 모든 하위 데이터가 삭제되며 되돌릴 수 없습니다.`, okText: '삭제', danger: true })) return
     try { await api.deleteProject(current.id); setSelected(null); projects.reload() } catch (x) { setErr(errMsg(x)) }
   }
 

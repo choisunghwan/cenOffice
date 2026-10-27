@@ -1,3 +1,4 @@
+import { askConfirm } from '../ui/confirm'
 import { BusinessTools } from './BusinessTools'
 import { TextTool, TEXT_TOOLS } from './TextTool'
 import { toolName } from './toolNames'
@@ -41,7 +42,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
         </div>
         <div className="flex gap-2 flex-wrap">
           <Btn tone="ghost" onClick={() => act(() => hub.download(id, versionId))}>다운로드</Btn>
-          {canEdit && s.status !== 'ARCHIVED' && <Btn tone="ghost" onClick={() => { if (window.confirm('이 업무 지침 을 보관(비공개) 처리할까요?')) void act(() => hub.archive(id), onBack) }}>보관</Btn>}
+          {canEdit && s.status !== 'ARCHIVED' && <Btn tone="ghost" onClick={() => { void askConfirm({ title: '보관할까요?', message: '이 업무 지침을 보관(비공개) 처리합니다. 보관하면 동료들이 더 이상 찾을 수 없습니다.', okText: '보관', danger: true }).then((ok) => { if (ok) void act(() => hub.archive(id), onBack) }) }}>보관</Btn>}
         </div>
       </div>
       <RuntimeBanner runtime={runtime} /></details>

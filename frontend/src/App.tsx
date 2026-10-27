@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { ConfirmHost } from './ui/confirm'
+import { useEffect, useState } from 'react'
 import { useOffice, type Conn } from './store'
 import { theme } from './theme'
 import { AI_STATUS_COLOR, AI_STATUS_LABEL } from './game/AiStaff'
@@ -109,6 +110,7 @@ export default function App() {
 
       {mode === 'workspace' && <Workspace onLogin={() => setLoginOpen(true)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      <ConfirmHost />
 
       {mode === 'office' && conn === 'online' && panel === 'none' && <ChatDock />}
 
