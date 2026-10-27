@@ -1,6 +1,7 @@
 ﻿import { create } from 'zustand'
 import { INTERACTABLES, type InteractableDef } from './game/layout'
-import { localPose, startPresenceSender, stopPresenceSender, useMultiplayer } from './multiplayer'
+import { clearAssistantMemory } from './home/assistantMemory'
+import { localPose,startPresenceSender, stopPresenceSender, useMultiplayer } from './multiplayer'
 import {
   api, ApiError, connectRealtime, tokenStore,
   type CommandBody, type CommandStatus, type CommandView, type DeviceView, type ServerEvent, type UserView,
@@ -213,6 +214,7 @@ export const useOffice = create<OfficeState>((set, get) => {
       stopPresenceSender()
       useMultiplayer.getState().reset()
       tokenStore.set(null)
+      clearAssistantMemory()
       set({ user: null, conn: 'local', devices: {}, commands: {}, serverAiStatus: null, authChecked: true })
     },
 

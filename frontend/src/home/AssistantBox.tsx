@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { formatRange, KIND_LABEL } from '../calendar/dates'
@@ -13,7 +14,7 @@ type Turn =
   | { id: number; role: 'user'; text: string }
   | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string }
 
-const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘']
+const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘', '쓸 만한 도구 뭐 있어?']
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 const asEntry = (d: Draft): Entry => ({ kind: 'EVENT', id: 'draft', eventId: null, scope: d.scope, title: d.title, description: d.description, location: d.location,
@@ -79,17 +80,25 @@ function goCalendar() {
 /** 홈 화면 입력창. 말로 일정을 등록·조회한다. 등록은 AI 가 해석한 초안을 확인 카드로 보여 주고, 사용자가 눌러야 실행된다. */
 export function AssistantBox() {
   const name = useOffice((s) => s.user?.displayName) ?? ''
-  const [turns, setTurns] = useState<Turn[]>([])
+  const owner = useOffice((s) => s.user?.username) ?? ''
+  // 다른 화면에 다녀와도 대화가 이어지도록 메모리에 있는 같은 사용자의 대화로 시작한다
+  if (assistantMemory.owner !== owner) { clearAssistantMemory(); assistantMemory.owner = owner }
+  const [turns, setTurnsState] = useState<Turn[]>(assistantMemory.turns as Turn[])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [ai, setAi] = useState<boolean | null>(null)
   const [editor, setEditor] = useState<{ turnId: number; init: EditorInit } | null>(null)
-  const previous = useRef<string | null>(null) // 되묻는 중이면 이전 요청(답을 이어서 해석하는 데 쓴다)
-  const nextId = useRef(1)
+  const previous = useRef<string | null>(assistantMemory.previous) // 되묻는 중이면 이전 요청(답을 이어서 해석하는 데 쓴다)
+  const nextId = useRef(assistantMemory.nextId)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const alive = useRef(true)
-  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+  useEffect(() => { alive.current = true; return () => { alive.current = false; assistantMemory.nextId = nextId.current; assistantMemory.previous = previous.current } }, [])
+  // 화면이 닫힌 뒤에 도착한 답도 잃지 않도록, 화면이 없으면 메모리에 바로 쌓는다
+  const setTurns = (f: (cur: Turn[]) => Turn[]) => {
+    assistantMemory.turns = f(assistantMemory.turns as Turn[])
+    if (alive.current) setTurnsState(assistantMemory.turns as Turn[])
+  }
 
   useEffect(() => { assistantApi.status().then((s) => setAi(s.ai)).catch(() => setAi(null)) }, [])
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }) }, [turns, busy])
