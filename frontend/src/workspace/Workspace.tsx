@@ -3,8 +3,7 @@ import { Btn } from './kit'
 import { AgentsPage, ComingSoonPage, MonitoringPage, OfficeManagementPage, RequirementsPage, SettingsPage } from './Pages'
 import { ProjectsPage } from './Projects'
 import { HubPage } from '../hub/HubPage'
-import { ConnectPage } from '../hub/ConnectPage'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 const MeetingsPage = lazy(() => import('../meeting/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
 
 const CalendarPage = lazy(() => import('../calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
@@ -18,7 +17,6 @@ const MENU = [
   { key: 'home', label: '도구 둘러보기', icon: '✧' },
   { key: 'hub-mine', label: '내 도구', icon: '▤' },
   { key: 'hub-register', label: '도구 만들기', icon: '＋' },
-  { key: 'hub-connect', label: 'AI 도구에서 쓰기', icon: '⇄' },
 ]
 const MORE = [
   { key: 'settings', label: '설정' },
@@ -28,6 +26,13 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
   const user = useOffice((s) => s.user)
   const page = useOffice((s) => s.workspacePage)
   const setPage = useOffice((s) => s.setWorkspacePage)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('workspace-nav-collapsed') === '1' } catch { return false }
+  })
+  const toggleNav = () => setCollapsed((c) => {
+    try { localStorage.setItem('workspace-nav-collapsed', c ? '0' : '1') } catch { /* 저장 못 해도 동작에는 지장 없음 */ }
+    return !c
+  })
 
   const body = () => {
     switch (page) {
@@ -37,7 +42,6 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
       case 'meetings': return <Suspense fallback={<p role="status">회의 화면을 준비하고 있습니다…</p>}><MeetingsPage /></Suspense>
       case 'hub-mine': return <HubPage key="mine" initialTab="mine" />
       case 'hub-register': return <HubPage key="register" initialTab="register" />
-      case 'hub-connect': return <ConnectPage />
       case 'hub-review': return user?.role === 'ADMIN' ? <HubPage key="review" initialTab="review" /> : <HubPage />
       case 'projects': return <ProjectsPage />
       case 'requirements': return <RequirementsPage />
@@ -58,26 +62,30 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="hub-shell absolute inset-x-0 bottom-0 top-[72px] flex border-t border-white/8 z-[5]">
-      <nav className="w-52 shrink-0 border-r border-white/8 p-3 space-y-0.5 overflow-y-auto hidden md:block">
-        <p className="text-[9px] tracking-[0.18em] text-slate-500 px-3 pt-4 pb-6">YOUR AI WORKSPACE</p>
+      <nav className={`${collapsed ? 'w-14' : 'w-52'} shrink-0 border-r border-white/8 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden hidden md:block transition-[width] duration-150`}>
+        <button onClick={toggleNav} aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'} title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between px-3'} py-2 mb-2 rounded-lg text-slate-400 hover:bg-white/5 hover:text-white`}>
+          {!collapsed && <span className="text-[9px] tracking-[0.18em] text-slate-500">YOUR AI WORKSPACE</span>}
+          <span className="text-base">{collapsed ? '»' : '«'}</span>
+        </button>
         {[...MENU, ...(user?.role === 'ADMIN' ? [{ key: 'hub-review', label: '공개 승인', icon: '✓' }] : [])].map((m) => (
           <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={page === m.key ? 'page' : undefined}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 transition ${page === m.key ? 'bg-sky-500/15 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+            title={collapsed ? m.label : undefined} aria-label={m.label}
+            className={`w-full text-left ${collapsed ? 'justify-center px-0' : 'px-3'} py-2 rounded-lg text-sm flex items-center gap-2.5 transition ${page === m.key ? 'bg-sky-500/15 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
             <span className="text-base">{m.icon}</span>
-            <span className="flex-1">{m.label}</span>
+            {!collapsed && <span className="flex-1">{m.label}</span>}
 
           </button>
         ))}
         <div className="pt-6 mt-6 border-t border-white/8">
-          {MORE.map((m) => <button key={m.key} onClick={() => setPage(m.key)} aria-current={page === m.key ? 'page' : undefined} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${page === m.key ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}>{m.label}</button>)}
-          <button onClick={() => useOffice.getState().setMode('office')} className="w-full text-left px-3 py-3 text-sm text-slate-400 hover:text-white">3D 오피스 ↗</button>
-        </div>
+          {MORE.map((m) => <button key={m.key} onClick={() => setPage(m.key)} aria-current={page === m.key ? 'page' : undefined} title={m.label} aria-label={m.label} className={`w-full ${collapsed ? 'text-center px-0' : 'text-left px-3'} py-2 rounded-lg text-sm ${page === m.key ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}>{collapsed ? '⚙' : m.label}</button>)}        </div>
       </nav>
-      <div className="md:hidden border-b border-white/8 p-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10">
-        <select value={page} onChange={(e) => setPage(e.target.value)} className="w-full bg-[#152238] rounded-lg px-3 py-2 text-sm">
-          {[...MENU, ...MORE, ...(user?.role === 'ADMIN' ? [{ key: 'hub-review', label: '공개 승인' }] : [])].map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-        </select>
-      </div>
+      <nav aria-label="업무 메뉴" className="md:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {[...MENU, ...MORE, ...(user?.role === 'ADMIN' ? [{ key: 'hub-review', label: '공개 승인' }] : [])].map((m) => (
+          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={page === m.key ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${page === m.key ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
+        ))}
+      </nav>
       <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden md:pt-0 pt-14' : 'overflow-y-auto p-6 md:pt-6 pt-16'}`} onKeyDown={(e) => e.stopPropagation()}>
         {user ? <div className={user && page === 'dashboard' ? 'h-full' : 'max-w-[1200px] mx-auto'}>{body()}</div> : (
           <div className="h-full grid place-items-center">
