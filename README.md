@@ -69,7 +69,7 @@ scripts/    run-backend.ps1  (Windows 백엔드 실행 스크립트)
 ## 실행
 
 ### 가장 쉬운 방법 (Windows)
-`start-local.bat` 을 더블클릭하면 백엔드(8080)와 프론트엔드(5173)를 띄우고 준비되면 브라우저를 엽니다. 종료는 `stop-local.bat`. (JDK 21·Node.js 필요, 처음 한 번은 의존성 설치로 시간이 걸립니다.)
+`start-local.bat` 을 더블클릭하면 백엔드(8080)와 프론트엔드(5180)를 띄우고 준비되면 브라우저를 엽니다. 종료는 `stop-local.bat`. (JDK 21·Node.js 필요, 처음 한 번은 의존성 설치로 시간이 걸립니다.)
 
 ### 직접 실행
 
@@ -83,7 +83,7 @@ scripts/    run-backend.ps1  (Windows 백엔드 실행 스크립트)
 
 직접 실행하려면: `cd backend && mvn spring-boot:run`, 테스트: `mvn test`
 
-### 2) 프론트엔드 (포트 5173)
+### 2) 프론트엔드 (포트 5180)
 ```bash
 cd frontend
 npm install
@@ -99,7 +99,7 @@ npm run dev
 | `JWT_SECRET` | JWT 서명키(32자 이상). 비우면 기동 시 임의 생성(재시작 시 로그인 만료) | 임의 |
 | `JWT_TTL_MINUTES` | 토큰 유효 시간 | 480 |
 | `OFFICE_ADMIN_PASSWORD`, `OFFICE_USER_PASSWORD` | 시드 계정 비밀번호 | 임의 생성 |
-| `CORS_ORIGINS` | 허용 프론트 주소 | `http://localhost:5173` |
+| `CORS_ORIGINS` | 허용 프론트 주소 | `http://localhost:5180` |
 | `DEVICE_COMMAND_TIMEOUT_SECONDS` | 장비 응답 대기 한도 | 10 |
 | `MOCK_MIN_LATENCY_MS` / `MOCK_MAX_LATENCY_MS` / `MOCK_FAILURE_RATE` | Mock 장비 지연/실패율(실패 처리 테스트용) | 300/900/0.0 |
 | `HUB_AI_ENGINE` | AI HUB 의 AI 모델 실행 허용(입력이 LLM 서비스로 전송됨) | false (개발 스크립트는 true) |

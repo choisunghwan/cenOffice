@@ -40,7 +40,7 @@ app:
     user-password: ${OFFICE_USER_PASSWORD:}
     sync-passwords: ${OFFICE_SYNC_PASSWORDS:false}   # 개발용: true 면 기존 계정 비밀번호를 위 값으로 갱신
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5180,http://localhost:5173}
   devices:
     command-timeout-seconds: ${DEVICE_COMMAND_TIMEOUT_SECONDS:10}
     mock:

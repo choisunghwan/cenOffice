@@ -1,4 +1,4 @@
-﻿# CEN OFFICE 로컬 실행: 백엔드(8080) + 프론트엔드(5173)를 띄우고 브라우저를 엽니다.
+﻿# CEN OFFICE 로컬 실행: 백엔드(8080) + 프론트엔드(5180)를 띄우고 브라우저를 엽니다.
 $ErrorActionPreference = 'Continue'
 $root = Split-Path $PSScriptRoot -Parent
 $Host.UI.RawUI.WindowTitle = 'CEN OFFICE 로컬 실행'
@@ -19,7 +19,7 @@ else {
   Start-Process powershell -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', "$root\scripts\run-backend.ps1"
 }
 
-if (Test-Port 5173) { Write-Host '[프론트엔드] 이미 실행 중입니다 (5173)' }
+if (Test-Port 5180) { Write-Host '[프론트엔드] 이미 실행 중입니다 (5180)' }
 else {
   if (-not (Test-Path "$root\frontend\node_modules")) {
     Write-Host '[프론트엔드] 패키지를 설치합니다 (최초 1회)...'
@@ -33,14 +33,14 @@ Write-Host "`n서버가 준비될 때까지 기다리는 중... (최대 약 3분
 $ready = $false
 for ($i = 0; $i -lt 60; $i++) {
   $b = Status 'http://localhost:8080/api/health'   # 로그인 전이므로 401 이 정상
-  $f = Status 'http://localhost:5173/'
+  $f = Status 'http://localhost:5180/'
   if (($b -eq 401 -or $b -eq 200) -and $f -eq 200) { $ready = $true; break }
   Start-Sleep 3
 }
 
 if ($ready) {
-  Write-Host "`n준비 완료! 브라우저를 엽니다: http://localhost:5173" -ForegroundColor Green
-  Start-Process 'http://localhost:5173'
+  Write-Host "`n준비 완료! 브라우저를 엽니다: http://localhost:5180" -ForegroundColor Green
+  Start-Process 'http://localhost:5180'
   Write-Host "`n계정: user (일반) / admin (관리자)"
   Write-Host '  비밀번호는 backend\.local-credentials.txt 를 확인하세요.'
   Write-Host '종료하려면 stop-local.bat 을 실행하세요.'
