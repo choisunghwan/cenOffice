@@ -155,6 +155,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const api = {
   login: (username: string, password: string) =>
     request<{ token: string; user: UserView }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  signup: (b: { username: string; displayName: string; email: string; password: string }) =>
+    request<{ token: string; user: UserView }>('/api/auth/signup', { method: 'POST', body: JSON.stringify(b) }),
   me: () => request<UserView>('/api/auth/me'),
   devices: () => request<DeviceView[]>('/api/devices'),
   sendCommand: (deviceId: number, body: CommandBody) =>

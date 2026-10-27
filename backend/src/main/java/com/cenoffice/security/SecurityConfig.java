@@ -74,7 +74,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/ws/**").permitAll() // /ws 는 핸드셰이크 인터셉터가 토큰을 검증
+                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/ws/**").permitAll() // /ws 는 핸드셰이크 인터셉터가 토큰을 검증
                         .requestMatchers("/mcp").permitAll() // /mcp 는 컨트롤러가 개인 액세스 토큰(cen_pat_)을 직접 검증
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(converter))

@@ -53,6 +53,7 @@ interface OfficeState {
 
   bootstrap: () => Promise<void>
   login: (username: string, password: string) => Promise<void>
+  signup: (b: { username: string; displayName: string; email: string; password: string }) => Promise<void>
   logout: () => void
   continueLocal: () => void
   /** 장비 제어. 온라인이면 명령을 백엔드에 보내고 "장비가 확인한 결과"를 기다린다. */
@@ -194,6 +195,13 @@ export const useOffice = create<OfficeState>((set, get) => {
 
     login: async (username, password) => {
       const res = await api.login(username, password)
+      tokenStore.set(res.token)
+      set({ user: res.user })
+      await goOnline(res.token)
+    },
+
+    signup: async (b) => {
+      const res = await api.signup(b)
       tokenStore.set(res.token)
       set({ user: res.user })
       await goOnline(res.token)
