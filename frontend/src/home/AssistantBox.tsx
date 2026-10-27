@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useChat } from './chatStore'
+import { TurnRail, type RailItem } from './TurnRail'
 import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { formatRange, KIND_LABEL } from '../calendar/dates'
@@ -92,6 +93,7 @@ export function AssistantBox() {
   const previous = useRef<string | null>(assistantMemory.previous) // 되묻는 중이면 이전 요청(답을 이어서 해석하는 데 쓴다)
   const nextId = useRef(assistantMemory.nextId)
   const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false; assistantMemory.nextId = nextId.current; assistantMemory.previous = previous.current } }, [])
@@ -230,9 +232,17 @@ export function AssistantBox() {
     setEditor({ turnId: t.id, init: { day: new Date(d.startAt), scope: 'mine', draft: { scope: d.scope, title: d.title, description: d.description ?? '', location: d.location ?? '', startAt: d.startAt, endAt: d.endAt, allDay: d.allDay, attendees: d.attendees.map((p) => p.username) } } })
   }
 
+  // 대화 목차: 질문마다 눈금 하나(미리보기에는 질문과 바로 뒤 답의 앞부분)
+  const rail: RailItem[] = turns.flatMap((t, i) => {
+    if (t.role !== 'user') return []
+    const next = turns[i + 1]
+    return [{ id: t.id, question: t.text, answer: next && next.role === 'assistant' ? next.reply.message : '' }]
+  })
+
   return (
     <section className="home-assistant" aria-label="입력창으로 업무 처리">
-      <div className="ha-scroll">
+      <TurnRail items={rail} scrollRef={scrollRef} />
+      <div className="ha-scroll" ref={scrollRef}>
       <div className="ha-thread" role="log" aria-live="polite">
         {turns.length === 0 && (
           <div className="ha-empty">
@@ -241,9 +251,9 @@ export function AssistantBox() {
           </div>
         )}
           {turns.map((t) => t.role === 'user'
-            ? <p key={t.id} className="ha-user">{t.text}</p>
+            ? <p key={t.id} id={`ha-t-${t.id}`} className="ha-user">{t.text}</p>
             : (
-              <div key={t.id} className="ha-bot">
+              <div key={t.id} id={`ha-t-${t.id}`} className="ha-bot">
                 <p className={t.reply.intent === 'ANSWER' ? 'ha-answer' : undefined}>{t.reply.message}</p>
                 {t.reply.intent === 'ANSWER' && (t.reply.references ?? []).length > 0 && <p className="ha-refs">참고한 정보: {(t.reply.references ?? []).join(' · ')}</p>}
                 {t.reply.intent === 'CREATE_EVENT' && t.draft && (
