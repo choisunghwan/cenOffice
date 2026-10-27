@@ -250,7 +250,12 @@ export function connectRealtime(
     current = ws
     ws.onopen = () => { retry = 0; onState('online') }
     ws.onmessage = (m) => {
-      try { onEvent(JSON.parse(m.data)) } catch { /* ignore malformed */ }
+      try {
+        const event = JSON.parse(m.data)
+        if (event.type === 'meeting.changed') window.dispatchEvent(new Event('cen-meeting-changed'))
+        if (event.type === 'notification.new') window.dispatchEvent(new Event('cen-notification'))
+        onEvent(event)
+      } catch { /* ignore malformed */ }
     }
     ws.onclose = (ev) => {
       if (current === ws) current = null

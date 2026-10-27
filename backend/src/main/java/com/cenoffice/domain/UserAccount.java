@@ -17,6 +17,11 @@ public class UserAccount {
     private Enums.Role role;
     @Column(length = 64)
     private String team;
+    /** 알림 메일 수신 주소. 비어 있으면 화면 알림만 간다. */
+    @Column(length = 254)
+    private String email;
+    /** 메일 알림 수신 여부. null 이면 수신(기존 계정 호환). */
+    private Boolean emailNotify;
 
     protected UserAccount() {}
 
@@ -29,6 +34,11 @@ public class UserAccount {
 
     public String getTeam() { return team; }
     public void setTeam(String team) { this.team = team; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public boolean isEmailNotify() { return emailNotify == null || emailNotify; }
+    public void setEmailNotify(boolean emailNotify) { this.emailNotify = emailNotify; }
 
     public void changePasswordHash(String hash) { this.passwordHash = hash; }
 

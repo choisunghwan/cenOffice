@@ -65,6 +65,11 @@ public class AnthropicLlmProvider implements LlmProvider {
         return call(systemPrompt, userText, 600).trim();
     }
 
+    @Override
+    public String generateJson(String systemPrompt, String userText) throws LlmException {
+        return call(systemPrompt, userText, 4096).trim();
+    }
+
     private String call(String system, String user, int maxTokens) throws LlmException {
         try {
             String body = mapper.writeValueAsString(Map.of("model", model, "max_tokens", maxTokens, "system", system,

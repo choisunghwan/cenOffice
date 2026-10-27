@@ -188,6 +188,7 @@ export function MeetingPanel() {
   return (
     <Shell title="📅 회의실 예약" onClose={close}>
       <div className="p-5 space-y-4">
+        <button className="w-full rounded-xl bg-sky-600 px-4 py-3 text-white text-sm font-semibold" onClick={() => { close(); useOffice.getState().setWorkspacePage('meetings'); useOffice.getState().setMode('workspace') }}>화상회의 시작 / 참여 ↗</button>
         {conn !== 'online' && <Notice>{OFFLINE_NOTE}</Notice>}
         <div className="flex gap-2">
           {rooms.map((r) => (

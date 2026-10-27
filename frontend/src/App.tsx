@@ -9,6 +9,7 @@ import { LoginModal } from './ui/LoginModal'
 import { ChatDock } from './ui/ChatDock'
 import { Workspace } from './workspace/Workspace'
 import { useAppearance } from './workspace/useAppearance'
+import { NotificationBell } from './meeting/NotificationBell'
 
 const CONN: Record<Conn, { label: string; color: string; pulse?: boolean }> = {
   online: { label: '백엔드 연결됨', color: theme.status.ok },
@@ -79,6 +80,7 @@ export default function App() {
           <span className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-sky-500 grid place-items-center text-[11px] font-bold text-slate-900">{user.displayName.slice(0, 1)}</span>
             <span className="hidden md:inline">{user.displayName}</span>
+            <NotificationBell />
             <button onClick={logout} className="text-slate-400 hover:text-white underline-offset-2 hover:underline">로그아웃</button>
           </span>
         ) : (

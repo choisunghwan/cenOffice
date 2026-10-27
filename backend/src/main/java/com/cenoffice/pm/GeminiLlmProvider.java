@@ -55,6 +55,11 @@ public class GeminiLlmProvider implements LlmProvider {
         return call(systemPrompt, userText, false).trim();
     }
 
+    @Override
+    public String generateJson(String systemPrompt, String userText) throws LlmException {
+        return call(systemPrompt, userText, true).trim();
+    }
+
     private String call(String system, String user, boolean json) throws LlmException {
         try {
             Map<String, Object> body = new LinkedHashMap<>();

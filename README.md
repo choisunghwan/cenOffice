@@ -186,6 +186,43 @@ npm run dev
 - 권한 거부(ACCESS_DENIED), 로그인 잠금이 감사 로그에 기록됨
 - 알려진 한계: DB 마이그레이션 도구(Flyway) 미도입(`ddl-auto=update`) — PostgreSQL 운영 전 도입 필요 / JWT 는 발급 후 사용자 삭제·권한 변경이 만료 전까지 반영되지 않음 / 승인 강제는 서버 AI 실행(3B)에서 연결 예정(현재 브라우저 Mock AI 의 조명 승인은 클라이언트 흐름이며, 실제 제어는 서버의 인증·권한·명령 파이프라인을 거침)
 
+## 로컬 화상회의 시연 (2026-10-27)
+
+사내 LLM 없이 **실제 LiveKit 영상·음성·화면 공유**를 사용합니다. 기본 업무 DB와 분리된 시연 DB를 사용하며, 한 PC에서 Chrome과 Edge로 시연하는 구성입니다.
+
+```powershell
+# 최초 1회: 공식 Windows LiveKit 바이너리 다운로드 + SHA256 검증
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-meeting-media.ps1
+# 프론트 패키지가 아직 없으면: cd frontend; npm install
+# 실행: 백엔드 빌드 후 세 서버를 숨김 창으로 기동
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-meeting-demo.ps1
+# 종료: 이 스크립트가 기록한 시연 프로세스만 종료
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop-meeting-demo.ps1
+```
+
+- 화면: **http://localhost:5174** / API: 8090 / LiveKit: 7880, RTC TCP 7881·UDP 7882. 모두 로컬 전용입니다.
+- 계정: Chrome은 `admin`, Edge는 `user`. 임의 생성된 비밀번호는 `backend/.local-credentials-meeting.txt`에서 확인합니다. 기존 계정 파일과 별개입니다.
+- 데이터: `backend/data/meeting-demo.mv.db`. 서버 로그/PID: `backend/data/meeting-demo-runtime/`.
+- LiveKit 키는 시작 스크립트가 `backend/.meeting-local.properties`에 생성합니다. 키/계정/DB/로그는 Git에 포함되지 않습니다.
+- LLM_PROVIDER=mock, HUB_AI_ENGINE=false로 시연을 실행합니다. 외부 LLM 호출이 필요하지 않습니다.
+
+**3분 시연 순서**
+
+1. 두 브라우저에서 서로 다른 계정으로 로그인 → 왼쪽 **회의**.
+2. 첫 브라우저에서 회의 이름 입력 → **회의 만들기** → 장치 선택 → **회의 참여하기**.
+3. 통화 화면 오른쪽 위 **동료 초대**로 코드를 복사합니다.
+4. 두 번째 브라우저에서 코드 붙여 넣기 → 참여. 한 PC에서는 소리 울림을 막기 위해 한쪽 마이크를 끄고 헤드폰을 사용하세요.
+5. 화면 공유, 메시지 전송, 카메라/마이크 전환을 시연합니다. 호스트가 **전체 종료**를 누르면 양쪽이 퇴장합니다.
+6. 3D에서는 기존 회의실 상호작용 → 예약 패널의 **화상회의 시작 / 참여**로 같은 화면에 진입합니다. 기존 예약 기능은 유지됩니다.
+
+**이번 범위:** 로그인 기반 회의 생성·코드 참여, 회의별 접근 제한, 호스트 종료, 실제 미디어, DB 저장 채팅, 서버 상태 안내. 세션·회원·메시지 테이블은 Flyway V5로 추가합니다. 화면에서 보여주는 참여 인원은 실제 LiveKit 연결 인원이고, 목록의 멤버 수는 등록된 참여자 수입니다.
+
+**미포함:** AI 참가자, 녹음, STT/TTS, 자동 회의록, 사내 LLM, 운영 배포. 여러 PC 접속은 HTTPS·내부망 주소·TURN 등을 별도로 구성해야 하며 이번 로컬 설정으로는 제공하지 않습니다. Windows LiveKit은 CPU 용량 감시가 비활성화되는 경고가 있으므로 운영 수용량 검증에 사용하지 않습니다.
+
+**보안 경계:** 코드를 아는 로그인 사용자가 참여하는 초대 방식입니다. 엄격한 지정 참석자 승인·강퇴는 후속 범위입니다. 입장 토큰은 30초, 회원 확인 후 서버에서 발급하며 호스트 종료 시 LiveKit room도 삭제합니다. self-hosted LiveKit의 이미 발급된 토큰 즉시 폐기는 보장하지 않으므로 전사 운영 전 재입장 통제를 보강해야 합니다.
+
+**검증:** 기존 93개 + 신규 MeetingApiTest 5개 = 98개 백엔드 테스트 통과. 프론트 TypeScript/Vite 빌드 통과. 격리된 Chrome·Edge에서 가상 영상·음성 장치를 사용한 실시간 영상, 채팅, 화면 공유, 전체 종료를 검증했습니다. 실제 카메라·마이크 품질, 사내망·PostgreSQL 운영 검증은 별도입니다. 재현 스크립트는 `scripts/test-meeting-demo.cjs`이며 Playwright와 두 브라우저가 필요합니다. `PLAYWRIGHT_MODULE` 환경변수로 Playwright 모듈 경로를 지정할 수 있습니다.
+
 ## 설계 메모
 - 충돌은 `@react-three/rapier` 대신 경량 자체 구현(`frontend/src/game/collision.ts`)을 사용합니다.
 - 색상/조명/상태색은 `frontend/src/theme.ts` 한 곳에서 관리합니다.

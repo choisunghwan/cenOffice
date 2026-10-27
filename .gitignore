@@ -13,6 +13,7 @@ backend/run.err
 *.pem
 *.key
 backend/.local-credentials.txt
+backend/.meeting-local.properties
 **/.local-credentials*
 **/application-local*.yml
 **/application-local*.properties
@@ -34,3 +35,5 @@ backend/data/
 
 # 내부 문서 (저장소에 올리지 않음)
 docs/
+backend/.local-db.txt
+backend/.local-mail.txt
