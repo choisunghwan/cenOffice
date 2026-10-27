@@ -4,6 +4,7 @@ import { hub } from '../hubApi'
 import { Btn, Card, Empty, ErrorNote, Input, Select, Stat, useLoad } from '../workspace/kit'
 import { AgentDetailView, AgentForm } from './AgentViews'
 import { CreatorDashboard } from './CreatorDashboard'
+import { Pager } from './Pager'
 import { ReviewQueue } from './ReviewQueue'
 import { SkillDetailView } from './SkillDetailView'
 import { SkillForm } from './SkillForm'
@@ -33,9 +34,17 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
   const bump = () => setTick((t) => t + 1)
 
   const open = (v: View) => setView(v)
+  const goTab = (page: string) => { setView(null); setPage(page); window.dispatchEvent(new Event('hub-navigation')) }
+  const TABS: { tab: Tab; page: string; icon: string; title: string; desc: string }[] = [
+    { tab: 'browse', page: 'home', icon: '✧', title: '모든 도구', desc: '승인된 AI 도구를 찾고 바로 써 보세요' },
+    { tab: 'mine', page: 'hub-mine', icon: '▤', title: '내 도구', desc: '내가 만든 도구와 동료의 피드백' },
+    { tab: 'register', page: 'hub-register', icon: '＋', title: '도구 만들기', desc: '업무 노하우를 도구로 등록하고 나누기' },
+    ...(admin ? [{ tab: 'review' as Tab, page: 'hub-review', icon: '✓', title: '공개 승인', desc: '등록된 도구를 검토하고 공개' }] : []),
+  ]
 
   return (
     <>
+      {!view && <nav className="hub-switch" aria-label="도구 화면 선택">{TABS.map((t) => <button key={t.tab} type="button" onClick={() => goTab(t.page)} aria-current={tab === t.tab ? 'page' : undefined}><span className="hub-switch-icon" aria-hidden="true">{t.icon}</span><span><b>{t.title}</b><small>{t.desc}</small></span></button>)}</nav>}
       {!view && tab === 'browse' && <header className="hub-hero">
         <div className="hub-eyebrow"><span className="hub-spark">✧</span> ITCEN AI HUB <span className="hub-eyebrow-line" /></div>
         <h1>오늘의 업무,<br /><span>잘하는 AI와 함께.</span></h1>
@@ -128,12 +137,7 @@ function Browse({ categories, onOpen }: { categories: { code: string; name: stri
         </div>
         {!skills.error && !agents.error && !skills.data?.items.length && !agents.data?.items.length && <Card><Empty>아직 표시할 도구가 없습니다. 검색 조건을 바꾸거나 ‘도구 만들기’로 첫 도구를 공유해 보세요.</Empty></Card>}
       </>}
-      {pages > 1 && (
-        <div className="flex items-center justify-center gap-3 text-sm">
-          <Btn small tone="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>이전</Btn><span className="text-slate-400">{page + 1} / {pages}</span>
-          <Btn small tone="ghost" disabled={page + 1 >= pages} onClick={() => setPage(page + 1)}>다음</Btn>
-        </div>
-      )}
+      <Pager page={page} pages={pages} total={total} onChange={(p) => { setPage(p); document.getElementById('hub-discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} />
     </div>
   )
 }

@@ -140,7 +140,7 @@ public class AssistantService {
         Reply reply = null;
         if (parsed.toolId() != null) {
             reply = toolReply(parsed.toolId(), text, catalog, ai, source); // AI 가 고른 번호는 우리가 보여 준 실행 가능 목록에 있을 때만 받아들인다
-            if (reply == null) reply = reply("UNSUPPORTED", "알맞은 도구를 찾지 못했습니다. 도구 둘러보기에서 직접 찾아보세요.", ai, source);
+            if (reply == null) reply = reply("UNSUPPORTED", "알맞은 도구를 찾지 못했습니다. 도구 메뉴에서 직접 찾아보세요.", ai, source);
         } else if (parsed.intent().kind() == RuleParser.Kind.UNSUPPORTED && !ai) {
             reply = keywordToolReply(text, catalog, source); // AI 없이 일정 말이 아니면 도구 이름·태그·설명에서 찾아본다
         } else if (parsed.intent().kind() == RuleParser.Kind.UNSUPPORTED) {
@@ -176,13 +176,13 @@ public class AssistantService {
         "(어떤|무슨|뭐\\s*있|뭐가)\\s*(AI\\s*)?(도구|툴|스킬)|(도구|툴|스킬)\\s*(목록|추천|뭐|있어|있나|있는지|알려|보여|찾아)");
 
     private Reply toolListReply(String text, List<ToolCatalog.Tool> catalog, String source) {
-        if (catalog.isEmpty()) return reply("UNSUPPORTED", "지금 쓸 수 있는 도구가 없습니다. 도구 둘러보기에서 승인된 도구를 확인해 주세요.", false, source);
+        if (catalog.isEmpty()) return reply("UNSUPPORTED", "지금 쓸 수 있는 도구가 없습니다. 도구 메뉴에서 승인된 도구를 확인해 주세요.", false, source);
         var ranked = ToolCatalog.rank(text, catalog).stream().filter(r -> r.score() >= ToolCatalog.ALT_THRESHOLD).limit(3).map(ToolCatalog.Ranked::tool).toList();
         boolean matched = !ranked.isEmpty();
         List<ToolCatalog.Tool> shown = matched ? ranked : catalog.stream().limit(3).toList();
         List<ToolPick> alts = shown.stream().skip(1).map(this::pick).toList();
         Reply card = toolCard(shown.get(0), alts, false, source);
-        String head = matched ? "찾은 도구입니다. " : "쓸 수 있는 도구 중 일부입니다. 더 보려면 도구 둘러보기를 열어 보세요. ";
+        String head = matched ? "찾은 도구입니다. " : "쓸 수 있는 도구 중 일부입니다. 더 보려면 도구 메뉴를 열어 보세요. ";
         return new Reply("USE_TOOL", head + card.message(), null, List.of(), List.of(), List.of(), false, source, card.tool(), alts);
     }
 

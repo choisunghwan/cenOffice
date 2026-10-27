@@ -14,9 +14,7 @@ const MENU = [
   { key: 'dashboard', label: '홈', icon: '⌂' },
   { key: 'calendar', label: '일정', icon: '▦' },
   { key: 'meetings', label: '회의', icon: '◉' },
-  { key: 'home', label: '도구 둘러보기', icon: '✧' },
-  { key: 'hub-mine', label: '내 도구', icon: '▤' },
-  { key: 'hub-register', label: '도구 만들기', icon: '＋' },
+  { key: 'home', label: '도구', icon: '✧' },
 ]
 const MORE = [
   { key: 'settings', label: '설정' },
@@ -33,6 +31,9 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
     try { localStorage.setItem('workspace-nav-collapsed', c ? '0' : '1') } catch { /* 저장 못 해도 동작에는 지장 없음 */ }
     return !c
   })
+
+  // 도구 관련 화면(내 도구·도구 만들기·공개 승인)은 사이드바의 '도구' 아래에 있는 것으로 본다
+  const isOn = (key: string) => (key === 'home' ? page === 'home' || page.startsWith('hub-') : page === key)
 
   const body = () => {
     switch (page) {
@@ -68,10 +69,10 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
           {!collapsed && <span className="text-[9px] tracking-[0.18em] text-slate-500">YOUR AI WORKSPACE</span>}
           <span className="text-base">{collapsed ? '»' : '«'}</span>
         </button>
-        {[...MENU, ...(user?.role === 'ADMIN' ? [{ key: 'hub-review', label: '공개 승인', icon: '✓' }] : [])].map((m) => (
-          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={page === m.key ? 'page' : undefined}
+        {MENU.map((m) => (
+          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
             title={collapsed ? m.label : undefined} aria-label={m.label}
-            className={`w-full text-left ${collapsed ? 'justify-center px-0' : 'px-3'} py-2 rounded-lg text-sm flex items-center gap-2.5 transition ${page === m.key ? 'bg-sky-500/15 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+            className={`w-full text-left ${collapsed ? 'justify-center px-0' : 'px-3'} py-2 rounded-lg text-sm flex items-center gap-2.5 transition ${isOn(m.key) ? 'bg-sky-500/15 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
             <span className="text-base">{m.icon}</span>
             {!collapsed && <span className="flex-1">{m.label}</span>}
 
@@ -81,9 +82,9 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
           {MORE.map((m) => <button key={m.key} onClick={() => setPage(m.key)} aria-current={page === m.key ? 'page' : undefined} title={m.label} aria-label={m.label} className={`w-full ${collapsed ? 'text-center px-0' : 'text-left px-3'} py-2 rounded-lg text-sm ${page === m.key ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}>{collapsed ? '⚙' : m.label}</button>)}        </div>
       </nav>
       <nav aria-label="업무 메뉴" className="md:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {[...MENU, ...MORE, ...(user?.role === 'ADMIN' ? [{ key: 'hub-review', label: '공개 승인' }] : [])].map((m) => (
-          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={page === m.key ? 'page' : undefined}
-            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${page === m.key ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
+        {[...MENU, ...MORE].map((m) => (
+          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${isOn(m.key) ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
         ))}
       </nav>
       <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden md:pt-0 pt-14' : 'overflow-y-auto p-6 md:pt-6 pt-16'}`} onKeyDown={(e) => e.stopPropagation()}>

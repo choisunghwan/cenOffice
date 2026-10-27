@@ -186,7 +186,7 @@ export function AssistantBox() {
       let ex = await hub.execute({ skillId: chosen.skillId, input: t.input, engine: chosen.engine })
       const deadline = Date.now() + 120_000
       while (alive.current && !['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(ex.status)) {
-        if (Date.now() > deadline) throw new Error('처리가 오래 걸리고 있습니다. 도구 둘러보기의 실행 기록에서 결과를 확인해 주세요.')
+        if (Date.now() > deadline) throw new Error('처리가 오래 걸리고 있습니다. 도구 화면의 실행 기록에서 결과를 확인해 주세요.')
         await sleep(1000)
         ex = await hub.execution(ex.id)
       }
