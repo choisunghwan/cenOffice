@@ -97,12 +97,16 @@ export function CalendarPage() {
             <button type="button" onClick={() => move(0)}>오늘</button>
             <button type="button" aria-label="다음" onClick={() => move(1)}>›</button>
           </div>
-          {canCreate && <button type="button" className="cal-primary" onClick={() => openNew(selected)}>＋ 일정 만들기</button>}
+          {/* 권한이 없어도 버튼은 같은 자리에 두고 비활성화한다(토글 전환 때 도구 줄이 밀리지 않게) */}
+          <button type="button" className="cal-primary" disabled={!canCreate} title={canCreate ? undefined : '전체 일정은 관리자와 일정 관리자만 만들 수 있습니다'} onClick={() => openNew(selected)}>＋ 일정 만들기</button>
         </div>
       </header>
 
-      {notice && <p className="cal-notice" role="status">{notice}</p>}
-      {error && <p className="cal-error" role="alert">{error}</p>}
+      {/* 알림·오류는 화면 구석에 띄운다. 본문 안에 끼워 넣으면 나타났다 사라질 때 달력이 위아래로 흔들린다 */}
+      {(notice || error) && <div className="cal-toasts" aria-live="polite">
+        {notice && <p className="cal-toast" role="status">{notice}</p>}
+        {error && <p className="cal-toast err" role="alert">{error}</p>}
+      </div>}
       <p className="cal-scope-note">{scope === 'mine'
         ? '내가 만들었거나 초대받은 일정, 내 회의실 예약, 기한이 날짜인 내 할 일이 보입니다.'
         : canManage ? '회사 공통 일정입니다. 관리자와 일정 관리자만 만들고 고칠 수 있습니다. (지금 계정은 가능)' : '회사 공통 일정입니다. 모든 사용자에게 보이고, 등록은 관리자와 일정 관리자가 합니다.'}</p>
@@ -160,8 +164,8 @@ export function CalendarPage() {
               </button></li>
             ))}
           </ul>
-          {canCreate ? <button type="button" className="cal-ghost wide" onClick={() => openNew(selected)}>＋ 이 날 일정 만들기</button>
-            : <p className="cal-muted">전체 일정은 관리자와 일정 관리자만 만들 수 있습니다.</p>}
+          <button type="button" className="cal-ghost wide" disabled={!canCreate} onClick={() => openNew(selected)}>＋ 이 날 일정 만들기</button>
+          <p className="cal-muted cal-side-hint">{canCreate ? ' ' : '전체 일정은 관리자와 일정 관리자만 만들 수 있습니다.'}</p>
         </aside>
       </div>
 

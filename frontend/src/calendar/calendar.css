@@ -84,3 +84,11 @@
 .cal-detail{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;font-size:13px;margin:4px 0}.cal-detail dt{color:var(--c-muted);font-size:12px}.cal-detail dd{margin:0}.cal-detail .pre{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:900px){.cal-layout{grid-template-columns:1fr}.cal-cell{min-height:78px}}
 @media(max-width:600px){.cal-ev i{display:none}.cal-cell{min-height:64px;padding:3px}.cal-ev{font-size:10px;padding:0 3px}.cal-tools{width:100%}.cal-row{grid-template-columns:1fr 110px}}
+
+/* 화면이 흔들리지 않게: 알림은 구석에 띄우고, 설명 줄과 버튼 자리는 늘 같은 높이를 쓴다 */
+.cal-toasts{position:fixed;right:24px;bottom:24px;z-index:90;display:flex;flex-direction:column;gap:8px;max-width:min(420px,calc(100vw - 32px));pointer-events:none}
+.cal-toast{margin:0;padding:11px 16px;border-radius:12px;font-size:12.5px;line-height:1.6;background:#1f7a66;color:#fff;box-shadow:0 8px 28px #0004;pointer-events:auto}
+.cal-toast.err{background:#a8473c}
+.cal-scope-note{min-height:20px}
+.cal-ghost:disabled{opacity:.45;cursor:not-allowed}
+.cal-side-hint{min-height:18px}
