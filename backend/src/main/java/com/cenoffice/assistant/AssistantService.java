@@ -56,7 +56,8 @@ public class AssistantService {
     /** 앞서 오간 말. role: user | assistant. "그건 뭔데", "왜 못해"처럼 앞 이야기를 가리키는 말을 이해하는 데 쓴다. */
     public record HistoryTurn(@Size(max = 20) String role, @Size(max = 1500) String text) {}
     /** 추천한 AI 허브 도구. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
-    public record ToolPick(Long skillId, String title, String description, String icon, String category, String engine, boolean external) {}
+    /** templateFormat: 결과물 양식이 등록된 도구면 "hwpx", 아니면 없음 */
+    public record ToolPick(Long skillId, String title, String description, String icon, String category, String engine, boolean external, String templateFormat) {}
     public record Draft(String scope, String title, String description, String location, Instant startAt, Instant endAt, boolean allDay, List<Person> attendees) {}
     public record Ambiguity(String name, List<Person> candidates) {}
     public record Room(Long id, String name, int capacity) {}
@@ -97,12 +98,14 @@ public class AssistantService {
     private final MinutesService minutes;
     private final CollaborationService collab;
     private final int maxPerMinute;
+    private final com.cenoffice.hub.TemplateService templates;
     private final Map<String, Deque<Instant>> recent = new ConcurrentHashMap<>();
 
-    public AssistantService(CalendarService calendar, ToolCatalog tools, MeetingRoomRepository roomRepo, ReservationRepository reservations, MinutesService minutes, CollaborationService collab,
+    public AssistantService(com.cenoffice.hub.TemplateService templates, CalendarService calendar, ToolCatalog tools,MeetingRoomRepository roomRepo, ReservationRepository reservations, MinutesService minutes, CollaborationService collab,
                             LlmProvider llm, ObjectMapper json, AuditService audit,
                             @org.springframework.beans.factory.annotation.Value("${app.assistant.max-per-minute:20}") int maxPerMinute) {
         this.maxPerMinute = maxPerMinute;
+        this.templates = templates;
         this.collab = collab;
         this.minutes = minutes;
         this.calendar = calendar; this.tools = tools; this.roomRepo = roomRepo; this.reservations = reservations; this.llm = llm; this.json = json; this.audit = audit;
@@ -154,7 +157,9 @@ public class AssistantService {
     // ───────────────────────── 허브 도구 추천 ─────────────────────────
 
     private ToolPick pick(ToolCatalog.Tool t) {
-        return new ToolPick(t.id(), t.title(), t.description(), t.icon(), t.category(), t.engine(), t.engine().equals("ai") && llm.isReal());
+        String templateFormat = null;
+        try { templateFormat = templates.find(t.id()).map(com.cenoffice.hub.TemplateService.Info::format).orElse(null); } catch (RuntimeException e) { log.warn("양식 정보를 읽지 못했습니다: {}", e.toString()); }
+        return new ToolPick(t.id(), t.title(), t.description(), t.icon(), t.category(), t.engine(), t.engine().equals("ai") && llm.isReal(), templateFormat);
     }
 
     private Reply toolReply(Long id, String text, List<ToolCatalog.Tool> catalog, boolean ai, String source) {

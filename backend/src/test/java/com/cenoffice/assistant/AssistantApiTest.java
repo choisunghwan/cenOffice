@@ -307,6 +307,21 @@ class AssistantApiTest {
         assertEquals("SQL 점검", sql.path("tool").path("title").asText());
     }
 
+    @Test void toolWithRegisteredTemplateIsMarkedAsHavingOne() throws Exception {
+        long id = builtinTool("cen-sql-reviewer").path("id").asLong();
+        byte[] form = req(post("/api/hub/documents/export"), admin, Map.of("format", "hwpx", "title", "양식", "markdown", "{{사업명}}")).andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        String sql = "SQL 점검 부탁해\nSELECT * FROM orders;";
+        try {
+            assertTrue(ask(admin, sql).path("tool").path("templateFormat").isMissingNode(), "양식을 등록하기 전에는 표시가 없다");
+            mvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/hub/skills/" + id + "/template")
+                .file(new org.springframework.mock.web.MockMultipartFile("file", "a.hwpx", "application/octet-stream", form)).header("Authorization", "Bearer " + admin)).andExpect(status().isOk());
+            assertEquals("hwpx", ask(admin, sql).path("tool").path("templateFormat").asText());
+        } finally {
+            req(delete("/api/hub/skills/" + id + "/template"), admin, null).andExpect(status().isNoContent());
+        }
+        assertTrue(ask(admin, sql).path("tool").path("templateFormat").isMissingNode());
+    }
+
     @Test void textWithNoRelatedToolIsNotForcedOntoOne() throws Exception {
         assertEquals("UNSUPPORTED", ask(admin, "오늘 점심 뭐 먹을까 고민이야").path("intent").asText());
     }
