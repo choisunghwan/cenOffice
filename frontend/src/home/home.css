@@ -131,3 +131,7 @@
 .tf-formats{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 .tf-formats button{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;border:1px solid var(--c-border);background:transparent;color:inherit}
 .tf-formats button.on{border-color:#2a6db2;background:rgba(42,109,178,.12);font-weight:700}
+
+.tf-missing-list.long{max-height:240px;overflow-y:auto;padding-right:4px}
+.tf-row{margin-top:4px}
+.tf-row .cal-ghost{height:36px;padding:0 12px;white-space:nowrap}

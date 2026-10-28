@@ -151,6 +151,19 @@ class OfficeFormsTest {
         assertEquals("성명", table.rows().get(0).get(1).fieldKey());
     }
 
+    /** 번호 칸(1, 2, 3)은 항목 이름이 아니다. 번호가 매겨진 빈 표 때문에 항목이 수십 개로 늘어나면 안 된다. */
+    @Test void numberedRowsAreNotFields() throws Exception {
+        var hwpx = HwpxWriter.write("양식", List.of(new DocumentExporter.Block("table", 0, null,
+                List.of(List.of("번호", "업무 내용"), List.of("1", ""), List.of("2", ""), List.of("3", ""), List.of("성명", "")))));
+        assertEquals(List.of("성명"), keys(FormEngine.Registry.get("hwpx").analyze(hwpx)));
+        String body = "<w:document " + W + "><w:body><w:tbl>"
+                + "<w:tr><w:tc><w:p><w:r><w:t>번호</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>내용</w:t></w:r></w:p></w:tc></w:tr>"
+                + "<w:tr><w:tc><w:p><w:r><w:t>1</w:t></w:r></w:p></w:tc><w:tc><w:p/></w:tc></w:tr>"
+                + "<w:tr><w:tc><w:p><w:r><w:t>2</w:t></w:r></w:p></w:tc><w:tc><w:p/></w:tc></w:tr>"
+                + "<w:tr><w:tc><w:p><w:r><w:t>담당자</w:t></w:r></w:p></w:tc><w:tc><w:p/></w:tc></w:tr></w:tbl></w:body></w:document>";
+        assertEquals(List.of("담당자"), keys(FormEngine.Registry.get("docx").analyze(zip("[Content_Types].xml", "<Types/>", "word/document.xml", body))));
+    }
+
     @Test void formsWithoutFieldsGetClearMessage() throws Exception {
         byte[] none = zip("[Content_Types].xml", "<Types/>", "xl/workbook.xml", "<workbook " + S + "/>", "xl/worksheets/sheet1.xml", "<worksheet " + S + "><sheetData/></worksheet>");
         var e = assertThrows(ApiException.class, () -> FormEngine.Registry.get("xlsx").analyze(none));

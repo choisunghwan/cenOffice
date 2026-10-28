@@ -118,6 +118,9 @@ final class HwpxTemplate {
         for (Element c : children(el)) walk(c, out, labelCount);
     }
 
+    /** 항목 이름으로 볼 수 있는 글인가. 번호(1, 2, 3)나 기호만 있는 칸은 항목 이름이 아니다. */
+    static boolean isName(String label) { return label.length() <= 40 && label.codePoints().anyMatch(Character::isLetter); }
+
     private static void labelCells(Element tbl, List<Slot> out, Map<String, Integer> labelCount) {
         boolean first = true;
         for (Element tr : children(tbl, "tr")) {
@@ -125,7 +128,7 @@ final class HwpxTemplate {
             if (!first) {
                 for (int i = 0; i + 1 < cells.size(); i++) {
                     String label = cellText(cells.get(i)).strip();
-                    if (!label.isEmpty() && cellText(cells.get(i + 1)).isBlank() && !label.contains("{{")) {
+                    if (!label.isEmpty() && cellText(cells.get(i + 1)).isBlank() && !label.contains("{{") && isName(label)) {
                         int n = labelCount.merge(label, 1, Integer::sum);
                         String key = n == 1 ? label : label + " (" + n + ")";
                         out.add(new Slot(new Field(key, label, "cell"), cells.get(i + 1)));

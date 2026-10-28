@@ -101,6 +101,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
       {missing.length > 0 && (
         <div className="tf-missing" role="group" aria-label="채우지 못한 항목">
           <p className="tf-missing-title">채우지 못한 항목 {missing.length}개 <small>— 근거를 찾지 못해 비워 두었습니다. 직접 입력하거나 AI 초안을 받을 수 있습니다.</small></p>
+          <div className={missing.length > 6 ? 'tf-missing-list long' : 'tf-missing-list'}>
           {missing.map((m) => (
             <div key={m.key} className="tf-row">
               <label htmlFor={`tf-${m.key}`}>{m.label}</label>
@@ -108,6 +109,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
               <button type="button" className="cal-ghost" disabled={!!busyKey} onClick={() => void draft(m.key)} title={aiUsed ? undefined : 'AI 가 연결되어 있지 않으면 쓸 수 없습니다'}>{busyKey === m.key ? '쓰는 중…' : 'AI 초안'}</button>
             </div>
           ))}
+          </div>
         </div>
       )}
       {err && <p className="ha-error" role="alert">{err}</p>}

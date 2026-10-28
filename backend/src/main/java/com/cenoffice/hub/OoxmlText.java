@@ -97,7 +97,7 @@ final class OoxmlText implements FormEngine {
             List<Element> cells = children(tr, "tc");
             for (int i = 0; i + 1 < cells.size(); i++) {
                 String label = cellText(cells.get(i)).strip();
-                if (!label.isEmpty() && cellText(cells.get(i + 1)).isBlank() && !label.contains("{{")) {
+                if (!label.isEmpty() && cellText(cells.get(i + 1)).isBlank() && !label.contains("{{") && HwpxTemplate.isName(label)) {
                     int n = labelCount.merge(label, 1, Integer::sum);
                     String key = n == 1 ? label : label + " (" + n + ")";
                     out.add(new Slot(new HwpxTemplate.Field(key, label, "cell"), cells.get(i + 1)));
