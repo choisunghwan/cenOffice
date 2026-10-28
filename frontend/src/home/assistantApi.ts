@@ -22,6 +22,8 @@ export interface Reply {
   uiAction?: string | null
   /** DOWNLOAD_MINUTES: 말한 형식(hwpx·docx·xlsx·pptx·pdf). 말하지 않았으면 없음 */
   minutesFormat?: string | null
+  /** 이어서 해 볼 만한 말(예시 질문·명령). 누르면 바로 보낸다 */
+  suggestions?: string[]
   /** BOOK_ROOM: 정해진 방(없으면 rooms 에서 고른다) · DELETE_ITEM/MOVE_EVENT: 대상(삭제는 여러 개면 candidates 에서 고른다) */
   room?: Room | null; rooms?: Room[]; target?: Entry | null; candidates?: Entry[]
   /** LIST_TASKS·BRIEFING: 안 끝난 내 할 일 · LIST_PENDING·BRIEFING: 확정을 기다리는 회의록 */
@@ -33,9 +35,9 @@ export interface Reply {
 /** 앞서 오간 말. "그건 뭔데"처럼 앞 이야기를 가리키는 질문을 이해하는 데 쓴다. */
 export interface HistoryTurn { role: 'user' | 'assistant'; text: string }
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function call<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${API_URL}/api/assistant${path}`, {
-    method,
+    method, signal,
     headers: { Authorization: `Bearer ${tokenStore.get() ?? ''}`, 'Content-Type': 'application/json' },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   })
@@ -53,6 +55,6 @@ export const assistantApi = {
     remove: (id: string) => call<void>('DELETE', `/sessions/${id}`),
   },
   status: () => call<{ ai: boolean }>('GET', '/status'),
-  interpret: (text: string, previous?: string, history?: HistoryTurn[]) =>
-    call<Reply>('POST', '/interpret', { text, ...(previous ? { previous } : {}), ...(history && history.length ? { history } : {}) }),
+  interpret: (text: string, previous?: string, history?: HistoryTurn[], signal?: AbortSignal) =>
+    call<Reply>('POST', '/interpret', { text, ...(previous ? { previous } : {}), ...(history && history.length ? { history } : {}) }, signal),
 }

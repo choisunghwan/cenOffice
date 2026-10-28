@@ -204,3 +204,12 @@
 .tfx-rows textarea{width:100%;padding:8px 10px;border:1px solid #b9c6d6;border-radius:8px;background:#fff;color:#1b2430;font:inherit;font-size:13px;line-height:1.5;resize:vertical}
 [data-workspace-theme=dark] .tfx-rows textarea{background:#142033;border-color:#3b516b;color:#edf3fa}
 @media(max-width:720px){.tfx-rows{grid-column:auto}}
+
+/* 이어서 해 볼 말(예시 질문 버튼) · 중단 버튼 */
+.ha-suggest{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.ha-suggest>span{font-size:12px;color:var(--c-muted)}
+.ha-suggest button{padding:6px 12px;border:1px solid rgba(127,140,156,.45);border-radius:999px;background:transparent;color:inherit;font-size:12.5px;text-align:left}
+.ha-suggest button:not(:disabled):hover{background:rgba(42,109,178,.12);border-color:#2a6db2}
+.ha-suggest button:disabled{opacity:.5;cursor:not-allowed}
+.ha-stop{background:#b64545;border-color:#b64545;display:inline-flex;align-items:center;gap:6px}
+.ha-stop:hover{background:#9b3636}

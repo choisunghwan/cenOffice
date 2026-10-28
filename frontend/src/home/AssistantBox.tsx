@@ -157,6 +157,7 @@ export function AssistantBox() {
   // 사이드바에서 다른 방을 열거나 새 채팅을 시작하면 메모리의 대화로 다시 시작한다
   const rev = useChat((s) => s.rev)
   const seenRev = useRef(rev)
+  const abortRef = useRef<AbortController | null>(null) // 답을 기다리는 요청(중단 버튼이 끊는다)
   const seq = useRef(0) // 요청 번호. 방을 옮기면 이전 요청은 더 이상 이 화면의 '처리 중'이 아니다
   useEffect(() => {
     if (seenRev.current === rev) return
@@ -179,6 +180,8 @@ export function AssistantBox() {
     if (!value || busy) return
     setText('')
     const mySeq = ++seq.current
+    const ctl = new AbortController()
+    abortRef.current = ctl
     setBusy(true)
     let sid: string | null = null
     try { sid = await useChat.getState().ensureSession(value) } catch { /* 방을 못 만들어도 대화는 계속한다(저장만 안 된다) */ }
@@ -190,7 +193,7 @@ export function AssistantBox() {
     try {
       // 최근 대화를 함께 보내서 "그건 뭔데", "왜 못해"처럼 앞 이야기를 가리키는 말을 이해하게 한다
       const history: HistoryTurn[] = turns.slice(-8).map((t) => ({ role: t.role, text: (t.role === 'user' ? t.text : t.reply.message).slice(0, 800) })).filter((h) => h.text.trim())
-      const reply = await assistantApi.interpret(value, previous.current ?? undefined, history)
+      const reply = await assistantApi.interpret(value, previous.current ?? undefined, history, ctl.signal)
       if (here()) previous.current = reply.intent === 'CLARIFY' ? `${previous.current ? previous.current + ' ' : ''}${value}`.slice(-480) : null
       setAi(reply.ai || ai)
       const bot: Turn = { id: nextId.current++, role: 'assistant', reply, input: value, draft: reply.draft, ambiguous: reply.ambiguous, tool: reply.tool, room: reply.room ?? null, rooms: reply.rooms ?? [], target: reply.target ?? null, candidates: reply.candidates ?? [], state: 'open' }
@@ -201,12 +204,21 @@ export function AssistantBox() {
         else runUiAction(reply.uiAction)
       }
     } catch (e) {
+      if ((e as Error).name === 'AbortError') {
+        // 사용자가 중단했다: 보낸 말을 없던 일로 하고 입력창에 되돌려 놓아 고쳐서 다시 보낼 수 있게 한다
+        commit((cur) => cur.filter((t) => t.id !== mine.id))
+        if (here()) { previous.current = null; setText((cur) => (cur.trim() ? cur : value)) }
+        return
+      }
       if (here()) previous.current = null
       const failed: Turn = { id: nextId.current++, role: 'assistant', input: value, draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open',
         reply: { intent: 'UNSUPPORTED', message: (e as Error).message, draft: null, ambiguous: [], unresolved: [], entries: [], ai: false, source: '', tool: null, alternatives: [] } }
       commit((cur) => [...cur, failed])
-    } finally { if (seq.current === mySeq) setBusy(false) }
+    } finally { if (abortRef.current === ctl) abortRef.current = null; if (seq.current === mySeq) setBusy(false) }
   }
+
+  /** 답을 기다리는 중에 멈춘다. 서버가 이미 하던 일은 되돌리지 않지만, 확인 카드가 나오기 전이라 저장되거나 실행되는 것은 없다. */
+  const stop = () => { abortRef.current?.abort() }
 
   const confirm = async (t: Extract<Turn, { role: 'assistant' }>) => {
     const d = t.draft
@@ -323,6 +335,12 @@ export function AssistantBox() {
               <div key={t.id} id={`ha-t-${t.id}`} className="ha-bot">
                 <Flow turn={t} />
                 <p className={t.reply.intent === 'ANSWER' ? 'ha-answer' : undefined}>{t.reply.message}</p>
+                {(t.reply.suggestions ?? []).length > 0 && (
+                  <div className="ha-suggest" role="group" aria-label="이어서 해 볼 말">
+                    <span>이렇게 물어보세요</span>
+                    {(t.reply.suggestions ?? []).map((q) => <button key={q} type="button" disabled={busy} onClick={() => void send(q)}>{q}</button>)}
+                  </div>
+                )}
                 {t.reply.intent === 'ANSWER' && (t.reply.references ?? []).length > 0 && <p className="ha-refs">참고한 정보: {(t.reply.references ?? []).join(' · ')}</p>}
                 {t.reply.intent === 'CREATE_EVENT' && t.draft && (
                   <div className={`ha-card ${t.state}`}>
@@ -479,10 +497,15 @@ export function AssistantBox() {
 
       <div className="ha-dock">
       <form className="ha-form" data-coach="home-input" onSubmit={(e) => { e.preventDefault(); void send() }}>
-        <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder="일정·회의실 예약, 할 일 확인, 회의 메모 정리까지 무엇이든 말씀하세요" aria-label="입력창" disabled={busy}
+        <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder="일정·회의실 예약, 할 일 확인, 회의 메모 정리까지 무엇이든 말씀하세요" aria-label="입력창"
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send() } }} />
-        <button className="cal-primary" disabled={busy || !text.trim()} aria-label="보내기">보내기</button>
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && busy) { e.preventDefault(); stop() }
+            else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); if (!busy) void send() }
+          }} />
+        {busy
+          ? <button type="button" className="cal-primary ha-stop" onClick={stop} aria-label="중단" title="답 기다리기를 멈추고, 보낸 말을 입력창으로 되돌립니다 (Esc)"><span aria-hidden="true">■</span> 중단</button>
+          : <button className="cal-primary" disabled={!text.trim()} aria-label="보내기">보내기</button>}
       </form>
       <p className="ha-note">{ai === null ? ' ' : ai ?'AI 연결됨 · 입력한 내용과 동료 이름이 AI 서비스로 전송됩니다. 일정·예약·삭제와 도구 실행은 확인하신 뒤에만 됩니다.' : 'AI 미연결 · 날짜·시각·제목이 분명한 짧은 문장과 도구 이름·태그를 이해합니다. 일정·예약·삭제와 도구 실행은 확인하신 뒤에만 됩니다.'}</p>
       </div>
