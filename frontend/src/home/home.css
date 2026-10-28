@@ -139,3 +139,18 @@
 /* 미리보기는 내용 양에 상관없이 한 페이지(A4) 크기로 고정하고, 넘치면 안에서 스크롤한다 */
 .tf-preview{width:min(100%,620px);aspect-ratio:210/297;max-height:none;margin:0 auto;box-shadow:0 2px 10px rgba(23,45,70,.14)}
 .tf-preview .tf-wait{display:grid;place-items:center;height:100%;margin:0;color:#6b7d91}
+
+/* 양식 채우기: 구역을 나눠 읽기 쉽게 */
+.tf-box{display:flex;flex-direction:column;gap:16px;padding:20px}
+.tf-box>*{margin-top:0;margin-bottom:0}
+.tf-head{margin:0;font-size:15px}
+.tf-sec{margin:0;font-size:13px;font-weight:700;color:var(--c-text)}
+.tf-sec small{margin-left:6px;font-weight:400;color:var(--c-muted)}
+.tf-missing{padding:14px;border-style:solid;background:var(--c-panel)}
+.tf-missing-title{margin:0 0 4px}
+.tf-row{margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:10px;background:var(--c-bg);grid-template-columns:130px 1fr auto}
+.tf-row label{font-weight:650;color:var(--c-text)}
+.tf-row input{border-color:#b9c6d6;background:#fff;color:#1b2430}
+.tf-legend{gap:8px;margin:0}
+.tf-box .ha-actions{margin-top:0;padding-top:14px;border-top:1px solid var(--c-border)}
+@media(max-width:640px){.tf-row{grid-template-columns:1fr}}

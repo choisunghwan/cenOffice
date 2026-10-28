@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 class TemplateApiTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     String admin, user;
     long skillId;
 
@@ -131,6 +132,16 @@ class TemplateApiTest {
         req(get("/api/hub/skills/-999999/template/formats"), user, null).andExpect(status().isNotFound()); // 남의 번호로 직접 접근해도 막힌다
         req(delete(me), user, null).andExpect(status().isNoContent());
         req(get(me), user, null).andExpect(status().isNoContent());
+    }
+
+    /** 예전에 저장된 항목 목록(번호 칸이 항목으로 들어간 것)도 읽을 때 새 규칙으로 다시 찾는다 */
+    @Test void storedFieldListsAreRecomputedWithCurrentRules() throws Exception {
+        upload(admin, "a.hwpx", form("성명")).andExpect(status().isOk());
+        jdbc.update("UPDATE hub_skill_templates SET fields = ? WHERE skill_id = ? AND format = 'hwpx'", "[{\"key\":\"1\",\"label\":\"1\",\"kind\":\"cell\"},{\"key\":\"2\",\"label\":\"2\",\"kind\":\"cell\"}]", skillId);
+        var got = read(req(get(url()), admin, null).andExpect(status().isOk()));
+        assertEquals("사업명", got.path("fields").get(0).path("key").asText());
+        assertEquals("성명", got.path("fields").get(1).path("key").asText());
+        assertEquals(2, got.path("fields").size());
     }
 
     @Test void invalidFileGets400WithKoreanMessage() throws Exception {

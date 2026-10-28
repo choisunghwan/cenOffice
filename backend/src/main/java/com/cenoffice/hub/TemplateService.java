@@ -117,14 +117,23 @@ public class TemplateService {
 
     /** 권한 확인 없이 이 형식의 양식 정보를 찾는다 */
     public Optional<Info> find(Long skillId, String format) {
-        var rows = db.query("SELECT file_name, format, fields FROM hub_skill_templates WHERE skill_id = ? AND format = ?", (rs, i) -> {
+        var rows = db.query("SELECT file_name, format, fields, data FROM hub_skill_templates WHERE skill_id = ? AND format = ?", (rs, i) -> {
             try {
-                return new Info(rs.getString(1), rs.getString(2), json.readValue(rs.getString(3), new TypeReference<List<HwpxTemplate.Field>>() {}));
+                var stored = json.readValue(rs.getString(3), new TypeReference<List<HwpxTemplate.Field>>() {});
+                return new Info(rs.getString(1), rs.getString(2), current(rs.getString(2), rs.getBytes(4), stored));
             } catch (JsonProcessingException e) {
                 throw new IllegalStateException(e);
             }
         }, skillId, format);
         return rows.stream().findFirst();
+    }
+
+    /**
+     * 채울 항목은 올릴 때 저장해 두지만, 읽는 규칙이 나아지면 예전에 올린 양식도 새 규칙으로 읽히도록 매번 양식 파일에서 다시 찾는다.
+     * 다시 찾지 못하면(파일이 읽히지 않으면) 저장해 둔 목록을 그대로 쓴다.
+     */
+    private static List<HwpxTemplate.Field> current(String format, byte[] data, List<HwpxTemplate.Field> stored) {
+        try { return FormEngine.Registry.get(format).analyze(data); } catch (RuntimeException e) { return stored; }
     }
 
     public byte[] data(Long skillId, String format) {

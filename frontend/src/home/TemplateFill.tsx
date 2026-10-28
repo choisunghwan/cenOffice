@@ -114,6 +114,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
         </div>
       )}
       {err && <p className="ha-error" role="alert">{err}</p>}
+      <p className="tf-sec">미리보기 <small>받을 파일과 같은 모습입니다</small></p>
       <div className="tf-preview" aria-label="미리보기">
         {blocks.map((b, i) => b.type === 'table'
           ? <table key={i}><tbody>{(b.rows ?? []).map((r, ri) => <tr key={ri}>{r.map((c, ci) => <td key={ci} className={cls(c.fieldKey)}>{c.text || (c.fieldKey ? '(비어 있음)' : '')}</td>)}</tr>)}</tbody></table>
