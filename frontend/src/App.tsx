@@ -60,20 +60,20 @@ export default function App() {
 
       <button type="button" aria-label="홈으로 이동" title="홈으로 이동"
         onClick={() => { setMode('workspace'); useOffice.getState().setWorkspacePage('dashboard'); window.dispatchEvent(new Event('hub-navigation')) }}
-        className="glass absolute left-4 top-4 rounded-xl px-4 py-2.5 flex items-center gap-2 z-10 cursor-pointer hover:bg-white/10 transition">
+        className="glass absolute left-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-2 z-10 cursor-pointer hover:bg-white/10 transition">
         <img src="/itcen-logo.png" alt="" className="h-5 w-auto" draggable={false} />
         <span className="w-px h-4 bg-white/20" />
         <span className="font-bold tracking-[0.2em] text-sm hidden sm:inline">CEN OFFICE</span>
       </button>
 
-      <div className="glass absolute left-1/2 -translate-x-1/2 top-4 rounded-xl p-1 flex gap-1 z-20 text-xs font-semibold" role="tablist" aria-label="화면 모드">
+      <div className="glass absolute left-1/2 -translate-x-1/2 top-4 h-[42px] rounded-xl p-1 flex items-center gap-1 z-20 text-xs font-semibold" role="tablist" aria-label="화면 모드">
         {([['workspace', '업무'], ['office', '3D 오피스']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
             className={`px-4 py-2 rounded-lg tracking-wide transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'}`}>{l}</button>
         ))}
       </div>
 
-      <div className="glass absolute right-4 top-4 rounded-xl px-4 py-2.5 flex items-center gap-3 z-10 text-xs max-w-[30vw] whitespace-nowrap">
+      <div className="glass absolute right-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-3 z-10 text-xs max-w-[30vw] whitespace-nowrap">
         {mode === 'workspace' && <button className="appearance-toggle" onClick={toggleAppearance} aria-label={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'} title={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}><span aria-hidden="true">{appearance === 'light' ? '☾' : '☀'}</span></button>}
         <details className="hidden lg:block">
           <summary className="cursor-pointer list-none" title={c.label}><span style={{ color: c.color }}>●</span><span className="sr-only">연결 상태</span></summary>
