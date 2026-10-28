@@ -19,9 +19,8 @@
 .meeting-search button { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.1); color: inherit; font-size: 13px; font-weight: 600; }
 .meeting-search button:hover { border-color: #3b8bff; }
 
-.meeting-waiting{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:320px;margin:18px auto 0;padding:22px 24px;border:1px dashed #3c536c;border-radius:14px;background:#ffffff06;font-size:12px;color:#839ab2}
-.meeting-waiting .mw-icon{font-size:22px;line-height:1}
-.meeting-waiting strong{font-size:14px;font-weight:600;color:#e4edf6}
-.meeting-waiting p{margin:0 0 8px;line-height:1.6}
-.meeting-waiting button{margin:0;padding:8px 16px;border-radius:8px;background:#25364c;border:1px solid #3c536c;color:#e4edf6;font-size:12px}
-.meeting-waiting button:hover{background:#2d4260}
+.meeting-stage{position:relative}
+.meeting-waiting{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);padding:8px 8px 8px 16px;border:1px solid #3c536c;border-radius:999px;background:#101c2cee;backdrop-filter:blur(6px);font-size:12px;color:#b4c6d9;margin:0}
+.meeting-waiting span{min-width:0}
+.meeting-waiting button{flex:none;margin:0;padding:6px 14px;border-radius:999px;background:#2a6db2;border:0;color:#fff;font-size:12px;font-weight:600;white-space:nowrap}
+.meeting-waiting button:hover{background:#3478c2}

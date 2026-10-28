@@ -89,7 +89,7 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
     <div className="meeting-call-body"><section className={`meeting-stage ${shares.length ? 'with-share' : ''}`}>
       {shares.length > 0 && <div className="meeting-share-stage">{shares.map(t => <ParticipantTile key={t.participant.identity + t.source} trackRef={t} />)}</div>}
       <div className="meeting-video-grid" data-count={Math.min(cameras.length, 4)}>{cameras.map(t => <ParticipantTile key={t.participant.identity} trackRef={t} />)}</div>
-      {participants.length < 2 && <div className="meeting-waiting"><span className="mw-icon" aria-hidden="true">👥</span><strong>아직 나 혼자예요</strong><p>참여 코드를 공유하면 동료가 들어올 때 이 자리에 나타납니다.</p><button onClick={() => void copy()}>{copied ? '✓ 참여 코드 복사됨' : '참여 코드 복사'}</button></div>}
+      {participants.length < 2 && <div className="meeting-waiting" role="status"><span>아직 나 혼자예요. 코드를 공유하면 동료가 여기에 나타납니다.</span><button onClick={() => void copy()}>{copied ? '✓ 복사됨' : '참여 코드 복사'}</button></div>}
       <RoomAudioRenderer /><StartAudio label="클릭해서 회의 소리 듣기" />
       {stt.recording.length > 0 && <CaptionBar segments={segments} interim={speech.interim} meName={user?.displayName ?? ''} />}
     </section><aside className="meeting-chat"><div className="meeting-chat-heading"><h3>함께하는 사람들 <span>{participants.length}</span></h3><div className="meeting-people">{participants.map(p => <span key={p.identity} title={p.name || p.identity}>{(p.name || p.identity).slice(0, 1)}</span>)}</div></div>
