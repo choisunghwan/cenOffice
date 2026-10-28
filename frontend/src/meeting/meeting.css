@@ -18,3 +18,10 @@
 .meeting-search input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.07); color: inherit; font-size: 14px; }
 .meeting-search button { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.1); color: inherit; font-size: 13px; font-weight: 600; }
 .meeting-search button:hover { border-color: #3b8bff; }
+
+.meeting-waiting{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:320px;margin:18px auto 0;padding:22px 24px;border:1px dashed #3c536c;border-radius:14px;background:#ffffff06;font-size:12px;color:#839ab2}
+.meeting-waiting .mw-icon{font-size:22px;line-height:1}
+.meeting-waiting strong{font-size:14px;font-weight:600;color:#e4edf6}
+.meeting-waiting p{margin:0 0 8px;line-height:1.6}
+.meeting-waiting button{margin:0;padding:8px 16px;border-radius:8px;background:#25364c;border:1px solid #3c536c;color:#e4edf6;font-size:12px}
+.meeting-waiting button:hover{background:#2d4260}
