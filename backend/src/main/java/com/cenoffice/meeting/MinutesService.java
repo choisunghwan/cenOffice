@@ -376,7 +376,7 @@ public class MinutesService {
 
     private Minutes withMarkdown(Minutes x, Meet m) {
         StringBuilder md = new StringBuilder("# ").append(cell(x.title())).append(" 회의록\n\n");
-        md.append("| 항목 | 내용 |\n|---|---|\n| 일시 | ").append(FULL.format(m.createdAt())).append(" |\n| 진행자 | ").append(cell(nameOf(x.members(), m.host()))).append(" |\n| 참석자 | ")
+        md.append("| 항목 | 내용 |\n|---|---|\n| 회의 제목 | ").append(cell(x.title())).append(" |\n| 일시 | ").append(FULL.format(m.createdAt())).append(" |\n| 진행자 | ").append(cell(nameOf(x.members(), m.host()))).append(" |\n| 참석자 | ")
             .append(cell(String.join(", ", x.members().stream().map(MemberRef::displayName).toList()))).append(" |\n| 상태 | ").append("CONFIRMED".equals(x.status()) ? "확정" : "초안(검토 필요)").append(" |\n\n");
         md.append("## 요약\n").append(x.summary().replace("\n", " ")).append("\n\n## 결정 사항\n");
         if (x.decisions().isEmpty()) md.append("- 없음\n"); else x.decisions().forEach(d -> md.append("- ").append(d.replace("\n", " ")).append('\n'));

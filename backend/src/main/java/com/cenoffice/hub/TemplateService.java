@@ -248,7 +248,8 @@ public class TemplateService {
     private static final Map<String, List<String>> ALIASES = Map.of(
             "회의명", List.of("회의 제목", "제목"), "회의 제목", List.of("회의명", "제목"),
             "일시", List.of("회의 일시", "일자", "날짜"), "참석자", List.of("참여자", "참석 인원"),
-            "이슈", List.of("이슈 · 확인 필요"), "이슈 · 확인 필요", List.of("이슈", "확인 필요"));
+            "이슈", List.of("이슈 · 확인 필요"), "이슈 · 확인 필요", List.of("이슈", "확인 필요"),
+            "논의 내용", List.of("요약", "회의 요약"), "요약", List.of("논의 내용", "회의 요약"), "작성자", List.of("진행자"), "진행자", List.of("작성자"));
 
     private static String lookup(Map<String, String> found, String label) {
         String v = found.get(label);
