@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { hub } from '../hubApi'
-import { Btn, ErrorNote, errMsg } from '../workspace/kit'
+import { ErrorNote, errMsg } from '../workspace/kit'
+import { FormatIcon } from './FormatIcon'
 
-const FORMATS = [['xlsx', 'Excel'], ['docx', 'Word'], ['pptx', 'PPT'], ['pdf', 'PDF'], ['hwpx', '한글(HWPX)']] as const
+const FORMATS = [['hwpx', '한글'], ['docx', '워드'], ['xlsx', '엑셀'], ['pptx', '파워포인트'], ['pdf', 'PDF']] as const
 
 /** 결과 문서를 Excel/Word/PPT/PDF 파일로 받기 (서버에서 변환, 저장하지 않음) */
-export function ExportButtons({ title, markdown }: { title: string; markdown: string }) {
+export function ExportButtons({ title, markdown, showLabel = true }: { title: string; markdown: string; showLabel?: boolean }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const go = async (f: typeof FORMATS[number][0]) => {
@@ -15,8 +16,12 @@ export function ExportButtons({ title, markdown }: { title: string; markdown: st
   }
   return (
     <div className="flex items-center gap-2 flex-wrap" aria-label="파일로 받기">
-      <span className="text-xs text-slate-400">파일로 받기</span>
-      {FORMATS.map(([k, l]) => <Btn key={k} small tone="ghost" disabled={!!busy} onClick={() => void go(k)}>{busy === k ? '만드는 중…' : l}</Btn>)}
+      {showLabel && <span className="text-xs text-slate-400">파일로 받기</span>}
+      {FORMATS.map(([k, l]) => (
+        <button key={k} type="button" className="export-chip" disabled={!!busy} title={`${l} 파일로 받기`} onClick={() => void go(k)}>
+          <FormatIcon format={k} on size={18} />{busy === k ? '만드는 중…' : l}
+        </button>
+      ))}
       <ErrorNote message={err} />
     </div>
   )

@@ -238,3 +238,9 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .tpl-slot:focus-visible { outline: 2px solid #83b8eb; outline-offset: 2px; }
 .tpl-detail { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(127, 140, 156, .25); }
 @media (max-width: 480px) { .tpl-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* 결과 파일로 받기 버튼(형식 아이콘 + 이름) */
+.export-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 8px; border-radius: 999px; font-size: 12.5px; border: 1px solid rgba(127, 140, 156, .35); background: transparent; color: inherit; transition: background .12s; }
+.export-chip:not(:disabled):hover { background: rgba(127, 140, 156, .14); }
+.export-chip:disabled { opacity: .55; cursor: not-allowed; }
+.export-chip:focus-visible { outline: 2px solid #83b8eb; outline-offset: 2px; }

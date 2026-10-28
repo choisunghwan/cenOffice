@@ -117,7 +117,7 @@ export function MeetingMinutes({ meetingId, title, host, onBack }: { meetingId: 
       </div>}
       {minutes.status === 'DRAFT' && !minutes.canEdit && <p className="minutes-muted">진행자가 회의록을 검토하고 있습니다. 확정되면 알림이 갑니다.</p>}
 
-      {minutes.status === 'CONFIRMED' && <div className="minutes-card"><h3>파일로 받기</h3><ExportButtons title={`${minutes.title} 회의록`} markdown={minutes.markdown} /></div>}
+      {minutes.status === 'CONFIRMED' && <div className="minutes-card"><h3>파일로 받기</h3><ExportButtons showLabel={false} title={`${minutes.title} 회의록`} markdown={minutes.markdown} /></div>}
     </>}
 
     {askConfirm && <div className="minutes-dialog-bg"><div className="minutes-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
