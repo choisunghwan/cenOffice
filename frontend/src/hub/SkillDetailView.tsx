@@ -28,7 +28,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
     <div>
       <button className="text-sm text-slate-400 hover:text-white mb-3" onClick={onBack}>← 목록으로</button>
       {tab !== 'overview' && <h2 className="text-xl font-semibold mb-4">{toolName(s.name, s.title)}</h2>}
-      <details className="hub-advanced"><summary>도구 정보 · 파일 다운로드 · 관리</summary><div className="flex items-start gap-4 flex-wrap my-4">
+      <div className="flex items-start gap-4 flex-wrap my-4">
         <div className="w-14 h-14 rounded-2xl bg-white/8 grid place-items-center text-3xl">{s.icon || '🧩'}</div>
         <div className="flex-1 min-w-[16rem]">
           <div className="flex items-center gap-2 flex-wrap">
@@ -45,7 +45,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
           {canEdit && s.status !== 'ARCHIVED' && <Btn tone="ghost" onClick={() => { void askConfirm({ title: '보관할까요?', message: '이 업무 지침을 보관(비공개) 처리합니다. 보관하면 동료들이 더 이상 찾을 수 없습니다.', okText: '보관', danger: true }).then((ok) => { if (ok) void act(() => hub.archive(id), onBack) }) }}>보관</Btn>}
         </div>
       </div>
-      <RuntimeBanner runtime={runtime} /></details>
+      <RuntimeBanner runtime={runtime} />
       <ErrorNote message={err ?? d.error} />
 
       <div className="flex gap-1 my-4 border-b border-white/10 flex-wrap">
