@@ -100,18 +100,30 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
         </div>
       )}
       {missing.length > 0 && (
-        <div className="tf-missing" role="group" aria-label="채우지 못한 항목">
-          <p className="tf-missing-title">채우지 못한 항목 {unfilled}개 <small>— 근거를 찾지 못해 비워 두었습니다. 직접 입력하거나 AI 초안을 받을 수 있습니다.</small></p>
-          <div className={missing.length > 6 ? 'tf-missing-list long' : 'tf-missing-list'}>
-          {missing.map((m) => (
-            <div key={m.key} className="tf-row">
-              <label htmlFor={`tf-${m.key}`}>{m.label}</label>
-              <input id={`tf-${m.key}`} value={values[m.key] ?? ''} placeholder="비워 두기 (직접 입력할 수 있습니다)" maxLength={2000} onChange={(e) => setValue(m.key, e.target.value)} />
-              <button type="button" className="cal-ghost" disabled={!!busyKey} onClick={() => void draft(m.key)} title={aiUsed ? undefined : 'AI 가 연결되어 있지 않으면 쓸 수 없습니다'}>{busyKey === m.key ? '쓰는 중…' : 'AI 초안'}</button>
-            </div>
-          ))}
-          </div>
-        </div>
+        <section className="tfx-panel" aria-label="확인이 필요한 항목">
+          <header className="tfx-head">
+            <h5>확인이 필요한 항목 <span className="tfx-count">{missing.length}</span></h5>
+            <p>{unfilled > 0 ? `결과에서 찾지 못한 항목입니다. 비어 있는 ${unfilled}곳은 직접 쓰거나 AI 초안을 받을 수 있어요.` : '모두 채워졌습니다. AI가 쓴 내용은 받기 전에 꼭 확인해 주세요.'}</p>
+          </header>
+          <ul className={`tfx-list${missing.length > 5 ? ' scroll' : ''}`}>
+            {missing.map((m) => {
+              const v = values[m.key] ?? ''
+              const state = !v ? 'empty' : aiKeys.has(m.key) ? 'ai' : 'typed'
+              return (
+                <li key={m.key} className={`tfx-row ${state}`}>
+                  <div className="tfx-label">
+                    <label htmlFor={`tf-${m.key}`}>{m.label}</label>
+                    <span className={`tfx-badge ${state}`}>{state === 'empty' ? '비어 있음' : state === 'ai' ? 'AI 초안' : '입력함'}</span>
+                  </div>
+                  <textarea id={`tf-${m.key}`} rows={2} value={v} placeholder="직접 입력하거나, 오른쪽에서 AI 초안을 받아 보세요" maxLength={2000} onChange={(e) => setValue(m.key, e.target.value)} />
+                  <button type="button" className="tfx-ai" disabled={!!busyKey} onClick={() => void draft(m.key)} title={aiUsed ? 'AI 가 결과를 참고해 이 칸의 초안을 씁니다' : 'AI 가 연결되어 있지 않으면 쓸 수 없습니다'}>
+                    {busyKey === m.key ? '쓰는 중…' : <><span aria-hidden="true">✦</span> AI 초안</>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       )}
       {err && <p className="ha-error" role="alert">{err}</p>}
       <p className="tf-sec">미리보기 <small>받을 파일과 같은 모습입니다</small></p>

@@ -168,6 +168,17 @@ public class MinutesService {
             actor, Timestamp.from(Instant.now().minus(java.time.Duration.ofDays(30))));
     }
 
+    /** 내가 참여한 회의 중 확정된 회의록(최근 확정 순). 홈 입력창에서 "회의록 다운로드"를 할 때 고르는 목록이다. */
+    @Transactional(readOnly = true)
+    public List<PendingMinutes> confirmedFor(String actor) {
+        return db.query("""
+            select m.id, m.title, mm.confirmed_at from meeting_minutes mm
+            join collaboration_meetings m on m.id=mm.meeting_id
+            join collaboration_members p on p.meeting_id=m.id and p.username=?
+            where mm.status='CONFIRMED' order by mm.confirmed_at desc limit 100""",
+            (r, i) -> new PendingMinutes(r.getString(1), r.getString(2), r.getTimestamp(3).toInstant(), "CONFIRMED"), actor);
+    }
+
     @Transactional(readOnly = true)
     public List<MyItem> myItems(String actor) {
         return db.query("""

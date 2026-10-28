@@ -170,6 +170,21 @@ class OfficeFormsTest {
         assertTrue(e.getMessage().contains("채울 항목"), e.getMessage());
     }
 
+    /** 아주 깊게 중첩된 문서가 서버 스레드를 죽이지 않고 400 으로 거절된다(StackOverflowError 방지) */
+    @Test void veryDeepDocumentsAreRejectedNotCrashing() throws Exception {
+        int depth = 30000;
+        var open = new StringBuilder();
+        var close = new StringBuilder();
+        for (int i = 0; i < depth; i++) { open.append("<w:sdt>"); close.append("</w:sdt>"); }
+        String word = "<w:document " + W + "><w:body>" + open + "<w:p><w:r><w:t>{{x}}</w:t></w:r></w:p>" + close + "</w:body></w:document>";
+        byte[] docx = zip("[Content_Types].xml", "<Types/>", "word/document.xml", word);
+        assertEquals(400, assertThrows(ApiException.class, () -> FormEngine.Registry.get("docx").analyze(docx)).status().value());
+        assertEquals(400, assertThrows(ApiException.class, () -> FormEngine.Registry.get("docx").fill(docx, Map.of("x", "v"))).status().value());
+        String slide = "<p:sld " + P + "><p:cSld>" + open.toString().replace("w:sdt", "p:sp") + "<a:p><a:r><a:t>{{x}}</a:t></a:r></a:p>" + close.toString().replace("w:sdt", "p:sp") + "</p:cSld></p:sld>";
+        byte[] pptx = zip("[Content_Types].xml", "<Types/>", "ppt/presentation.xml", "<p:presentation " + P + "/>", "ppt/slides/slide1.xml", slide);
+        assertEquals(400, assertThrows(ApiException.class, () -> FormEngine.Registry.get("pptx").analyze(pptx)).status().value());
+    }
+
     @Test void hostileXmlIsRejected() throws Exception {
         String evil = "<?xml version=\"1.0\"?><!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]><w:document " + W + "><w:body><w:p><w:r><w:t>&e;</w:t></w:r></w:p></w:body></w:document>";
         byte[] bad = zip("[Content_Types].xml", "<Types/>", "word/document.xml", evil);

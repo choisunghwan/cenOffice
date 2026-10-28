@@ -22,15 +22,28 @@ interface FormEngine {
 
         static FormEngine get(String format) {
             String f = format == null ? "hwpx" : format.strip().toLowerCase();
-            return ALL.stream().filter(e -> e.format().equals(f)).findFirst()
+            return ALL.stream().filter(e -> e.format().equals(f)).findFirst().<FormEngine>map(Guarded::new)
                     .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "지원하지 않는 양식 형식입니다: " + format));
         }
 
         /** 파일 이름의 확장자로 처리기를 찾는다. 모르는 확장자면 null */
         static FormEngine byFileName(String name) {
             String lower = name == null ? "" : name.strip().toLowerCase();
-            return ALL.stream().filter(e -> lower.endsWith("." + e.format())).findFirst().orElse(null);
+            return ALL.stream().filter(e -> lower.endsWith("." + e.format())).findFirst().<FormEngine>map(Guarded::new).orElse(null);
         }
+    }
+
+    /** 아주 깊게 중첩된 문서로 서버 스레드가 죽지 않도록, 스택이 넘치면 "너무 복잡한 문서"(400)로 바꿔 돌려준다 */
+    final class Guarded implements FormEngine {
+        private final FormEngine inner;
+        Guarded(FormEngine inner) { this.inner = inner; }
+        public String format() { return inner.format(); }
+        public String label() { return inner.label(); }
+        public String mime() { return inner.mime(); }
+        private static ApiException tooComplex() { return new ApiException(HttpStatus.BAD_REQUEST, "문서 구조가 너무 복잡해서 읽을 수 없습니다. 단순한 양식으로 저장해 올려 주세요."); }
+        public List<HwpxTemplate.Field> analyze(byte[] data) { try { return inner.analyze(data); } catch (StackOverflowError e) { throw tooComplex(); } }
+        public byte[] fill(byte[] data, Map<String, String> values) { try { return inner.fill(data, values); } catch (StackOverflowError e) { throw tooComplex(); } }
+        public List<HwpxTemplate.PreviewBlock> preview(byte[] data, Map<String, String> values) { try { return inner.preview(data, values); } catch (StackOverflowError e) { throw tooComplex(); } }
     }
 
     /** 한글: 기존 HwpxTemplate 를 그대로 쓴다 */

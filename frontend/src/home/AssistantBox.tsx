@@ -5,6 +5,7 @@ import { runUiAction } from './uiActions'
 import { TurnRail, type RailItem } from './TurnRail'
 import { TemplateFill } from './TemplateFill'
 import { Flow } from './Workflow'
+import { dlLabel, DL_FORMATS, downloadMinutes, type DlFormat } from './minutesDownload'
 import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { formatRange, KIND_LABEL } from '../calendar/dates'
@@ -50,6 +51,43 @@ function TaskList({ items }: { items: MyItem[] }) {
         )
       })}
     </ul>
+  )
+}
+
+/** 확정된 회의록 내려받기 카드: 어떤 회의록·어떤 형식인지 여기서 고르고, 누르면 받는다. */
+function MinutesDownloadList({ items, initial }: { items: PendingMinutes[]; initial: string | null }) {
+  const [format, setFormat] = useState<DlFormat | null>(DL_FORMATS.some((f) => f.key === initial) ? (initial as DlFormat) : null)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [done, setDone] = useState<Record<string, string>>({})
+  const [err, setErr] = useState<string | null>(null)
+  const go = async (id: string) => {
+    if (busy) return
+    setBusy(id); setErr(null)
+    try {
+      const r = await downloadMinutes(id, format)
+      const how = r.how === 'me' ? '내 양식' : r.how === 'company' ? '회사 양식' : '기본 문서'
+      setDone((cur) => ({ ...cur, [id]: `${how}(${dlLabel(r.format)})으로 받았습니다.${r.missing.length ? ` 비어 있는 항목: ${r.missing.join(', ')}` : ''}` }))
+    } catch (e) { setErr((e as Error).message) } finally { setBusy(null) }
+  }
+  return (
+    <div className="ha-dl">
+      <div className="tf-formats" role="radiogroup" aria-label="받을 형식">
+        <button type="button" role="radio" aria-checked={format === null} className={format === null ? 'on' : ''} onClick={() => setFormat(null)} title="내 양식 → 회사 양식 → 기본 문서 순으로 정합니다">자동</button>
+        {DL_FORMATS.map((f) => <button key={f.key} type="button" role="radio" aria-checked={format === f.key} className={format === f.key ? 'on' : ''} onClick={() => setFormat(f.key)}>{f.label}</button>)}
+      </div>
+      <ul className="home-list compact ha-list">
+        {items.map((p) => {
+          const e = new Date(p.endedAt)
+          return (
+            <li key={p.meetingId} className="ha-dl-row">
+              <div><b>{p.meetingTitle}</b><small>{e.getMonth() + 1}월 {e.getDate()}일 확정{done[p.meetingId] ? ` · ${done[p.meetingId]}` : ''}</small></div>
+              <button type="button" className="cal-primary" disabled={!!busy} onClick={() => void go(p.meetingId)}>{busy === p.meetingId ? '만드는 중…' : done[p.meetingId] ? '다시 받기' : '받기'}</button>
+            </li>
+          )
+        })}
+      </ul>
+      {err && <p className="ha-error" role="alert">{err}</p>}
+    </div>
   )
 }
 
@@ -426,6 +464,7 @@ export function AssistantBox() {
                 {t.reply.intent === 'LIST_EVENTS' && t.reply.entries.length > 0 && <EventList entries={t.reply.entries} />}
                 {t.reply.intent === 'LIST_TASKS' && (t.reply.tasks ?? []).length > 0 && <TaskList items={t.reply.tasks ?? []} />}
                 {t.reply.intent === 'LIST_PENDING' && (t.reply.pendingMinutes ?? []).length > 0 && <PendingList items={t.reply.pendingMinutes ?? []} />}
+                {t.reply.intent === 'DOWNLOAD_MINUTES' && (t.reply.pendingMinutes ?? []).length > 0 && <MinutesDownloadList items={t.reply.pendingMinutes ?? []} initial={t.reply.minutesFormat ?? null} />}
                 {t.reply.intent === 'BRIEFING' && <>
                   {t.reply.entries.length > 0 && <><p className="ha-sub">오늘 일정</p><EventList entries={t.reply.entries} /></>}
                   {(t.reply.tasks ?? []).length > 0 && <><p className="ha-sub">할 일</p><TaskList items={t.reply.tasks ?? []} /></>}

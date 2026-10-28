@@ -154,3 +154,36 @@
 .tf-legend{gap:8px;margin:0}
 .tf-box .ha-actions{margin-top:0;padding-top:14px;border-top:1px solid var(--c-border)}
 @media(max-width:640px){.tf-row{grid-template-columns:1fr}}
+
+/* 회의록 내려받기 카드 */
+.ha-dl .tf-formats{margin:8px 0}
+.ha-dl-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 4px}
+.ha-dl-row>div{display:flex;flex-direction:column;min-width:0}
+.ha-dl-row small{color:var(--c-muted);overflow-wrap:anywhere}
+.ha-dl-row .cal-primary{flex:none;min-width:84px}
+
+/* 확인이 필요한 항목(양식 채우기) — 항목마다 카드, 상태는 왼쪽 색줄과 배지로 */
+.tfx-panel{padding:16px 18px;border:1px solid rgba(127,140,156,.35);border-radius:14px;background:rgba(127,140,156,.07)}
+.tfx-head h5{margin:0;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+.tfx-count{padding:1px 9px;border-radius:999px;background:#2a6db2;color:#fff;font-size:11px;font-weight:700}
+.tfx-head p{margin:4px 0 0;font-size:12px;color:var(--c-muted)}
+.tfx-list{display:flex;flex-direction:column;gap:8px;margin:12px 0 0;padding:0;list-style:none}
+.tfx-list.scroll{max-height:320px;overflow-y:auto;padding-right:4px}
+.tfx-row{display:grid;grid-template-columns:132px minmax(0,1fr) auto;gap:12px;align-items:start;padding:10px 12px;border:1px solid #dbe3ec;border-left:4px solid #e2a03f;border-radius:12px;background:#fff}
+.tfx-row.ai{border-left-color:#8b5cf6}
+.tfx-row.typed{border-left-color:#2a6db2}
+.tfx-label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tfx-label label{font-size:13px;font-weight:700;color:#1b2430;overflow-wrap:anywhere}
+.tfx-badge{align-self:flex-start;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#fdf1dc;color:#8a5a00}
+.tfx-badge.ai{background:#ede7ff;color:#5b34c9}
+.tfx-badge.typed{background:#e1edfb;color:#1f5da0}
+.tfx-row textarea{width:100%;min-height:52px;padding:8px 10px;border:1px solid #b9c6d6;border-radius:8px;background:#fff;color:#1b2430;font:inherit;font-size:13px;line-height:1.5;resize:vertical}
+.tfx-row textarea:focus{outline:2px solid #83b8eb;outline-offset:1px}
+.tfx-ai{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #8b5cf6;border-radius:999px;background:#faf8ff;color:#5b34c9;font-size:12.5px;font-weight:700;white-space:nowrap}
+.tfx-ai:not(:disabled):hover{background:#f1ebff}
+.tfx-ai:disabled{opacity:.5;cursor:not-allowed}
+[data-workspace-theme=dark] .tfx-row{background:#1b2a3f;border-color:#2b3d54}
+[data-workspace-theme=dark] .tfx-label label{color:#edf3fa}
+[data-workspace-theme=dark] .tfx-row textarea{background:#142033;border-color:#3b516b;color:#edf3fa}
+[data-workspace-theme=dark] .tfx-ai{background:#2a2145;color:#cbb9ff}
+@media(max-width:720px){.tfx-row{grid-template-columns:minmax(0,1fr)}.tfx-label{flex-direction:row;align-items:center;justify-content:space-between}.tfx-ai{justify-self:start}}

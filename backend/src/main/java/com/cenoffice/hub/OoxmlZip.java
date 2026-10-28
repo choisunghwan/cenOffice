@@ -57,6 +57,7 @@ final class OoxmlZip {
             f.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             f.setXIncludeAware(false);
+            try { f.setAttribute("jdk.xml.maxElementDepth", "400"); } catch (IllegalArgumentException ignored) { /* 이 JDK 가 모르는 설정이면 아래 방어(StackOverflowError 처리)에 맡긴다 */ }
             f.setExpandEntityReferences(false);
             return f.newDocumentBuilder().parse(new ByteArrayInputStream(xml));
         } catch (Exception e) {

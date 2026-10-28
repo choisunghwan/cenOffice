@@ -17,7 +17,7 @@ final class RuleParser {
     private RuleParser() {}
 
     /** BOOK_ROOM: 회의실 예약 · DELETE_ITEM: 일정/예약 삭제 · MOVE_EVENT: 일정 시간·제목 변경 */
-    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, START_MEETING, JOIN_MEETING, UI_ACTION, UNSUPPORTED }
+    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, START_MEETING, JOIN_MEETING, DOWNLOAD_MINUTES, UI_ACTION, UNSUPPORTED }
 
     /** 변경할 값. 비어 있는(null) 칸은 "그대로 둔다". */
     record MoveSpec(LocalDate date, LocalTime start, LocalTime end, String title) {
@@ -72,6 +72,40 @@ final class RuleParser {
     private static final Pattern LARGE_ROOM = Pattern.compile("(?:큰|넓은|대)\\s*회의실");
     private static final Pattern SMALL_ROOM = Pattern.compile("(?:작은|좁은|소)\\s*회의실");
 
+    /** "회의록 ... 다운로드/받아줘" 같은 내려받기 말 */
+    private static final Pattern DOWNLOAD = Pattern.compile("다운\\s*로드|다운\\s*받|내려\\s*받|받아\\s*(?:줘|줄|주|와|봐)|받고\\s*싶|뽑아|출력");
+    private static final Pattern DOWNLOAD_NOISE = Pattern.compile("회의록|다운\\s*로드|다운\\s*받(?:고\\s*싶어요?|아\\s*줘요?|아\\s*주세요|을래)?|내려\\s*받(?:고\\s*싶어요?|아\\s*줘요?|아\\s*주세요)?|받아\\s*(?:줘요|줘|줄래|주세요)?|받고\\s*싶어요?|뽑아\\s*(?:줘요|줘|주세요)?|출력(?:해\\s*줘)?|(?:한글|hwpx?|워드|word|docx|엑셀|excel|xlsx|파워\\s*포인트|pptx?|pdf)(?:로|으로)?|파일로|파일|양식으로|양식|해\\s*줘요?|해\\s*주세요|해\\s*줄래|부탁\\S*|좀", Pattern.CASE_INSENSITIVE);
+
+    /** 받을 문서 형식(한글/워드/엑셀/파워포인트/PDF). 말하지 않았으면 null — 화면이 내 양식 → 회사 양식 → 기본 순으로 정한다. */
+    static String formatOf(String t) {
+        String s = t.toLowerCase();
+        if (s.matches(".*(?:한글|hwp).*")) return "hwpx";
+        if (s.matches(".*(?:워드|word|docx).*")) return "docx";
+        if (s.matches(".*(?:엑셀|excel|xlsx).*")) return "xlsx";
+        if (s.matches(".*(?:파워\\s*포인트|ppt).*")) return "pptx";
+        if (s.contains("pdf")) return "pdf";
+        return null;
+    }
+
+    /**
+     * 회의록 내려받기: title = 회의 이름에 들어 있어야 할 말(없으면 null), rangeFrom/rangeTo = 확정한 날짜 범위(없으면 null),
+     * targetQuery = 받을 형식. 이름·날짜를 모르면 서비스가 최근 회의록을 카드로 보여 주고 묻는다.
+     */
+    private static Intent downloadIntent(String t, LocalDate today) {
+        String rest = t;
+        LocalDate from = null, to = null;
+        Dated d = findDate(t, today);
+        if (d != null) { from = d.from(); to = d.to(); rest = rest.replace(d.matched(), " "); }
+        else if (rest.matches(".*(?:그저께|그제).*")) { from = to = today.minusDays(2); rest = rest.replaceAll("그저께|그제", " "); }
+        else if (rest.contains("어제")) { from = to = today.minusDays(1); rest = rest.replace("어제", " "); }
+        else if (rest.matches(".*지난\\s*주.*")) { from = today.with(DayOfWeek.MONDAY).minusWeeks(1); to = from.plusDays(6); rest = rest.replaceAll("지난\\s*주(?:에|의)?", " "); }
+        else if (rest.matches(".*이번\\s*주.*")) { from = today.with(DayOfWeek.MONDAY); to = from.plusDays(6); rest = rest.replaceAll("이번\\s*주(?:에|의)?", " "); }
+        else if (rest.contains("오늘")) { from = to = today; rest = rest.replace("오늘", " "); }
+        rest = DOWNLOAD_NOISE.matcher(rest).replaceAll(" ").replaceAll("\\s+", " ").strip();
+        String query = rest.isBlank() ? null : rest;
+        return new Intent(Kind.DOWNLOAD_MINUTES, query, null, null, false, false, null, false, List.of(), from, to, null, null, formatOf(t), null);
+    }
+
     static Intent parse(String text, LocalDate today, List<String> directoryNames) { return parse(text, today, directoryNames, List.of()); }
 
     static Intent parse(String text, LocalDate today, List<String> directoryNames, List<String> roomNames) {
@@ -79,6 +113,7 @@ final class RuleParser {
         if (t.isEmpty()) return Intent.unsupported("무엇을 도와드릴까요? 예: “내일 오후 3시에 팀 회의 잡아줘”");
         var code = MEETING_CODE.matcher(t);
         if (code.find()) return new Intent(Kind.JOIN_MEETING, null, null, null, false, false, null, false, List.of(), null, null, null, null, code.group().toLowerCase(), null);
+        if (t.contains("회의록") && DOWNLOAD.matcher(t).find()) return downloadIntent(t, today);
         boolean create = CREATE.matcher(t).find();
         boolean list = LIST.matcher(t).find();
         boolean strongCreate = STRONG_CREATE.matcher(t).find();

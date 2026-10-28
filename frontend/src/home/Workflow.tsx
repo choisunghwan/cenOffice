@@ -34,6 +34,7 @@ export function stepsFor(t: Bot): Step[] {
       return steps
     }
     case 'ANSWER': return [understood, { label: '내 업무 정보 확인', state: 'done', note: t.reply.references?.length ? `${t.reply.references.length}건` : undefined }, { label: 'AI 답변', state: 'done' }]
+    case 'DOWNLOAD_MINUTES': { const n = (t.reply.pendingMinutes ?? []).length; return [understood, { label: '회의록 찾기', state: n > 0 ? 'done' : 'fail', note: n > 0 ? `${n}건` : '없음' }, { label: '파일 받기', state: n > 0 ? 'ready' : 'wait', note: n > 0 ? '카드에서 선택' : undefined }] }
     case 'UI_ACTION': return [understood, { label: '화면 조작', state: 'done' }]
     case 'CLARIFY': return [understood, { label: '추가 정보', state: 'ready', note: '더 알려 주세요' }]
     case 'UNSUPPORTED': return [understood, { label: '처리', state: 'fail', note: '할 수 없는 요청' }]

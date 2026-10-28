@@ -249,6 +249,24 @@ class AssistantApiTest {
         req(delete("/api/calendar/events/" + id), admin, null).andExpect(status().isNoContent());
     }
 
+    /** 주제 없이 도구를 물으면 한 개만 내밀지 않고 순위로 알려 주고, 나머지를 카드에서 고르게 한다 */
+    @Test void openToolQuestionShowsARankingNotJustOneTool() throws Exception {
+        var r = ask(admin, "쓸만한 도구 뭐 있어?");
+        assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
+        String msg = r.path("message").asText();
+        assertTrue(msg.contains("1. ") && msg.contains("2. ") && msg.contains("3. "), msg);
+        assertTrue(r.path("alternatives").size() >= 3, r.toString()); // 1위 외의 도구들도 카드로 고를 수 있다
+    }
+
+    @Test void minutesDownloadAsksWhichOneInsteadOfGuessing() throws Exception {
+        var r = ask(admin, "회의록 다운로드해줘");
+        assertEquals("DOWNLOAD_MINUTES", r.path("intent").asText(), r.toString());
+        assertTrue(r.path("pendingMinutes").isArray()); // 후보(확정된 회의록)는 내가 참여한 회의의 것만, 없으면 빈 목록
+        assertTrue(r.path("message").asText().length() > 0);
+        var word = ask(admin, "회의록 워드로 받아줘");
+        assertEquals("docx", word.path("minutesFormat").asText());
+    }
+
     // ── 할 일 · 확정할 회의록 · 브리핑 (물으면 대화로 보여 준다) ──
 
     @Test void statusQuestionsShowTasksPendingMinutesAndTheDayBriefing() throws Exception {

@@ -31,6 +31,29 @@ class RuleParserTest {
         assertEquals(Kind.BOOK_ROOM, p("회의실 예약해줘").kind());
     }
 
+    @Test void minutesDownloadReadsNameFormatAndDate() {
+        var plain = p("주간 팀 회의 회의록 다운로드해줘");
+        assertEquals(Kind.DOWNLOAD_MINUTES, plain.kind());
+        assertEquals("주간 팀 회의", plain.title());
+        assertNull(plain.targetQuery()); // 형식을 말하지 않았다 → 화면이 내 양식 → 회사 양식 → 기본 순으로 정한다
+        var word = p("지난주 팀 회의 회의록 워드로 받아줘");
+        assertEquals(Kind.DOWNLOAD_MINUTES, word.kind());
+        assertEquals("docx", word.targetQuery());
+        assertEquals("팀 회의", word.title());
+        assertEquals(LocalDate.of(2026, 10, 19), word.rangeFrom()); // 지난주 월요일
+        assertEquals(LocalDate.of(2026, 10, 25), word.rangeTo());
+        var bare = p("회의록 다운로드");
+        assertEquals(Kind.DOWNLOAD_MINUTES, bare.kind());
+        assertNull(bare.title()); // 이름을 모르면 서비스가 카드로 묻는다
+        assertEquals("pdf", p("어제 회의록 pdf로 다운받고 싶어").targetQuery());
+        assertEquals(LocalDate.of(2026, 10, 26), p("어제 회의록 pdf로 다운받고 싶어").rangeFrom());
+    }
+
+    @Test void minutesWordsWithoutDownloadStayOtherIntents() {
+        assertEquals(Kind.LIST_PENDING, p("확정할 회의록 있어?").kind()); // 다운로드 말이 없으면 기존 동작
+        assertNotEquals(Kind.DOWNLOAD_MINUTES, p("내일 오후 3시에 회의 잡아줘").kind());
+    }
+
     @Test void joinCodeStartsAJoin() {
         var i = p("회의 참여해줘 0123456789ABCDEF0123456789abcdef");
         assertEquals(Kind.JOIN_MEETING, i.kind());
