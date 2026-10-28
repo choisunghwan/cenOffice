@@ -3,6 +3,7 @@ import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useChat } from './chatStore'
 import { TurnRail, type RailItem } from './TurnRail'
 import { TemplateFill } from './TemplateFill'
+import { Flow } from './Workflow'
 import { useOffice } from '../store'
 import { calendarApi, type Entry } from '../calendar/api'
 import { formatRange, KIND_LABEL } from '../calendar/dates'
@@ -13,7 +14,7 @@ import { ExportButtons } from '../hub/ExportButtons'
 import { formatDue, isoDate, type MyItem, type PendingMinutes } from '../meeting/minutesApi'
 import { assistantApi, type Ambiguity, type Draft, type HistoryTurn, type Reply, type Room, type ToolPick } from './assistantApi'
 
-type Turn =
+export type Turn =
   | { id: number; role: 'user'; text: string }
   | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string }
 
@@ -255,6 +256,7 @@ export function AssistantBox() {
             ? <p key={t.id} id={`ha-t-${t.id}`} className="ha-user">{t.text}</p>
             : (
               <div key={t.id} id={`ha-t-${t.id}`} className="ha-bot">
+                <Flow turn={t} />
                 <p className={t.reply.intent === 'ANSWER' ? 'ha-answer' : undefined}>{t.reply.message}</p>
                 {t.reply.intent === 'ANSWER' && (t.reply.references ?? []).length > 0 && <p className="ha-refs">참고한 정보: {(t.reply.references ?? []).join(' · ')}</p>}
                 {t.reply.intent === 'CREATE_EVENT' && t.draft && (
@@ -388,7 +390,7 @@ export function AssistantBox() {
                 </>}
               </div>
             ))}
-          {busy && <p className="ha-bot ha-wait">생각하는 중…</p>}
+          {busy && <div className="ha-bot ha-wait" role="status"><Flow /></div>}
           <div ref={endRef} />
       </div>
       </div>
