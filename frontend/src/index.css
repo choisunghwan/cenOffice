@@ -211,3 +211,16 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .chat-history li:hover .chat-del, .chat-del:focus-visible { opacity: .6; }
 .chat-del:hover { opacity: 1 !important; background: rgba(239,68,68,.2); }
 .chat-empty { padding: 8px 12px; font-size: 12px; opacity: .5; }
+
+/* 스크롤바: 얇고 둥글게, 평소에는 은은하게 보이다가 마우스를 올리면 진해진다. 다크·라이트 모두 반투명 회색이라 같이 쓴다. */
+* { scrollbar-width: thin; scrollbar-color: rgba(127, 140, 156, .42) transparent; }
+*:hover { scrollbar-color: rgba(127, 140, 156, .62) transparent; }
+/* 표준 속성을 모르는 오래된 브라우저용 */
+@supports not (scrollbar-width: thin) {
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: rgba(127, 140, 156, .42); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(127, 140, 156, .7); background-clip: content-box; }
+  *::-webkit-scrollbar-button { display: none; }
+  *::-webkit-scrollbar-corner { background: transparent; }
+}
