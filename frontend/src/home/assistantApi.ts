@@ -13,9 +13,11 @@ export interface Room { id: number; name: string; capacity: number }
  * DELETE_ITEM: 삭제·취소 카드 · MOVE_EVENT: 일정 변경 카드 · CLARIFY: 되묻기 · UNSUPPORTED: 아직 못 하는 요청
  */
 export interface Reply {
-  intent: 'CREATE_EVENT' | 'LIST_EVENTS' | 'LIST_TASKS' | 'LIST_PENDING' | 'BRIEFING' | 'ANSWER' | 'USE_TOOL' | 'BOOK_ROOM' | 'DELETE_ITEM' | 'MOVE_EVENT' | 'CLARIFY' | 'UNSUPPORTED'; message: string; draft: Draft | null
+  intent: 'CREATE_EVENT' | 'LIST_EVENTS' | 'LIST_TASKS' | 'LIST_PENDING' | 'BRIEFING' | 'ANSWER' | 'USE_TOOL' | 'BOOK_ROOM' | 'START_MEETING' | 'JOIN_MEETING' | 'DELETE_ITEM' | 'MOVE_EVENT' | 'CLARIFY' | 'UNSUPPORTED'; message: string; draft: Draft | null
   ambiguous: Ambiguity[]; unresolved: string[]; entries: Entry[]; ai: boolean; source: string
   tool: ToolPick | null; alternatives: ToolPick[]
+  /** START_MEETING: 만들 회의 이름(title) · JOIN_MEETING: 참여 코드(code) */
+  meeting?: { title?: string | null; code?: string | null } | null
   /** BOOK_ROOM: 정해진 방(없으면 rooms 에서 고른다) · DELETE_ITEM/MOVE_EVENT: 대상(삭제는 여러 개면 candidates 에서 고른다) */
   room?: Room | null; rooms?: Room[]; target?: Entry | null; candidates?: Entry[]
   /** LIST_TASKS·BRIEFING: 안 끝난 내 할 일 · LIST_PENDING·BRIEFING: 확정을 기다리는 회의록 */

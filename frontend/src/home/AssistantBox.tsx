@@ -12,11 +12,12 @@ import { api } from '../api'
 import { hub } from '../hubApi'
 import { ExportButtons } from '../hub/ExportButtons'
 import { formatDue, isoDate, type MyItem, type PendingMinutes } from '../meeting/minutesApi'
+import { meetingsApi } from '../meeting/api'
 import { assistantApi, type Ambiguity, type Draft, type HistoryTurn, type Reply, type Room, type ToolPick } from './assistantApi'
 
 export type Turn =
   | { id: number; role: 'user'; text: string }
-  | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string }
+  | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string; meetingId?: string }
 
 const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘', '쓸 만한 도구 뭐 있어?']
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -74,6 +75,14 @@ function EventList({ entries }: { entries: Entry[] }) {
       {entries.length > 8 && <li className="cal-muted">외 {entries.length - 8}건 · <button type="button" className="cal-link" onClick={goCalendar}>일정에서 모두 보기</button></li>}
     </ul>
   )
+}
+
+/** 회의 화면으로 가서 그 회의의 입장 준비 화면을 연다 */
+function openMeeting(id: string) {
+  sessionStorage.setItem('cenOpenMeeting', id)
+  useOffice.getState().setWorkspacePage('meetings')
+  window.dispatchEvent(new Event('hub-navigation'))
+  window.dispatchEvent(new Event('cen-open-meeting'))
 }
 
 function goCalendar() {
@@ -228,6 +237,17 @@ export function AssistantBox() {
     patch(t.id, { draft: { ...t.draft, attendees: t.draft.attendees.some((p) => p.username === username) ? t.draft.attendees : [...t.draft.attendees, who] }, ambiguous: t.ambiguous.filter((x) => x !== a) })
   }
 
+  /** 회의 만들기 · 코드로 참여: 사용자가 카드의 버튼을 눌렀을 때만 기존 회의 API 로 실행한다 */
+  const runMeeting = async (t: Extract<Turn, { role: 'assistant' }>) => {
+    const m = t.reply.meeting
+    if (!m || t.state !== 'open') return
+    patch(t.id, { state: 'saving', error: undefined })
+    try {
+      const made = t.reply.intent === 'START_MEETING' ? await meetingsApi.create(m.title ?? '새 회의') : await meetingsApi.join(m.code ?? '')
+      patch(t.id, { state: 'done', meetingId: made.id, result: t.reply.intent === 'START_MEETING' ? `‘${made.title}’ 회의를 만들었습니다. 참여 코드: ${made.code}` : `‘${made.title}’ 회의에 참여했습니다.` })
+    } catch (e) { patch(t.id, { state: 'open', error: (e as Error).message }) }
+  }
+
   const openEditor = (t: Extract<Turn, { role: 'assistant' }>) => {
     const d = t.draft
     if (!d) return
@@ -281,6 +301,22 @@ export function AssistantBox() {
                           <button type="button" className="cal-primary" disabled={t.state === 'saving' || t.ambiguous.length > 0 || !t.draft.title.trim()} onClick={() => void confirm(t)}>{t.state === 'saving' ? '등록 중…' : '등록하기'}</button>
                           <button type="button" className="cal-ghost" disabled={t.state === 'saving'} onClick={() => openEditor(t)}>자세히 수정</button>
                           <button type="button" className="cal-link" disabled={t.state === 'saving'} onClick={() => patch(t.id, { state: 'cancelled' })}>취소</button>
+                        </div>
+                      )}
+                  </div>
+                )}
+                {(t.reply.intent === 'START_MEETING' || t.reply.intent === 'JOIN_MEETING') && t.reply.meeting && (
+                  <div className={`ha-card ${t.state}`}>
+                    <dl>
+                      {t.reply.intent === 'START_MEETING' ? <><dt>회의 이름</dt><dd><b>{t.reply.meeting.title}</b></dd></> : <><dt>참여 코드</dt><dd><code>{t.reply.meeting.code}</code></dd></>}
+                    </dl>
+                    {t.error && <p className="ha-error" role="alert">{t.error}</p>}
+                    {t.state === 'done' ? <p className="ha-done">✓ {t.result} {t.meetingId && <button type="button" className="cal-link" onClick={() => openMeeting(t.meetingId!)}>입장하러 가기 →</button>}</p>
+                      : t.state === 'cancelled' ? <p className="cal-muted">취소했습니다.</p>
+                      : (
+                        <div className="ha-actions">
+                          <button type="button" className="cal-primary" disabled={t.state === 'saving'} onClick={() => void runMeeting(t)}>{t.state === 'saving' ? '처리 중…' : t.reply.intent === 'START_MEETING' ? '회의 만들기' : '참여하기'}</button>
+                          <button type="button" className="cal-link" disabled={t.state === 'saving'} onClick={() => patch(t.id, { state: 'cancelled' })}>그만두기</button>
                         </div>
                       )}
                   </div>

@@ -22,6 +22,8 @@ export function stepsFor(t: Bot): Step[] {
     case 'CREATE_EVENT': return confirmStep('일정 초안')
     case 'BOOK_ROOM': return confirmStep('예약 초안')
     case 'DELETE_ITEM': return confirmStep('대상 확인')
+    case 'START_MEETING': return confirmStep('회의 정보')
+    case 'JOIN_MEETING': return confirmStep('참여 코드')
     case 'MOVE_EVENT': return confirmStep('변경안')
     case 'USE_TOOL': {
       const hasOutput = t.output !== undefined

@@ -49,9 +49,18 @@ export function MeetingsPage() {
       sessionStorage.removeItem('cenOpenMinutes')
       meetingsApi.detail(id).then(setMinutesFor).catch((e) => setError((e as Error).message))
     }
+    // 홈 입력창에서 만든·참여한 회의의 입장 준비 화면 열기
+    const openLobby = () => {
+      const id = sessionStorage.getItem('cenOpenMeeting')
+      if (!id) return
+      sessionStorage.removeItem('cenOpenMeeting')
+      meetingsApi.detail(id).then(setSelected).catch((e) => setError((e as Error).message))
+    }
     open()
+    openLobby()
     window.addEventListener('cen-open-minutes', open)
-    return () => window.removeEventListener('cen-open-minutes', open)
+    window.addEventListener('cen-open-meeting', openLobby)
+    return () => { window.removeEventListener('cen-open-minutes', open); window.removeEventListener('cen-open-meeting', openLobby) }
   }, [])
   useEffect(() => {
     let alive = true
