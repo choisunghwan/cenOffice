@@ -101,7 +101,6 @@ function Browse({ categories, onOpen }: { categories: { code: string; name: stri
   }, [JSON.stringify(favorites)])
   const history = useLoad(() => hub.executions(), [])
   const recent = (history.data?.items ?? []).filter((e) => e.requester === user?.username).filter((e, i, all) => all.findIndex((x) => x.skillId === e.skillId && x.agentId === e.agentId) === i).slice(0, 4)
-  const hot = (ov?.popular ?? []).filter((s) => s.executions > 0 && s.executionState === 'RUNTIME_AVAILABLE' && s.status === 'APPROVED').slice(0, 3)
 
   const search = (e: React.FormEvent) => { e.preventDefault(); setApplied(q.trim()); setPage(0) }
   const total = Math.max(skills.data?.total ?? 0, agents.data?.total ?? 0)
@@ -113,7 +112,6 @@ function Browse({ categories, onOpen }: { categories: { code: string; name: stri
         <section><h3>★ 즐겨찾는 도구</h3>{saved.loading ? <p role="status">불러오는 중…</p> : !saved.data?.length ? <p>도구 카드의 ☆을 누르면 여기에 모아둘 수 있어요.</p> : <div className="hub-return-links">{saved.data.map((s) => <button key={s.key} onClick={() => onOpen({ ...s.view, run: s.ready })}>{s.name}<span>→</span></button>)}</div>}</section>
         <section><h3>↺ 최근 사용</h3>{!recent.length ? <p>처음 사용한 도구부터 여기에 기록됩니다.</p> : <div className="hub-return-links">{recent.map((e) => <button key={e.id} onClick={() => onOpen(e.skillId ? { kind: 'skill', id: e.skillId, run: true } : { kind: 'agent', id: e.agentId!, run: true })}>{toolName(e.targetName)}<span>다시 사용 →</span></button>)}</div>}</section>
       </div>
-      {!!hot.length && <section className="hub-hot"><div className="hub-hot-heading"><h3>HOT · 동료들이 많이 쓰는 도구</h3><span>누적 실제 실행 기준</span></div><div className="hub-tool-grid">{hot.map((s) => <SkillCard key={s.id} s={s} onClick={() => onOpen({ kind: 'skill', id: s.id })} onUse={() => onOpen({ kind: 'skill', id: s.id, run: true })} />)}</div></section>}
       <ErrorNote message={overview.error} />
       <details className="hub-advanced"><summary>활용 통계 보기</summary><div className="grid gap-3 grid-cols-2 lg:grid-cols-5 mt-4"><Stat label="등록된 업무 지침" value={ov?.skills ?? '–'} /><Stat label="공개된 업무 지침" value={ov?.approvedSkills ?? '–'} /><Stat label="등록된 조합 도구" value={ov?.agents ?? '–'} /><Stat label="이번 달 실행" value={ov?.executionsThisMonth ?? '–'} /><Stat label="활성 사용자 (30일)" value={ov?.activeUsers ?? '–'} /></div></details>
       <Card>
