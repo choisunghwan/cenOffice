@@ -24,3 +24,6 @@
 .meeting-waiting span{min-width:0}
 .meeting-waiting button{flex:none;margin:0;padding:6px 14px;border-radius:999px;background:#2a6db2;border:0;color:#fff;font-size:12px;font-weight:600;white-space:nowrap}
 .meeting-waiting button:hover{background:#3478c2}
+
+.meeting-device-options label{display:flex;align-items:center;gap:10px;cursor:pointer;line-height:1.4}
+.meeting-device-options input{flex:none;margin:0;width:16px;height:16px}
