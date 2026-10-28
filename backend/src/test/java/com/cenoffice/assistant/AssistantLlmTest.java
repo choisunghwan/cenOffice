@@ -192,6 +192,22 @@ class AssistantLlmTest {
     }
 
     /** "도구"라는 말이 없어도 도구 이름이 들어 있으면 그 도구의 설명이 근거로 들어간다("오류로그 분석은 언제 사용해야되는데") */
+    /** AI 에게 "할 수 있는 일"과 질문에 맞는 사용법 도움말이 근거로 가고, 답에는 이어서 물어볼 말이 붙는다 */
+    @Test void howToQuestionsCarryTheHelpGuidesAndFollowUpSuggestions() throws Exception {
+        answerFlow("{\"answer\":\"도구 상세의 결과물 양식에서 올립니다.\"}");
+        var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "양식은 어떻게 올려요?")).andExpect(status().isOk()));
+        assertEquals("ANSWER", r.path("intent").asText(), r.toString());
+        var prompts = ArgumentCaptor.forClass(String.class);
+        verify(llm, times(2)).generateJson(anyString(), prompts.capture());
+        String answer = prompts.getAllValues().get(1);
+        assertTrue(answer.contains("## 이 서비스에서 할 수 있는 일") && answer.contains("## 서비스 사용법:"), answer);
+        assertTrue(answer.contains("결과물 양식"), answer);
+        assertTrue(r.path("suggestions").size() >= 1, r.toString());
+        boolean ref = false;
+        for (var x : r.path("references")) if (x.asText().equals("사용법 도움말")) ref = true;
+        assertTrue(ref, r.path("references").toString());
+    }
+
     @Test void aQuestionNamingAToolGetsThatToolsGuideAsContext() throws Exception {
         answerFlow("{\"answer\":\"로그 분석은 오류가 났을 때 씁니다.\"}");
         var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "SQL 점검은 언제 사용해야되는데")).andExpect(status().isOk()));

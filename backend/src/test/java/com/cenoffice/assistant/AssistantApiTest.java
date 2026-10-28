@@ -258,6 +258,20 @@ class AssistantApiTest {
         assertTrue(r.path("alternatives").size() >= 3, r.toString()); // 1위 외의 도구들도 카드로 고를 수 있다
     }
 
+    /** AI 가 없어도 사용법 질문은 도움말 문서로 답하고, 모르는 말에는 해 볼 말을 보여 준다(막다른 길을 만들지 않는다) */
+    @Test void howToQuestionsAreAnsweredFromTheHelpGuides() throws Exception {
+        var r = ask(admin, "양식은 어떻게 올려요?");
+        assertEquals("ANSWER", r.path("intent").asText(), r.toString());
+        assertTrue(r.path("message").asText().contains("양식"), r.toString());
+        boolean ref = false;
+        for (var x : r.path("references")) if (x.asText().equals("사용법 도움말")) ref = true;
+        assertTrue(ref, r.path("references").toString());
+        assertTrue(r.path("suggestions").size() >= 1, r.toString()); // 이어서 물어볼 말
+        var unknown = ask(admin, "오늘 저녁 메뉴 추천해줘");
+        assertEquals("UNSUPPORTED", unknown.path("intent").asText(), unknown.toString());
+        assertTrue(unknown.path("suggestions").size() >= 3, unknown.toString()); // 해 볼 만한 말을 같이 보여 준다
+    }
+
     @Test void minutesDownloadAsksWhichOneInsteadOfGuessing() throws Exception {
         var r = ask(admin, "회의록 다운로드해줘");
         assertEquals("DOWNLOAD_MINUTES", r.path("intent").asText(), r.toString());
