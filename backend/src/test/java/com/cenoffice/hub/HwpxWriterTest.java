@@ -27,12 +27,11 @@ class HwpxWriterTest {
         assertTrue(h.contains("shadeColor=\"#FFFFFF\""));
     }
 
-    @Test void everyBorderFillStatesItsFill() throws Exception {
+    @Test void noColorValueIsTheWordNone() throws Exception {
+        // 한글(확인한 PC)은 shadeColor·faceColor 의 "none" 을 검정으로 읽어 글자나 문단 전체가 검게 칠해진다
         String h = header();
-        int fills = h.split("<hh:borderFill ", -1).length - 1;
-        int brushes = h.split("<hc:fillBrush>", -1).length - 1;
-        assertTrue(fills > 0);
-        assertEquals(fills, brushes, "채움이 없는 borderFill 은 한글에서 검정으로 보인다");
+        assertFalse(h.contains("shadeColor=\"none\""));
+        assertFalse(h.contains("faceColor=\"none\""));
     }
 
     @Test void colorsReadTheSameInRgbAndBgrOrder() throws Exception {
