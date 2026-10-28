@@ -164,7 +164,6 @@ export function CalendarPage() {
               </button></li>
             ))}
           </ul>
-          <button type="button" className="cal-ghost wide" disabled={!canCreate} onClick={() => openNew(selected)}>＋ 이 날 일정 만들기</button>
           <p className="cal-muted cal-side-hint">{canCreate ? ' ' : '전체 일정은 관리자와 일정 관리자만 만들 수 있습니다.'}</p>
         </aside>
       </div>
