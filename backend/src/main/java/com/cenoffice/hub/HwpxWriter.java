@@ -24,6 +24,7 @@ final class HwpxWriter {
             + "xmlns:epub=\"http://www.idpf.org/2007/ops\" xmlns:config=\"urn:oasis:names:tc:opendocument:xmlns:config:1.0\"";
     private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
     private static final int TEXT_WIDTH = 42520;
+    private static final String PAPER = "#FFFFFF", HEADER_FILL = "#E6E6E6"; // 종이 바탕색 · 표 머리글 칸 바탕색
 
     static synchronized byte[] write(String title, List<Block> blocks) throws Exception {
         var bos = new ByteArrayOutputStream();
@@ -71,8 +72,9 @@ final class HwpxWriter {
     }
 
     // charPr: 0 본문, 1 제목1, 2 제목2, 3 표 머리글(굵게), 4 문서 제목
-    private static String charPr(int id, int height, boolean bold, String color) {
-        return "<hh:charPr id=\"" + id + "\" height=\"" + height + "\" textColor=\"" + color + "\" shadeColor=\"#FFFFFF\" useFontSpace=\"0\" useKerning=\"0\" symMark=\"NONE\" borderFillIDRef=\"1\">"
+    /** shade: 글자 음영색. "none" 은 한글에서 검은 상자로 보이므로 쓰지 않고, 글자가 놓이는 바탕과 같은 색을 줘서 눈에 띄지 않게 한다(흰 종이는 흰색, 회색 머리글 칸은 그 회색). */
+    private static String charPr(int id, int height, boolean bold, String color, String shade) {
+        return "<hh:charPr id=\"" + id + "\" height=\"" + height + "\" textColor=\"" + color + "\" shadeColor=\"" + shade + "\" useFontSpace=\"0\" useKerning=\"0\" symMark=\"NONE\" borderFillIDRef=\"1\">"
                 + "<hh:fontRef hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
                 + "<hh:ratio hangul=\"100\" latin=\"100\" hanja=\"100\" japanese=\"100\" other=\"100\" symbol=\"100\" user=\"100\"/>"
                 + "<hh:spacing hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
@@ -99,9 +101,9 @@ final class HwpxWriter {
                 + "<hh:leftBorder " + border("SOLID", "0.12 mm") + "/><hh:rightBorder " + border("SOLID", "0.12 mm") + "/><hh:topBorder " + border("SOLID", "0.12 mm") + "/><hh:bottomBorder " + border("SOLID", "0.12 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/></hh:borderFill>"
                 + "<hh:borderFill id=\"3\" threeD=\"0\" shadow=\"0\" centerLine=\"NONE\" breakCellSeparateLine=\"0\">" + slash
                 + "<hh:leftBorder " + border("SOLID", "0.12 mm") + "/><hh:rightBorder " + border("SOLID", "0.12 mm") + "/><hh:topBorder " + border("SOLID", "0.12 mm") + "/><hh:bottomBorder " + border("SOLID", "0.12 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/>"
-                + "<hc:fillBrush><hc:winBrush faceColor=\"#E6E6E6\" hatchColor=\"#000000\" alpha=\"0\"/></hc:fillBrush></hh:borderFill></hh:borderFills>";
-        String chars = "<hh:charProperties itemCnt=\"5\">" + charPr(0, 1000, false, "#000000") + charPr(1, 1500, true, "#222222") + charPr(2, 1200, true, "#222222")
-                + charPr(3, 1000, true, "#000000") + charPr(4, 2000, true, "#222222") + "</hh:charProperties>";
+                + "<hc:fillBrush><hc:winBrush faceColor=\"" + HEADER_FILL + "\" hatchColor=\"#000000\" alpha=\"0\"/></hc:fillBrush></hh:borderFill></hh:borderFills>";
+        String chars = "<hh:charProperties itemCnt=\"5\">" + charPr(0, 1000, false, "#000000", PAPER) + charPr(1, 1500, true, "#222222", PAPER) + charPr(2, 1200, true, "#222222", PAPER)
+                + charPr(3, 1000, true, "#000000", HEADER_FILL) + charPr(4, 2000, true, "#222222", PAPER) + "</hh:charProperties>";
         String para = "<hh:paraProperties itemCnt=\"1\"><hh:paraPr id=\"0\" tabPrIDRef=\"0\" condense=\"0\" fontLineHeight=\"0\" snapToGrid=\"1\" suppressLineNumbers=\"0\" checked=\"0\">"
                 + "<hh:align horizontal=\"JUSTIFY\" vertical=\"BASELINE\"/><hh:heading type=\"NONE\" idRef=\"0\" level=\"0\"/>"
                 + "<hh:breakSetting breakLatinWord=\"KEEP_WORD\" breakNonLatinWord=\"KEEP_WORD\" widowOrphan=\"0\" keepWithNext=\"0\" keepLines=\"0\" pageBreakBefore=\"0\" lineWrap=\"BREAK\"/>"

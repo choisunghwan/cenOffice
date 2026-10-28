@@ -27,6 +27,18 @@ class HwpxWriterTest {
         assertTrue(h.contains("shadeColor=\"#FFFFFF\""));
     }
 
+    /** 표 머리글 칸은 회색 바탕이라, 그 글자의 음영색이 흰색이면 글자 뒤에 흰 상자가 보인다 → 칸 바탕과 같은 색이어야 한다 */
+    @Test void headerTextShadeMatchesItsCellFill() throws Exception {
+        String h = header();
+        String fill = java.util.regex.Pattern.compile("winBrush faceColor=\"(#[0-9A-Fa-f]{6})\"").matcher(h).results().map(m -> m.group(1)).findFirst().orElseThrow();
+        var header = java.util.regex.Pattern.compile("<hh:charPr id=\"3\"[^>]*shadeColor=\"(#[0-9A-Fa-f]{6})\"").matcher(h);
+        assertTrue(header.find(), h);
+        assertEquals(fill, header.group(1));
+        var body = java.util.regex.Pattern.compile("<hh:charPr id=\"0\"[^>]*shadeColor=\"(#[0-9A-Fa-f]{6})\"").matcher(h);
+        assertTrue(body.find());
+        assertEquals("#FFFFFF", body.group(1)); // 본문은 흰 종이 위
+    }
+
     @Test void noColorValueIsTheWordNone() throws Exception {
         // 한글(확인한 PC)은 shadeColor·faceColor 의 "none" 을 검정으로 읽어 글자나 문단 전체가 검게 칠해진다
         String h = header();
