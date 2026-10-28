@@ -57,7 +57,8 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
     return () => clearTimeout(t)
   }, [items, values, skillId, format])
 
-  const missing = useMemo(() => (items ?? []).filter((i) => !values[i.key]), [items, values])
+  const missing = useMemo(() => (items ?? []).filter((i) => i.source === 'MISSING'), [items]) // 입력해도 줄이 사라지지 않게 처음 모습으로 고정
+  const unfilled = missing.filter((m) => !values[m.key]).length
   const aiCount = useMemo(() => [...aiKeys].filter((k) => values[k]).length, [aiKeys, values])
 
   const setValue = (key: string, v: string) => {
@@ -84,7 +85,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
 
   const label = formats?.find((f) => f.format === format)?.label ?? ''
   if (err && !items) return <div className="tf-box"><p className="ha-error" role="alert">{err}</p></div>
-  if (!items || !format) return <div className="tf-box"><p role="status" className="cal-muted">양식에 맞춰 채우는 중…</p></div>
+  if (!items || !format) return <div className="tf-box"><div className="tf-preview" aria-busy="true"><p role="status" className="tf-wait">양식에 맞춰 채우는 중…</p></div></div>
 
   return (
     <div className="tf-box">
@@ -100,7 +101,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
       )}
       {missing.length > 0 && (
         <div className="tf-missing" role="group" aria-label="채우지 못한 항목">
-          <p className="tf-missing-title">채우지 못한 항목 {missing.length}개 <small>— 근거를 찾지 못해 비워 두었습니다. 직접 입력하거나 AI 초안을 받을 수 있습니다.</small></p>
+          <p className="tf-missing-title">채우지 못한 항목 {unfilled}개 <small>— 근거를 찾지 못해 비워 두었습니다. 직접 입력하거나 AI 초안을 받을 수 있습니다.</small></p>
           <div className={missing.length > 6 ? 'tf-missing-list long' : 'tf-missing-list'}>
           {missing.map((m) => (
             <div key={m.key} className="tf-row">

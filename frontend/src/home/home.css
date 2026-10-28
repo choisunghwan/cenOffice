@@ -135,3 +135,7 @@
 .tf-missing-list.long{max-height:240px;overflow-y:auto;padding-right:4px}
 .tf-row{margin-top:4px}
 .tf-row .cal-ghost{height:36px;padding:0 12px;white-space:nowrap}
+
+/* 미리보기는 내용 양에 상관없이 한 페이지(A4) 크기로 고정하고, 넘치면 안에서 스크롤한다 */
+.tf-preview{width:min(100%,620px);aspect-ratio:210/297;max-height:none;margin:0 auto;box-shadow:0 2px 10px rgba(23,45,70,.14)}
+.tf-preview .tf-wait{display:grid;place-items:center;height:100%;margin:0;color:#6b7d91}
