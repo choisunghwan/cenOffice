@@ -1,3 +1,4 @@
+import { askText } from '../ui/confirm'
 import { ToolIntroduction } from './ToolIntroduction'
 import { useState } from 'react'
 import { hub } from '../hubApi'
@@ -30,7 +31,7 @@ export function AgentDetailView({ id, onBack, onChanged, startWithRun = false }:
           {canEdit && (a.status === 'DRAFT' || a.status === 'REJECTED') && <Btn onClick={() => act(() => hub.submitAgent(id))}>검토 요청</Btn>}
           {canApprove && a.status === 'PENDING_REVIEW' && <>
             <Btn onClick={() => act(() => hub.approveAgent(id))}>승인</Btn>
-            <Btn tone="danger" onClick={() => { const c = window.prompt('반려 사유 (필수)')?.trim(); if (c) void act(() => hub.rejectAgent(id, c)) }}>반려</Btn>
+            <Btn tone="danger" onClick={async () => { const c = await askText({ title: '반려할까요?', message: '반려 사유를 적어 주세요.', okText: '반려', danger: true, placeholder: '사유를 입력해 주세요', required: true }); if (c) void act(() => hub.rejectAgent(id, c)) }}>반려</Btn>
           </>}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { askText } from '../ui/confirm'
 import { useEffect, useState } from 'react'
 import { api, type ServerSnapshot } from '../api'
 import { useOffice } from '../store'
@@ -88,7 +89,8 @@ export function AgentsPage() {
   const [err, setErr] = useState<string | null>(null)
 
   const decide = async (id: number, approve: boolean) => {
-    const comment = window.prompt(approve ? '승인 코멘트 (선택)' : '거절 사유 (선택)') ?? undefined
+    const comment = await askText({ title: approve ? '승인할까요?' : '거절할까요?', message: approve ? '남길 코멘트가 있으면 적어 주세요.' : '거절 사유가 있으면 적어 주세요.', okText: approve ? '승인' : '거절', danger: !approve, placeholder: '코멘트 (선택)' })
+    if (comment === null) return
     try { await api.decide(id, approve, comment || undefined); setErr(null); pending.reload(); tasks.reload() } catch (x) { setErr(errMsg(x)) }
   }
   const agentName = (id: number) => agents.data?.find((a) => a.id === id)?.name ?? `#${id}`

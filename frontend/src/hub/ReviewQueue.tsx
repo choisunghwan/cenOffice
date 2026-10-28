@@ -1,3 +1,4 @@
+import { askText } from '../ui/confirm'
 import { useState } from 'react'
 import { hub } from '../hubApi'
 import { Badge, Btn, Card, Empty, ErrorNote, errMsg, fmtTime, useLoad } from '../workspace/kit'
@@ -12,7 +13,7 @@ export function ReviewQueue({ onOpenSkill, onOpenAgent, onChanged }: { onOpenSki
   const ap = usePaged(aq.data, 8)
   const [err, setErr] = useState<string | null>(null)
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); setErr(null); q.reload(); aq.reload(); onChanged() } catch (x) { setErr(errMsg(x)) } }
-  const reject = (fn: (c: string) => Promise<unknown>) => { const c = window.prompt('반려 사유 (필수)')?.trim(); if (c) void act(() => fn(c)) }
+  const reject = async (fn: (c: string) => Promise<unknown>) => { const c = await askText({ title: '반려할까요?', message: '반려 사유를 적어 주세요.', okText: '반려', danger: true, placeholder: '사유를 입력해 주세요', required: true }); if (c) void act(() => fn(c)) }
   return (
     <div className="space-y-4">
       <ErrorNote message={err ?? q.error ?? aq.error} />

@@ -1,4 +1,4 @@
-import { askConfirm } from '../ui/confirm'
+import { askConfirm, askText } from '../ui/confirm'
 import { useState } from 'react'
 import {
   api, type AiTaskType, type Environment, type Priority, type RequirementItem, type RequirementStatus, type TaskItem, type TaskStatus,
@@ -271,8 +271,8 @@ function AiTasksTab({ projectId }: { projectId: number }) {
     } catch (x) { setErr(errMsg(x)) }
   }
   const askApproval = async (id: number) => {
-    const summary = window.prompt('승인 요청 내용을 입력하세요 (예: 작업 3건을 프로젝트에 등록)')
-    if (!summary?.trim()) return
+    const summary = await askText({ title: '승인을 요청할까요?', message: '승인 요청 내용을 적어 주세요.', okText: '요청', placeholder: '예: 작업 3건을 프로젝트에 등록', required: true })
+    if (!summary) return
     try { await api.requestApproval(id, { kind: 'MANUAL_REVIEW', summary: summary.trim() }); list.reload() } catch (x) { setErr(errMsg(x)) }
   }
 

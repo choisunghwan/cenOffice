@@ -1,4 +1,4 @@
-import { askConfirm } from '../ui/confirm'
+import { askConfirm, askText } from '../ui/confirm'
 import { BusinessTools } from './BusinessTools'
 import { TemplateUploader } from './TemplateUploader'
 import { TextTool, TEXT_TOOLS } from './TextTool'
@@ -23,7 +23,6 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
   }
   if (!d.data) return <><button className="text-sm text-slate-400 mb-3" onClick={onBack}>← 목록</button><ErrorNote message={d.error} /></>
   const { summary: s, current, versions, canEdit, canApprove, runtime } = d.data
-  const ask = (msg: string) => window.prompt(msg)?.trim()
 
   return (
     <div>
@@ -72,7 +71,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       )}
 
       {tab === 'versions' && (
-        <VersionsTab id={id} skillName={s.name} versions={versions} canEdit={canEdit} canApprove={canApprove} onAct={act} ask={ask} onView={(v) => { setVersionId(v); setTab('md') }} />
+        <VersionsTab id={id} skillName={s.name} versions={versions} canEdit={canEdit} canApprove={canApprove} onAct={act} onView={(v) => { setVersionId(v); setTab('md') }} />
       )}
       {tab === 'stats' && <StatsTab id={id} />}
       {tab === 'reviews' && <ReviewsTab id={id} onChanged={d.reload} />}
@@ -81,13 +80,14 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
   )
 }
 
-function VersionsTab({ id, versions, canEdit, canApprove, onAct, ask, onView }: {
+function VersionsTab({ id, versions, canEdit, canApprove, onAct, onView }: {
   id: number; skillName: string; versions: import('../hubApi').HubVersion[]; canEdit: boolean; canApprove: boolean
-  onAct: (fn: () => Promise<unknown>, done?: () => void) => Promise<void>; ask: (m: string) => string | undefined; onView: (v: number) => void
+  onAct: (fn: () => Promise<unknown>, done?: () => void) => Promise<void>; onView: (v: number) => void
 }) {
   const hist = useLoad(() => (canEdit ? hub.history(id) : Promise.resolve([])), [id, canEdit])
   const [md, setMd] = useState('')
   const [submit, setSubmit] = useState(true)
+  const note = (title: string, message: string, okText: string) => askText({ title, message, okText, placeholder: '코멘트 (선택)' })
   return (
     <div className="space-y-4">
       <Card title="버전">
@@ -102,10 +102,10 @@ function VersionsTab({ id, versions, canEdit, canApprove, onAct, ask, onView }: 
               <Btn small tone="ghost" onClick={() => onAct(() => hub.download(id, v.id))}>다운로드</Btn>
               {canEdit && (v.status === 'DRAFT' || v.status === 'REJECTED') && <Btn small onClick={() => onAct(() => hub.submitVersion(id, v.id))}>검토 요청</Btn>}
               {canApprove && v.status === 'PENDING_REVIEW' && <>
-                <Btn small onClick={() => onAct(() => hub.approve(id, v.id, ask('승인 코멘트 (선택)') ?? undefined))}>승인</Btn>
-                <Btn small tone="danger" onClick={() => { const c = ask('반려 사유 (필수)'); if (c) void onAct(() => hub.reject(id, v.id, c)) }}>반려</Btn>
+                <Btn small onClick={async () => { const c = await note('승인할까요?', '남길 코멘트가 있으면 적어 주세요.', '승인'); if (c !== null) void onAct(() => hub.approve(id, v.id, c || undefined)) }}>승인</Btn>
+                <Btn small tone="danger" onClick={async () => { const c = await askText({ title: '반려할까요?', message: '반려 사유를 적어 주세요.', okText: '반려', danger: true, placeholder: '사유를 입력해 주세요', required: true }); if (c) void onAct(() => hub.reject(id, v.id, c)) }}>반려</Btn>
               </>}
-              {canApprove && v.status === 'APPROVED' && !v.published && <Btn small tone="ghost" onClick={() => onAct(() => hub.rollback(id, v.id, ask('되돌리는 이유 (선택)') ?? undefined))}>이 버전으로 되돌리기</Btn>}
+              {canApprove && v.status === 'APPROVED' && !v.published && <Btn small tone="ghost" onClick={async () => { const c = await note('이 버전으로 되돌릴까요?', '되돌리는 이유가 있으면 적어 주세요.', '되돌리기'); if (c !== null) void onAct(() => hub.rollback(id, v.id, c || undefined)) }}>이 버전으로 되돌리기</Btn>}
             </li>
           ))}
         </ul>
