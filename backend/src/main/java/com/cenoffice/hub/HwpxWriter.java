@@ -72,7 +72,7 @@ final class HwpxWriter {
 
     // charPr: 0 본문, 1 제목1, 2 제목2, 3 표 머리글(굵게), 4 문서 제목
     private static String charPr(int id, int height, boolean bold, String color) {
-        return "<hh:charPr id=\"" + id + "\" height=\"" + height + "\" textColor=\"" + color + "\" shadeColor=\"none\" useFontSpace=\"0\" useKerning=\"0\" symMark=\"NONE\" borderFillIDRef=\"1\">"
+        return "<hh:charPr id=\"" + id + "\" height=\"" + height + "\" textColor=\"" + color + "\" shadeColor=\"#FFFFFF\" useFontSpace=\"0\" useKerning=\"0\" symMark=\"NONE\" borderFillIDRef=\"1\">"
                 + "<hh:fontRef hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
                 + "<hh:ratio hangul=\"100\" latin=\"100\" hanja=\"100\" japanese=\"100\" other=\"100\" symbol=\"100\" user=\"100\"/>"
                 + "<hh:spacing hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
@@ -94,14 +94,14 @@ final class HwpxWriter {
         String slash = "<hh:slash type=\"NONE\" Crooked=\"0\" isCounter=\"0\"/><hh:backSlash type=\"NONE\" Crooked=\"0\" isCounter=\"0\"/>";
         String borderFills = "<hh:borderFills itemCnt=\"3\">"
                 + "<hh:borderFill id=\"1\" threeD=\"0\" shadow=\"0\" centerLine=\"NONE\" breakCellSeparateLine=\"0\">" + slash
-                + "<hh:leftBorder " + border("NONE", "0.1 mm") + "/><hh:rightBorder " + border("NONE", "0.1 mm") + "/><hh:topBorder " + border("NONE", "0.1 mm") + "/><hh:bottomBorder " + border("NONE", "0.1 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/></hh:borderFill>"
+                + "<hh:leftBorder " + border("NONE", "0.1 mm") + "/><hh:rightBorder " + border("NONE", "0.1 mm") + "/><hh:topBorder " + border("NONE", "0.1 mm") + "/><hh:bottomBorder " + border("NONE", "0.1 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/><hc:fillBrush><hc:winBrush faceColor=\"none\" hatchColor=\"#FF000000\" alpha=\"0\"/></hc:fillBrush></hh:borderFill>"
                 + "<hh:borderFill id=\"2\" threeD=\"0\" shadow=\"0\" centerLine=\"NONE\" breakCellSeparateLine=\"0\">" + slash
-                + "<hh:leftBorder " + border("SOLID", "0.12 mm") + "/><hh:rightBorder " + border("SOLID", "0.12 mm") + "/><hh:topBorder " + border("SOLID", "0.12 mm") + "/><hh:bottomBorder " + border("SOLID", "0.12 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/></hh:borderFill>"
+                + "<hh:leftBorder " + border("SOLID", "0.12 mm") + "/><hh:rightBorder " + border("SOLID", "0.12 mm") + "/><hh:topBorder " + border("SOLID", "0.12 mm") + "/><hh:bottomBorder " + border("SOLID", "0.12 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/><hc:fillBrush><hc:winBrush faceColor=\"none\" hatchColor=\"#FF000000\" alpha=\"0\"/></hc:fillBrush></hh:borderFill>"
                 + "<hh:borderFill id=\"3\" threeD=\"0\" shadow=\"0\" centerLine=\"NONE\" breakCellSeparateLine=\"0\">" + slash
                 + "<hh:leftBorder " + border("SOLID", "0.12 mm") + "/><hh:rightBorder " + border("SOLID", "0.12 mm") + "/><hh:topBorder " + border("SOLID", "0.12 mm") + "/><hh:bottomBorder " + border("SOLID", "0.12 mm") + "/><hh:diagonal type=\"SOLID\" width=\"0.1 mm\" color=\"#000000\"/>"
-                + "<hc:fillBrush><hc:winBrush faceColor=\"#E3EEFF\" hatchColor=\"#000000\" alpha=\"0\"/></hc:fillBrush></hh:borderFill></hh:borderFills>";
-        String chars = "<hh:charProperties itemCnt=\"5\">" + charPr(0, 1000, false, "#000000") + charPr(1, 1500, true, "#1A62D6") + charPr(2, 1200, true, "#1A62D6")
-                + charPr(3, 1000, true, "#000000") + charPr(4, 2000, true, "#1A62D6") + "</hh:charProperties>";
+                + "<hc:fillBrush><hc:winBrush faceColor=\"#E6E6E6\" hatchColor=\"#000000\" alpha=\"0\"/></hc:fillBrush></hh:borderFill></hh:borderFills>";
+        String chars = "<hh:charProperties itemCnt=\"5\">" + charPr(0, 1000, false, "#000000") + charPr(1, 1500, true, "#222222") + charPr(2, 1200, true, "#222222")
+                + charPr(3, 1000, true, "#000000") + charPr(4, 2000, true, "#222222") + "</hh:charProperties>";
         String para = "<hh:paraProperties itemCnt=\"1\"><hh:paraPr id=\"0\" tabPrIDRef=\"0\" condense=\"0\" fontLineHeight=\"0\" snapToGrid=\"1\" suppressLineNumbers=\"0\" checked=\"0\">"
                 + "<hh:align horizontal=\"JUSTIFY\" vertical=\"BASELINE\"/><hh:heading type=\"NONE\" idRef=\"0\" level=\"0\"/>"
                 + "<hh:breakSetting breakLatinWord=\"KEEP_WORD\" breakNonLatinWord=\"KEEP_WORD\" widowOrphan=\"0\" keepWithNext=\"0\" keepLines=\"0\" pageBreakBefore=\"0\" lineWrap=\"BREAK\"/>"
