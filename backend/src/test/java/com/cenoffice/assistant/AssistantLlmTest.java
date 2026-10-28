@@ -191,6 +191,20 @@ class AssistantLlmTest {
         assertTrue(answer.matches("(?s).*총 \\d+개.*"), "도구 개수가 근거에 들어 있어야 한다");
     }
 
+    /** "도구"라는 말이 없어도 도구 이름이 들어 있으면 그 도구의 설명이 근거로 들어간다("오류로그 분석은 언제 사용해야되는데") */
+    @Test void aQuestionNamingAToolGetsThatToolsGuideAsContext() throws Exception {
+        answerFlow("{\"answer\":\"로그 분석은 오류가 났을 때 씁니다.\"}");
+        var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "SQL 점검은 언제 사용해야되는데")).andExpect(status().isOk()));
+        assertEquals("ANSWER", r.path("intent").asText(), r.toString());
+        var prompts = ArgumentCaptor.forClass(String.class);
+        verify(llm, times(2)).generateJson(anyString(), prompts.capture());
+        String answer = prompts.getAllValues().get(1);
+        assertTrue(answer.contains("사용 안내"), answer);
+        boolean ref = false;
+        for (var x : r.path("references")) if (x.asText().equals("도구 사용 안내")) ref = true;
+        assertTrue(ref, r.path("references").toString());
+    }
+
     @Test void generalQuestionsAreAnsweredFromWhatTheUserMayReadAndNeverFromTheTranscript() throws Exception {
         db.update("delete from meeting_action_items");
         String t1 = "견적회의" + UUID.randomUUID().toString().substring(0, 4);
