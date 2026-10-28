@@ -1,6 +1,6 @@
 /** 숫자 페이지 버튼. page 는 0부터 시작한다. 쪽이 많으면 처음·끝과 현재 쪽 둘레만 보이고 나머지는 … 로 줄인다. */
 export function Pager({ page, pages, total, onChange }: { page: number; pages: number; total?: number; onChange: (page: number) => void }) {
-  if (pages <= 1) return null
+  if (pages <= 1 && !total) return null // 항목이 하나도 없을 때만 감춘다
   const shown = new Set<number>([0, pages - 1])
   for (let i = page - 2; i <= page + 2; i++) if (i >= 0 && i < pages) shown.add(i)
   const nums = [...shown].sort((a, b) => a - b)

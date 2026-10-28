@@ -1,18 +1,23 @@
 import { hub } from '../hubApi'
 import { Badge, Card, Empty, ErrorNote, Stat, fmtTime, useLoad } from '../workspace/kit'
+import { Pager } from './Pager'
 import { AgentCard, Bars, SkillCard } from './shared'
+import { usePaged } from './usePaged'
 
 /** 제작자 대시보드: 내가 만든 Skill/Agent, 사용 추이, 평가, 월별 실적 (원자료 지표만 — 점수/보상은 산정하지 않음) */
 export function CreatorDashboard({ onOpenSkill, onOpenAgent }: { onOpenSkill: (id: number) => void; onOpenAgent: (id: number) => void }) {
   const st = useLoad(() => hub.myStats(), [])
+  const paged = usePaged([...(st.data?.skills.map((s) => ({ kind: 'skill' as const, s })) ?? []), ...(st.data?.agents.map((a) => ({ kind: 'agent' as const, a })) ?? [])], 9)
   if (!st.data) return <ErrorNote message={st.error} />
   const d = st.data
   return (
     <div className="space-y-5">
       <div className="hub-tool-grid">
-        {d.skills.map((s) => <SkillCard key={`s${s.id}`} s={s} onClick={() => onOpenSkill(s.id)} />)}
-        {d.agents.map((a) => <AgentCard key={`a${a.id}`} a={a} onClick={() => onOpenAgent(a.id)} />)}
+        {paged.items.map((it) => it.kind === 'skill'
+          ? <SkillCard key={`s${it.s.id}`} s={it.s} onClick={() => onOpenSkill(it.s.id)} />
+          : <AgentCard key={`a${it.a.id}`} a={it.a} onClick={() => onOpenAgent(it.a.id)} />)}
       </div>
+      <Pager page={paged.page} pages={paged.pages} total={paged.total} onChange={paged.setPage} />
       {!d.skills.length && !d.agents.length && <Card><Empty>아직 만든 도구가 없습니다. 왼쪽 ‘도구 만들기’에서 업무 노하우를 공유해 보세요.</Empty></Card>}
       <details className="hub-advanced"><summary>사용 통계와 동료들의 피드백 보기</summary><div className="space-y-5 mt-5">
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
