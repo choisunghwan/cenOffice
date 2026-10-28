@@ -84,7 +84,16 @@ final class OoxmlText implements FormEngine {
         switch (el.getLocalName()) {
             case "p" -> {
                 Matcher m = PLACEHOLDER.matcher(paraText(el));
-                while (m.find()) out.add(new Slot(new HwpxTemplate.Field(m.group(1).strip(), m.group(1).strip(), "placeholder"), el));
+                boolean any = false;
+                while (m.find()) { any = true; out.add(new Slot(new HwpxTemplate.Field(m.group(1).strip(), m.group(1).strip(), "placeholder"), el)); }
+                if (!any) {
+                    var opts = new ArrayList<String>();
+                    String label = HwpxTemplate.choiceParaLabel(paraText(el), opts);
+                    if (label != null) {
+                        int n = labelCount.merge(label, 1, Integer::sum);
+                        out.add(new Slot(new HwpxTemplate.Field(n == 1 ? label : label + " (" + n + ")", label, "choice", opts), el));
+                    }
+                }
             }
             case "tbl" -> labelCells(el, out, labelCount);
             default -> { }
@@ -97,11 +106,13 @@ final class OoxmlText implements FormEngine {
             List<Element> cells = children(tr, "tc");
             for (int i = 0; i + 1 < cells.size(); i++) {
                 String label = cellText(cells.get(i)).strip();
-                if (!label.isEmpty() && cellText(cells.get(i + 1)).isBlank() && !label.contains("{{") && HwpxTemplate.isName(label)) {
-                    int n = labelCount.merge(label, 1, Integer::sum);
-                    String key = n == 1 ? label : label + " (" + n + ")";
-                    out.add(new Slot(new HwpxTemplate.Field(key, label, "cell"), cells.get(i + 1)));
-                }
+                if (label.isEmpty() || label.contains("{{") || !HwpxTemplate.isName(label)) continue;
+                var options = new ArrayList<String>();
+                String kind = HwpxTemplate.valueKind(label, cellText(cells.get(i + 1)), options);
+                if (kind == null) continue;
+                int n = labelCount.merge(label, 1, Integer::sum);
+                String key = n == 1 ? label : label + " (" + n + ")";
+                out.add(new Slot(new HwpxTemplate.Field(key, label, kind, options), cells.get(i + 1)));
             }
         }
     }
@@ -130,8 +141,10 @@ final class OoxmlText implements FormEngine {
                 String v = values.get(s.field().key());
                 if (v == null) continue;
                 List<Element> paras = new ArrayList<>();
-                descendants(s.target(), "p", paras);
-                if (!paras.isEmpty()) setParaText(paras.get(0), clean(v));
+                if (s.target().getLocalName().equals("p")) paras.add(s.target()); else descendants(s.target(), "p", paras);
+                if (paras.isEmpty()) continue;
+                if (s.field().kind().equals("choice")) setParaText(paras.get(0), HwpxTemplate.markChoice(paraText(paras.get(0)), s.field().options(), clean(v)));
+                else setParaText(paras.get(0), clean(v));
             }
         }
     }

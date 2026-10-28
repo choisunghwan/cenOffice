@@ -220,6 +220,14 @@ class TemplateApiTest {
         assertEquals("RESULT", item(plan, "액션 아이템").path("source").asText());
     }
 
+    /** 이름이 겹치는 항목("일시 (2)": 다음 회의 일시 등)은 어느 값인지 알 수 없어 결과에서 자동으로 채우지 않는다 */
+    @Test void repeatedLabelsAreNotAutoFilledFromTheResult() throws Exception {
+        upload(admin, "a.hwpx", form("일시", "일시")).andExpect(status().isOk());
+        var plan = postJson("/plan", admin, Map.of("format", "hwpx", "result", "일시: 2026-10-27"));
+        assertEquals("2026-10-27", item(plan, "일시").path("value").asText());
+        assertEquals("MISSING", item(plan, "일시 (2)").path("source").asText());
+    }
+
     @Test void planNeverInventsValues() throws Exception {
         upload(admin, "a.hwpx", form("성명", "소속")).andExpect(status().isOk());
         var plan = postJson("/plan", admin, Map.of("result", "오늘 날씨가 좋습니다. 관련 없는 문장입니다."));

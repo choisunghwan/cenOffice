@@ -152,10 +152,12 @@ final class XlsxTemplate implements FormEngine {
                     }
                     if (ph || t.contains("{{") || t.length() > 40 || !t.matches(".*\\p{L}.*")) continue;
                     Element right = row.getValue().get(cell.getKey() + 1);
-                    if (right != null && !text(right, doc.shared()).isBlank()) continue; // 오른쪽이 이미 채워져 있으면 항목 이름이 아니다
+                    var options = new ArrayList<String>();
+                    String kind = HwpxTemplate.valueKind(t, right == null ? "" : text(right, doc.shared()), options);
+                    if (kind == null) continue; // 오른쪽이 이미 채워져 있으면(선택지·날짜 틀이 아니면) 항목 이름이 아니다
                     int n = labelCount.merge(t, 1, Integer::sum);
                     String key = n == 1 ? t : t + " (" + n + ")";
-                    out.add(new Slot(new HwpxTemplate.Field(key, t, "cell"), sh.getKey(), row.getKey(), cell.getKey() + 1, false));
+                    out.add(new Slot(new HwpxTemplate.Field(key, t, kind, options), sh.getKey(), row.getKey(), cell.getKey() + 1, false));
                 }
             }
         }
@@ -186,7 +188,9 @@ final class XlsxTemplate implements FormEngine {
             } else {
                 String v = values.get(s.field().key());
                 if (v == null) continue;
-                setText(cellAt(sheet, s.row(), s.col(), true), clean(v));
+                Element target = cellAt(sheet, s.row(), s.col(), true);
+                if (s.field().kind().equals("choice")) setText(target, HwpxTemplate.markChoice(text(target, doc.shared()), s.field().options(), clean(v)));
+                else setText(target, clean(v));
             }
         }
     }

@@ -24,7 +24,11 @@ import org.w3c.dom.Node;
 final class HwpxTemplate {
     private HwpxTemplate() {}
 
-    record Field(String key, String label, String kind) {}
+    /** kind: placeholder({{항목}}) · cell(빈 칸) · choice(□ 선택지 — options 에 선택지) · datetime(날짜 틀만 적힌 칸) */
+    record Field(String key, String label, String kind, List<String> options) {
+        Field { options = options == null ? List.of() : options; }
+        Field(String key, String label, String kind) { this(key, label, kind, List.of()); }
+    }
 
     static final int MAX_BYTES = 5 * 1024 * 1024;
     static final long MAX_UNPACKED = 30L * 1024 * 1024;
@@ -110,8 +114,18 @@ final class HwpxTemplate {
     private static void walk(Element el, List<Slot> out, Map<String, Integer> labelCount) {
         switch (el.getLocalName()) {
             case "p" -> {
-                Matcher m = PLACEHOLDER.matcher(paraText(el));
-                while (m.find()) out.add(new Slot(new Field(m.group(1).strip(), m.group(1).strip(), "placeholder"), el));
+                String text = paraText(el);
+                Matcher m = PLACEHOLDER.matcher(text);
+                boolean any = false;
+                while (m.find()) { any = true; out.add(new Slot(new Field(m.group(1).strip(), m.group(1).strip(), "placeholder"), el)); }
+                if (!any) {
+                    Matcher c = CHOICE_PARA.matcher(text);
+                    if (c.matches() && isName(c.group(1).strip()) && !choices(c.group(2)).isEmpty()) {
+                        String label = c.group(1).strip();
+                        int n = labelCount.merge(label, 1, Integer::sum);
+                        out.add(new Slot(new Field(n == 1 ? label : label + " (" + n + ")", label, "choice", choices(c.group(2))), el));
+                    }
+                }
             }
             case "tbl" -> labelCells(el, out, labelCount);
             default -> { }
@@ -119,24 +133,75 @@ final class HwpxTemplate {
         for (Element c : children(el)) walk(c, out, labelCount);
     }
 
+    /** 선택지 칸의 체크 모양(□ ☐ ▢ 비어 있음 · ☑ ■ ✓ ☒ 고름) */
+    private static final String BOXES = "□☐▢☑■✓☒";
+    private static final Pattern CHOICE = Pattern.compile("[□☐▢☑■✓☒]\\s*([^□☐▢☑■✓☒]+)");
+    private static final Pattern CHOICE_PARA = Pattern.compile("^\\s*([^:：□☐▢☑■✓☒]{1,20}?)\\s*[:：]\\s*([□☐▢☑■✓☒].*)$");
+    private static final Pattern DATE_LABEL = Pattern.compile("일시|일자|날짜|작성일|기간|시간");
+
+    /** "□ 정기 □ 임시 □ 기타" → [정기, 임시, 기타]. 선택지가 둘 이상일 때만 선택 칸으로 본다. */
+    static List<String> choices(String text) {
+        var out = new ArrayList<String>();
+        Matcher m = CHOICE.matcher(text == null ? "" : text);
+        while (m.find()) { String o = m.group(1).strip(); if (!o.isEmpty() && o.length() <= 30) out.add(o); }
+        return out.size() >= 2 ? List.copyOf(out) : List.of();
+    }
+
+    /** 고른 항목은 ■, 나머지는 □ 로 다시 그린다. 고른 말이 선택지에 없으면 글을 그대로 둔다. */
+    static String markChoice(String text, List<String> options, String chosen) {
+        if (!options.contains(chosen)) return text;
+        String out = text;
+        for (String o : options) {
+            String mark = o.equals(chosen) ? "■" : "□";
+            out = Pattern.compile("[□☐▢☑■✓☒](\\s*)" + Pattern.quote(o)).matcher(out).replaceFirst(r -> Matcher.quoteReplacement(mark + r.group(1) + o));
+        }
+        return out;
+    }
+
+    /** "20 . . . ( ) : ~ :" 처럼 날짜·시각의 틀만 적혀 있는 칸인가(글자가 없고, 숫자는 몇 개뿐이며, 구분 기호가 여럿). 실제 날짜가 적힌 칸은 아니다. */
+    static boolean datetimeSkeleton(String label, String cell) {
+        if (!DATE_LABEL.matcher(label).find() || cell == null || cell.isBlank()) return false;
+        if (cell.codePoints().anyMatch(Character::isLetter)) return false;
+        long digits = cell.codePoints().filter(Character::isDigit).count();
+        long separators = cell.codePoints().filter(c -> ".:/-~()".indexOf(c) >= 0).count();
+        return digits <= 4 && separators >= 3;
+    }
+
+    /** "라벨: □ 선택지 □ 선택지" 문단이면 라벨을 돌려주고 선택지를 options 에 담는다. 아니면 null. */
+    static String choiceParaLabel(String text, List<String> optionsOut) {
+        Matcher c = CHOICE_PARA.matcher(text == null ? "" : text);
+        if (!c.matches()) return null;
+        String label = c.group(1).strip();
+        var opts = choices(c.group(2));
+        if (opts.isEmpty() || !isName(label)) return null;
+        optionsOut.addAll(opts);
+        return label;
+    }
+
+    /** 채울 칸(label 오른쪽 칸 value)의 종류: 빈 칸 · 선택지 · 날짜 틀. 채울 칸이 아니면 null. options 는 선택지일 때만 채워진다. */
+    static String valueKind(String label, String value, List<String> optionsOut) {
+        if (value == null || value.isBlank()) return "cell";
+        var opts = choices(value);
+        if (!opts.isEmpty()) { optionsOut.addAll(opts); return "choice"; }
+        return datetimeSkeleton(label, value) ? "datetime" : null;
+    }
+
     /** 항목 이름으로 볼 수 있는 글인가. 번호(1, 2, 3)나 기호만 있는 칸은 항목 이름이 아니다. */
     static boolean isName(String label) { return label.length() <= 40 && label.codePoints().anyMatch(Character::isLetter); }
 
     private static void labelCells(Element tbl, List<Slot> out, Map<String, Integer> labelCount) {
-        boolean first = true;
         for (Element tr : children(tbl, "tr")) {
             List<Element> cells = children(tr, "tc");
-            if (!first) {
-                for (int i = 0; i + 1 < cells.size(); i++) {
-                    String label = cellText(cells.get(i)).strip();
-                    if (!label.isEmpty() && cellText(cells.get(i + 1)).isBlank() && !label.contains("{{") && isName(label)) {
-                        int n = labelCount.merge(label, 1, Integer::sum);
-                        String key = n == 1 ? label : label + " (" + n + ")";
-                        out.add(new Slot(new Field(key, label, "cell"), cells.get(i + 1)));
-                    }
-                }
+            for (int i = 0; i + 1 < cells.size(); i++) {
+                String label = cellText(cells.get(i)).strip();
+                if (label.isEmpty() || label.contains("{{") || !isName(label)) continue;
+                var options = new ArrayList<String>();
+                String kind = valueKind(label, cellText(cells.get(i + 1)), options);
+                if (kind == null) continue;
+                int n = labelCount.merge(label, 1, Integer::sum);
+                String key = n == 1 ? label : label + " (" + n + ")";
+                out.add(new Slot(new Field(key, label, kind, options), cells.get(i + 1)));
             }
-            first = false;
         }
     }
 
@@ -170,9 +235,15 @@ final class HwpxTemplate {
             } else {
                 String v = values.get(s.field().key());
                 if (v == null) continue;
-                List<Element> subs = children(s.target(), "subList");
-                List<Element> paras = subs.isEmpty() ? List.of() : children(subs.get(0), "p");
-                if (!paras.isEmpty()) setParaText(paras.get(0), clean(v));
+                Element para = s.target().getLocalName().equals("p") ? s.target() : null;
+                if (para == null) {
+                    List<Element> subs = children(s.target(), "subList");
+                    List<Element> paras = subs.isEmpty() ? List.of() : children(subs.get(0), "p");
+                    if (!paras.isEmpty()) para = paras.get(0);
+                }
+                if (para == null) continue;
+                if (s.field().kind().equals("choice")) setParaText(para, markChoice(paraText(para), s.field().options(), clean(v)));
+                else setParaText(para, clean(v));
             }
         }
     }

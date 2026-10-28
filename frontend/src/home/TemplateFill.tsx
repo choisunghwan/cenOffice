@@ -113,12 +113,22 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
                 <li key={m.key} className={`tfx-row ${state}`}>
                   <div className="tfx-label">
                     <label htmlFor={`tf-${m.key}`}>{m.label}</label>
-                    <span className={`tfx-badge ${state}`}>{state === 'empty' ? '비어 있음' : state === 'ai' ? 'AI 초안' : '입력함'}</span>
+                    <span className={`tfx-badge ${state}`}>{state === 'empty' ? (m.kind === 'choice' ? '선택 필요' : '비어 있음') : state === 'ai' ? 'AI 초안' : m.kind === 'choice' ? '선택함' : '입력함'}</span>
                   </div>
-                  <textarea id={`tf-${m.key}`} rows={2} value={v} placeholder="직접 입력하거나, 오른쪽에서 AI 초안을 받아 보세요" maxLength={2000} onChange={(e) => setValue(m.key, e.target.value)} />
-                  <button type="button" className="tfx-ai" disabled={!!busyKey} onClick={() => void draft(m.key)} title={aiUsed ? 'AI 가 결과를 참고해 이 칸의 초안을 씁니다' : 'AI 가 연결되어 있지 않으면 쓸 수 없습니다'}>
-                    {busyKey === m.key ? '쓰는 중…' : <><span aria-hidden="true">✦</span> AI 초안</>}
-                  </button>
+                  {m.kind === 'choice' ? (
+                    <div className="tfx-choices" role="radiogroup" aria-label={m.label}>
+                      {(m.options ?? []).map((o) => (
+                        <button key={o} type="button" role="radio" aria-checked={v === o} className={v === o ? 'on' : ''} onClick={() => setValue(m.key, v === o ? '' : o)}>{o}</button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <textarea id={`tf-${m.key}`} rows={2} value={v} placeholder="직접 입력하거나, 오른쪽에서 AI 초안을 받아 보세요" maxLength={2000} onChange={(e) => setValue(m.key, e.target.value)} />
+                      <button type="button" className="tfx-ai" disabled={!!busyKey} onClick={() => void draft(m.key)} title={aiUsed ? 'AI 가 결과를 참고해 이 칸의 초안을 씁니다' : 'AI 가 연결되어 있지 않으면 쓸 수 없습니다'}>
+                        {busyKey === m.key ? '쓰는 중…' : <><span aria-hidden="true">✦</span> AI 초안</>}
+                      </button>
+                    </>
+                  )}
                 </li>
               )
             })}

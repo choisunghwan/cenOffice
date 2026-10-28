@@ -26,7 +26,9 @@ public class TemplateService {
     public record Info(String fileName, String format, List<HwpxTemplate.Field> fields) {}
 
     /** source: RESULT(스킬 결과에서 라벨로 찾음) | AI(AI 가 결과에서 뽑음) | MISSING(근거를 찾지 못해 비워 둠; value 는 null) */
-    public record PlanItem(String key, String label, String value, String source) {}
+    public record PlanItem(String key, String label, String value, String source, String kind, List<String> options) {
+        public PlanItem(String key, String label, String value, String source) { this(key, label, value, source, "cell", List.of()); }
+    }
 
     public record Plan(List<PlanItem> items, boolean aiUsed) {}
 
@@ -163,17 +165,19 @@ public class TemplateService {
         Map<String, String> found = labelled(text, info.fields().stream().map(f -> norm(f.label())).collect(java.util.stream.Collectors.toSet()));
         var items = new LinkedHashMap<String, PlanItem>();
         for (var f : info.fields()) {
-            String v = lookup(found, norm(f.label()));
-            items.put(f.key(), v == null ? new PlanItem(f.key(), f.label(), null, "MISSING") : new PlanItem(f.key(), f.label(), cut(v), "RESULT"));
+            // 같은 이름이 또 나오는 항목("일시 (2)": 다음 회의 일시 등)은 어느 값인지 알 수 없어 결과에서 찾지 않고 비워 둔다
+            String v = f.key().equals(f.label()) ? lookup(found, norm(f.label())) : null;
+            if (f.kind().equals("choice")) v = pickOption(v, f.options()); // 선택지는 결과에 분명히 적힌 것만 고르고, 아니면 사람이 고르게 둔다
+            items.put(f.key(), v == null ? new PlanItem(f.key(), f.label(), null, "MISSING", f.kind(), f.options()) : new PlanItem(f.key(), f.label(), cut(v), "RESULT", f.kind(), f.options()));
         }
         boolean aiUsed = false;
-        var missing = items.values().stream().filter(i -> i.source().equals("MISSING")).map(PlanItem::key).toList();
+        var missing = items.values().stream().filter(i -> i.source().equals("MISSING") && !i.kind().equals("choice")).map(PlanItem::key).toList(); // 선택지는 AI 가 고르지 않는다
         if (!missing.isEmpty() && !text.isBlank() && llm.isReal()) {
             aiUsed = true;
             Map<String, String> ai = askAi(missing, text);
             for (String key : missing) {
                 String v = ai.get(key);
-                if (v != null) items.put(key, new PlanItem(key, items.get(key).label(), v, "AI"));
+                if (v != null) items.put(key, new PlanItem(key, items.get(key).label(), v, "AI", items.get(key).kind(), items.get(key).options()));
             }
         }
         audit.log(user, "TEMPLATE_PLAN", (skillId < 0 ? "my-form:" : "hub-skill:") + Math.abs(skillId), aiUsed ? "ai" : "rule"); // 결과 내용은 기록하지 않는다
@@ -303,6 +307,16 @@ public class TemplateService {
         if (cells == null) return line;
         if (cells.length >= 3 && cells[0].matches("\\d+")) return cells[0] + ". " + cells[1] + " (" + String.join(" · ", java.util.Arrays.copyOfRange(cells, 2, cells.length)) + ")";
         return String.join(" · ", cells);
+    }
+
+    /** 결과에서 찾은 글이 선택지 중 정확히 하나를 가리키면 그 선택지, 아니면 null */
+    static String pickOption(String text, List<String> options) {
+        if (text == null || text.isBlank()) return null;
+        String hit = null;
+        for (String o : options) {
+            if (text.contains(o)) { if (hit != null) return null; hit = o; }
+        }
+        return hit;
     }
 
     private static String norm(String label) { return label.replaceAll("[*`#]", "").replaceAll("[:：]\\s*$", "").replaceAll("\\s+", " ").strip(); }

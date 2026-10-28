@@ -187,3 +187,12 @@
 [data-workspace-theme=dark] .tfx-row textarea{background:#142033;border-color:#3b516b;color:#edf3fa}
 [data-workspace-theme=dark] .tfx-ai{background:#2a2145;color:#cbb9ff}
 @media(max-width:720px){.tfx-row{grid-template-columns:minmax(0,1fr)}.tfx-label{flex-direction:row;align-items:center;justify-content:space-between}.tfx-ai{justify-self:start}}
+
+/* 선택지 항목(□ 정기 □ 임시 …): 칩으로 고른다 */
+.tfx-choices{display:flex;flex-wrap:wrap;gap:8px;grid-column:2 / -1}
+.tfx-choices button{padding:7px 14px;border:1px solid #b9c6d6;border-radius:999px;background:#fff;color:#1b2430;font-size:13px}
+.tfx-choices button:hover{background:#f1f5fa}
+.tfx-choices button.on{border-color:#2a6db2;background:#2a6db2;color:#fff;font-weight:700}
+[data-workspace-theme=dark] .tfx-choices button{background:#142033;border-color:#3b516b;color:#edf3fa}
+[data-workspace-theme=dark] .tfx-choices button.on{background:#2a6db2;border-color:#2a6db2;color:#fff}
+@media(max-width:720px){.tfx-choices{grid-column:auto}}

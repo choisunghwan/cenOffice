@@ -132,4 +132,61 @@ class HwpxTemplateTest {
         assertNull(rows.get(1).get(0).fieldKey()); // 라벨 칸은 필드가 아니다
         assertEquals("소속", rows.get(2).get(1).fieldKey());
     }
+
+    /** 실제 회의록 양식 구조: 표 첫 줄의 항목, 날짜 틀, □ 선택지 칸, 선택지 문단, 번호 칸 */
+    static byte[] minutesLikeForm() throws Exception {
+        return form(List.of(
+                p("보안등급:  □ 일반   □ 대외비   □ 기밀"),
+                table(List.of(
+                        List.of("회의명", ""),
+                        List.of("일시", "20  .   .   .  (   )   :   ~   :", "장소", ""),
+                        List.of("회의 구분", "□ 정기   □ 임시   □ 기타", "기록 방식", "□ 직접 작성   □ 녹취 요약"),
+                        List.of("작성일", "2026-10-27 14:34"))),
+                table(List.of(List.of("번호", "안건명"), List.of("1", ""), List.of("2", "")))));
+    }
+
+    @Test void firstRowDatetimeSkeletonAndChoiceCellsAreFields() throws Exception {
+        var fields = HwpxTemplate.analyze(minutesLikeForm());
+        var byKey = new java.util.LinkedHashMap<String, HwpxTemplate.Field>();
+        for (var f : fields) byKey.put(f.key(), f);
+        assertEquals(java.util.List.of("보안등급", "회의명", "일시", "장소", "회의 구분", "기록 방식"), new java.util.ArrayList<>(byKey.keySet()), byKey.toString());
+        assertEquals("cell", byKey.get("회의명").kind()); // 표의 첫 줄이어도 채울 칸이다
+        assertEquals("datetime", byKey.get("일시").kind());
+        assertEquals("choice", byKey.get("회의 구분").kind());
+        assertEquals(java.util.List.of("정기", "임시", "기타"), byKey.get("회의 구분").options());
+        assertEquals(java.util.List.of("직접 작성", "녹취 요약"), byKey.get("기록 방식").options());
+        assertEquals("choice", byKey.get("보안등급").kind()); // "라벨: □ … □ …" 문단
+        assertFalse(byKey.containsKey("작성일")); // 이미 날짜가 적힌 칸은 건드리지 않는다
+        assertFalse(byKey.containsKey("1")); // 번호 칸은 항목 이름이 아니다
+    }
+
+    @Test void fillMarksChosenOptionsAndWritesDatetime() throws Exception {
+        var filled = HwpxTemplate.fill(minutesLikeForm(), java.util.Map.of("회의명", "팀 협업 회의", "일시", "2026-10-27 11:21", "회의 구분", "정기", "기록 방식", "녹취 요약", "보안등급", "일반"));
+        var sb = new StringBuilder();
+        for (var b : HwpxTemplate.preview(filled, java.util.Map.of())) {
+            if (b.text() != null) sb.append(b.text()).append('|');
+            if (b.rows() != null) for (var row : b.rows()) for (var c : row) sb.append(c.text()).append('|');
+        }
+        String all = sb.toString();
+        assertTrue(all.contains("팀 협업 회의|"), all);
+        assertTrue(all.contains("2026-10-27 11:21|"), all);
+        assertTrue(all.contains("■ 정기") && all.contains("□ 임시") && all.contains("□ 기타"), all);
+        assertTrue(all.contains("□ 직접 작성") && all.contains("■ 녹취 요약"), all);
+        assertTrue(all.contains("보안등급: ■ 일반") || all.contains("■ 일반"), all);
+        assertTrue(all.contains("□ 대외비") && all.contains("□ 기밀"), all);
+    }
+
+    @Test void unknownChoiceValueLeavesTheTextAlone() throws Exception {
+        var filled = HwpxTemplate.fill(minutesLikeForm(), java.util.Map.of("회의 구분", "없는 선택지"));
+        var sb = new StringBuilder();
+        for (var b : HwpxTemplate.preview(filled, java.util.Map.of())) if (b.rows() != null) for (var row : b.rows()) for (var c : row) sb.append(c.text()).append('|');
+        assertTrue(sb.toString().contains("□ 정기   □ 임시   □ 기타") || sb.toString().contains("□ 정기 □ 임시 □ 기타"), sb.toString());
+    }
+
+    @Test void pickOptionOnlyWhenExactlyOneOptionIsNamed() {
+        assertEquals("정기", TemplateService.pickOption("정기 회의", java.util.List.of("정기", "임시", "기타")));
+        assertNull(TemplateService.pickOption("정기 또는 임시", java.util.List.of("정기", "임시", "기타"))); // 둘이 걸리면 사람이 고른다
+        assertNull(TemplateService.pickOption("관련 없는 말", java.util.List.of("정기", "임시", "기타")));
+        assertNull(TemplateService.pickOption(null, java.util.List.of("정기", "임시")));
+    }
 }
