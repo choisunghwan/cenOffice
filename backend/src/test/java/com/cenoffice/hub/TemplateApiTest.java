@@ -96,6 +96,24 @@ class TemplateApiTest {
         req(delete(url()), user, null).andExpect(status().isForbidden());
     }
 
+    @Test void formatSlotsShowWhichFormatsAreUploadedAndSupported() throws Exception {
+        var before = read(req(get(url() + "/formats"), admin, null).andExpect(status().isOk()));
+        assertEquals(4, before.size());
+        assertEquals("hwpx", before.get(0).path("format").asText());
+        assertTrue(before.get(0).path("supported").asBoolean());
+        assertTrue(before.get(0).path("template").isMissingNode() || before.get(0).path("template").isNull());
+        assertFalse(before.get(1).path("supported").asBoolean()); // 워드·엑셀·파워포인트는 아직 채우는 기능이 없다
+        upload(admin, "a.hwpx", form("성명")).andExpect(status().isOk());
+        var after = read(req(get(url() + "/formats"), admin, null).andExpect(status().isOk()));
+        assertEquals("a.hwpx", after.get(0).path("template").path("fileName").asText());
+        assertTrue(after.get(2).path("template").isMissingNode() || after.get(2).path("template").isNull());
+    }
+
+    @Test void unsupportedFormatsGetClearMessage() throws Exception {
+        var res = read(upload(admin, "a.xlsx", new byte[]{1, 2, 3}).andExpect(status().isBadRequest()));
+        assertTrue(res.toString().contains("엑셀"), res.toString());
+    }
+
     @Test void invalidFileGets400WithKoreanMessage() throws Exception {
         var res = read(upload(admin, "a.hwpx", "그냥 글자".getBytes(StandardCharsets.UTF_8)).andExpect(status().isBadRequest()));
         assertTrue(res.toString().contains("hwpx"), res.toString());

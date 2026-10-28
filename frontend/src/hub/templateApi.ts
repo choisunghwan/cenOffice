@@ -3,6 +3,8 @@ import { API_URL, tokenStore } from '../api'
 /** 양식에서 찾은 채울 자리. placeholder 는 본문의 {{이름}}, cell 은 표에서 라벨 칸 오른쪽의 빈 칸 */
 export interface TemplateField { key: string; label: string; kind: 'placeholder' | 'cell' }
 export interface TemplateInfo { fileName: string; format: string; fields: TemplateField[] }
+/** 형식 아이콘 한 칸. supported=false 는 아직 채우는 기능이 없는 형식, template 은 올려 둔 양식 */
+export interface FormatSlot { format: string; label: string; supported: boolean; template?: TemplateInfo | null }
 /** RESULT: 스킬 결과에서 찾음 · AI: AI 가 결과에서 뽑음 · MISSING: 근거를 못 찾아 비워 둠 */
 export interface PlanItem { key: string; label: string; value?: string | null; source: 'RESULT' | 'AI' | 'MISSING' }
 export interface TemplatePlan { items: PlanItem[]; aiUsed: boolean }
@@ -27,6 +29,7 @@ export const templateApi = {
     const res = await send('GET', skillId, '')
     return res.status === 204 ? null : res.json()
   },
+  slots: async (skillId: number): Promise<FormatSlot[]> => (await send('GET', skillId, '/formats')).json(),
   put: async (skillId: number, file: File): Promise<TemplateInfo> => {
     const form = new FormData()
     form.append('file', file)

@@ -51,17 +51,36 @@ public class TemplateService {
         this.db = db; this.skills = skills; this.json = json; this.llm = llm; this.audit = audit;
     }
 
+    // ───────────────────────── 양식 형식 ─────────────────────────
+
+    /** 양식으로 받을 수 있는 문서 형식. supported=false 는 아직 채우는 기능이 없는 형식이다. */
+    public record FormatDef(String format, String label, boolean supported) {}
+    public static final List<FormatDef> FORMATS = List.of(
+            new FormatDef("hwpx", "한글", true), new FormatDef("docx", "워드", false),
+            new FormatDef("xlsx", "엑셀", false), new FormatDef("pptx", "파워포인트", false));
+    /** 화면의 형식 아이콘 한 칸: 지원 여부와 이 도구에 올려 둔 양식 */
+    public record Slot(String format, String label, boolean supported, Info template) {}
+
+    /** 형식별 칸. 올려 둔 양식이 있으면 template 에 담긴다. */
+    public List<Slot> slots(Long skillId, String user, boolean admin) {
+        skills.visible(skillId, user, admin);
+        var hwpx = find(skillId).orElse(null);
+        return FORMATS.stream().map(f -> new Slot(f.format(), f.label(), f.supported(), f.format().equals("hwpx") ? hwpx : null)).toList();
+    }
+
     // ───────────────────────── 저장 ─────────────────────────
 
     /** 제작자·관리자만 등록한다(스킬 수정 권한과 같다). 같은 스킬에 다시 올리면 교체된다. */
     public Info put(Long skillId, String user, boolean admin, String fileName, byte[] data) {
         skills.editable(skillId, user, admin);
         String name = fileName == null ? "" : fileName.strip();
-        if (!name.toLowerCase().endsWith(".hwpx")) throw new ApiException(HttpStatus.BAD_REQUEST, "한글 hwpx 파일만 올릴 수 있습니다. 한글에서 .hwpx 로 저장해 올려 주세요.");
+        String lower = name.toLowerCase();
+        for (var f : FORMATS) if (!f.supported() && lower.endsWith("." + f.format())) throw new ApiException(HttpStatus.BAD_REQUEST, f.label() + " 양식은 아직 지원하지 않습니다. 지금은 한글(.hwpx) 양식만 올릴 수 있습니다.");
+        if (!lower.endsWith(".hwpx")) throw new ApiException(HttpStatus.BAD_REQUEST, "한글 hwpx 파일만 올릴 수 있습니다. 한글에서 .hwpx 로 저장해 올려 주세요.");
         List<HwpxTemplate.Field> fields = HwpxTemplate.analyze(data);
         if (name.length() > 200) name = name.substring(name.length() - 200);
         try {
-            db.update("DELETE FROM hub_skill_templates WHERE skill_id = ?", skillId);
+            db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", skillId);
             db.update("INSERT INTO hub_skill_templates (skill_id, file_name, format, data, fields, created_by, created_at) VALUES (?, ?, 'hwpx', ?, ?, ?, ?)",
                 skillId, name, data, json.writeValueAsString(fields), user, Timestamp.from(Instant.now()));
         } catch (JsonProcessingException e) {
@@ -78,7 +97,7 @@ public class TemplateService {
 
     /** 권한 확인 없이 양식 정보를 찾는다(이미 권한을 확인한 호출자용) */
     public Optional<Info> find(Long skillId) {
-        var rows = db.query("SELECT file_name, format, fields FROM hub_skill_templates WHERE skill_id = ?", (rs, i) -> {
+        var rows = db.query("SELECT file_name, format, fields FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", (rs, i) -> {
             try {
                 return new Info(rs.getString(1), rs.getString(2), json.readValue(rs.getString(3), new TypeReference<List<HwpxTemplate.Field>>() {}));
             } catch (JsonProcessingException e) {
@@ -89,14 +108,14 @@ public class TemplateService {
     }
 
     public byte[] data(Long skillId) {
-        var rows = db.query("SELECT data FROM hub_skill_templates WHERE skill_id = ?", (rs, i) -> rs.getBytes(1), skillId);
+        var rows = db.query("SELECT data FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", (rs, i) -> rs.getBytes(1), skillId);
         if (rows.isEmpty()) throw noTemplate();
         return rows.get(0);
     }
 
     public void delete(Long skillId, String user, boolean admin) {
         skills.editable(skillId, user, admin);
-        db.update("DELETE FROM hub_skill_templates WHERE skill_id = ?", skillId);
+        db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", skillId);
     }
 
     // ───────────────────────── 채우기 ─────────────────────────

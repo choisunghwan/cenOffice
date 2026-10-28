@@ -224,3 +224,17 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
   *::-webkit-scrollbar-button { display: none; }
   *::-webkit-scrollbar-corner { background: transparent; }
 }
+
+/* 결과물 양식 형식 아이콘(한글·워드·엑셀·파워포인트) */
+.tpl-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 520px; }
+.tpl-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px 10px; border-radius: 14px; border: 1px solid rgba(127, 140, 156, .3); background: transparent; color: inherit; transition: background .12s, border-color .12s; }
+.tpl-slot:not(:disabled):hover { background: rgba(127, 140, 156, .12); }
+.tpl-slot strong { font-size: 13px; }
+.tpl-slot small { font-size: 11px; opacity: .7; }
+.tpl-slot:disabled { cursor: not-allowed; opacity: .55; }
+.tpl-slot.on { border-color: #2a6db2; background: rgba(42, 109, 178, .1); }
+.tpl-slot.on small { color: #2a6db2; opacity: 1; font-weight: 700; }
+.tpl-slot.picked { box-shadow: 0 0 0 2px #2a6db2 inset; }
+.tpl-slot:focus-visible { outline: 2px solid #83b8eb; outline-offset: 2px; }
+.tpl-detail { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(127, 140, 156, .25); }
+@media (max-width: 480px) { .tpl-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -33,6 +33,10 @@ public class TemplateController {
         return templates.info(id, a.getName(), HubSkillController.admin(a)).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
+    /** 형식별 칸(한글·워드·엑셀·파워포인트): 지원 여부와 올려 둔 양식 */
+    @GetMapping("/formats")
+    public List<TemplateService.Slot> formats(@PathVariable Long id, Authentication a) { return templates.slots(id, a.getName(), HubSkillController.admin(a)); }
+
     @DeleteMapping @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize(WRITE)
     public void delete(@PathVariable Long id, Authentication a) { templates.delete(id, a.getName(), HubSkillController.admin(a)); }
 
