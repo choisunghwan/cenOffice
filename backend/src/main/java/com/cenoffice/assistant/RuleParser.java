@@ -17,7 +17,7 @@ final class RuleParser {
     private RuleParser() {}
 
     /** BOOK_ROOM: 회의실 예약 · DELETE_ITEM: 일정/예약 삭제 · MOVE_EVENT: 일정 시간·제목 변경 */
-    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, START_MEETING, JOIN_MEETING, UNSUPPORTED }
+    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, START_MEETING, JOIN_MEETING, UI_ACTION, UNSUPPORTED }
 
     /** 변경할 값. 비어 있는(null) 칸은 "그대로 둔다". */
     record MoveSpec(LocalDate date, LocalTime start, LocalTime end, String title) {

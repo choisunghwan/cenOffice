@@ -307,6 +307,22 @@ class AssistantApiTest {
         assertEquals("SQL 점검", sql.path("tool").path("title").asText());
     }
 
+    @Test void screenCommandsAreAnsweredWithoutAskingTheAi() throws Exception {
+        var r = ask(user, "다크 모드 전환");
+        assertEquals("UI_ACTION", r.path("intent").asText(), r.toString());
+        assertEquals("THEME_DARK", r.path("uiAction").asText());
+        assertFalse(r.path("ai").asBoolean());
+        assertEquals("NAV_CALENDAR", ask(user, "일정 화면 열어줘").path("uiAction").asText());
+        assertEquals("LIST_EVENTS", ask(user, "이번 주 일정 보여줘").path("intent").asText()); // 일정 조회는 그대로
+    }
+
+    @Test void adminOnlyScreenCommandsAreRefusedForOrdinaryUsers() throws Exception {
+        var denied = ask(user, "공개 승인 화면 열어줘");
+        assertEquals("UNSUPPORTED", denied.path("intent").asText(), denied.toString());
+        assertTrue(denied.path("uiAction").isMissingNode());
+        assertEquals("NAV_REVIEW", ask(admin, "공개 승인 화면 열어줘").path("uiAction").asText());
+    }
+
     @Test void startingAMeetingIsAProposalAndCreatesNothingYet() throws Exception {
         int before = read(req(get("/api/meetings"), admin, null).andExpect(status().isOk())).size();
         var r = ask(admin, "주간 회의 시작해줘");

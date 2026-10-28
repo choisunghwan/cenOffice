@@ -167,6 +167,16 @@ class AssistantLlmTest {
         return new Object[0];
     }
 
+    @Test void aiMayPickAScreenActionOnlyFromTheAllowedList() throws Exception {
+        when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"ui_action\",\"ui\":{\"action\":\"SIDEBAR_COLLAPSE\"}}");
+        var ok = read(req(post("/api/assistant/interpret"), user, Map.of("text", "메뉴 좀 치워줄래")).andExpect(status().isOk()));
+        assertEquals("UI_ACTION", ok.path("intent").asText(), ok.toString());
+        assertEquals("SIDEBAR_COLLAPSE", ok.path("uiAction").asText());
+        when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"ui_action\",\"ui\":{\"action\":\"FORMAT_DISK\"}}", "{\"answer\":\"그건 할 수 없습니다.\"}");
+        var bad = read(req(post("/api/assistant/interpret"), user, Map.of("text", "디스크 지워줘")).andExpect(status().isOk()));
+        assertTrue(bad.path("uiAction").isMissingNode(), bad.toString()); // 지어낸 동작은 실행되지 않는다
+    }
+
     @Test void toolQuestionsAreAnsweredFromTheToolList() throws Exception {
         answerFlow("{\"answer\":\"도구는 7개 있습니다.\"}");
         var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "도구 몇개야?")).andExpect(status().isOk()));
