@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { askConfirm } from '../ui/confirm'
 import { Btn, Card, ErrorNote } from '../workspace/kit'
 import { FormatIcon } from './FormatIcon'
-import { templateApi, type FormatSlot } from './templateApi'
+import { templateApi, type FormatSlot, type FormTarget } from './templateApi'
 
 /** 제작자용: 이 도구의 결과물 양식을 형식별(한글·워드·엑셀·파워포인트)로 올린다. 올린 형식은 켜지고, 안 올린 형식은 흐리게 보인다. */
-export function TemplateUploader({ skillId }: { skillId: number }) {
+export function TemplateUploader({ skillId, title = '결과물 양식', hint, onChange }: { skillId: FormTarget; title?: string; hint?: string; onChange?: () => void }) {
   const [slots, setSlots] = useState<FormatSlot[] | undefined>(undefined) // undefined: 불러오는 중
   const [picked, setPicked] = useState<string | null>(null) // 자세히 보는 형식
   const [busy, setBusy] = useState(false)
@@ -27,18 +27,18 @@ export function TemplateUploader({ skillId }: { skillId: number }) {
   const upload = async (file: File | undefined) => {
     if (!file || busy) return
     setBusy(true); setErr(null)
-    try { await templateApi.put(skillId, file); await load(); setPicked(target.current) } catch (e) { setErr((e as Error).message) } finally { setBusy(false); if (input.current) input.current.value = '' }
+    try { await templateApi.put(skillId, file); await load(); setPicked(target.current); onChange?.() } catch (e) { setErr((e as Error).message) } finally { setBusy(false); if (input.current) input.current.value = '' }
   }
   const remove = async (s: FormatSlot) => {
     if (busy || !await askConfirm({ title: `${s.label} 양식을 삭제할까요?`, message: '삭제하면 이 형식으로는 결과를 받을 수 없습니다.', okText: '삭제', danger: true })) return
     setBusy(true); setErr(null)
-    try { await templateApi.remove(skillId, s.format); await load(); setPicked(null) } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
+    try { await templateApi.remove(skillId, s.format); await load(); setPicked(null); onChange?.() } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
   }
 
   const detail = slots?.find((s) => s.format === picked && s.template)
   return (
-    <Card title="결과물 양식">
-      <p className="text-sm text-slate-400 mb-4">정해진 양식이 있다면 형식에 맞는 아이콘을 눌러 올려 두세요. 이 도구를 쓰는 사람이 결과를 그 양식에 맞춰 채운 파일로 받습니다. 본문에 <code>{'{{항목}}'}</code> 자리표시자를 넣거나, 표에 ‘항목 이름 칸 + 빈 칸’을 만들어 두면 됩니다.</p>
+    <Card title={title}>
+      <p className="text-sm text-slate-400 mb-4">{hint ?? '정해진 양식이 있다면 형식에 맞는 아이콘을 눌러 올려 두세요. 이 도구를 쓰는 사람이 결과를 그 양식에 맞춰 채운 파일로 받습니다.'} 본문에 <code>{'{{항목}}'}</code> 자리표시자를 넣거나, 표에 ‘항목 이름 칸 + 빈 칸’을 만들어 두면 됩니다.</p>
       <input ref={input} type="file" hidden onChange={(e) => void upload(e.target.files?.[0])} />
       {slots === undefined ? <p role="status" className="text-sm text-slate-400">불러오는 중…</p> : (
         <div className="tpl-slots" role="group" aria-label="양식 형식">

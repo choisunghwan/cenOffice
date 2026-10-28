@@ -11,10 +11,13 @@ export interface TemplatePlan { items: PlanItem[]; aiUsed: boolean }
 export interface PreviewCell { text: string; fieldKey?: string | null }
 export interface PreviewBlock { type: 'p' | 'table'; text?: string | null; rows?: PreviewCell[][] | null; fieldKey?: string | null }
 
-async function send(method: string, skillId: number, path: string, body?: BodyInit | object): Promise<Response> {
+/** 도구 번호, 또는 'me'(내 양식: 예) 내 회의록 양식) */
+export type FormTarget = number | 'me'
+
+async function send(method: string, skillId: FormTarget, path: string, body?: BodyInit | object): Promise<Response> {
   const token = tokenStore.get()
   const isForm = body instanceof FormData
-  const res = await fetch(`${API_URL}/api/hub/skills/${skillId}/template${path}`, {
+  const res = await fetch(`${API_URL}${skillId === 'me' ? '/api/hub/templates/me' : `/api/hub/skills/${skillId}/template`}${path}`, {
     method,
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body && !isForm ? { 'Content-Type': 'application/json' } : {}) },
     ...(body === undefined ? {} : { body: isForm ? body : JSON.stringify(body) }),
@@ -25,22 +28,22 @@ async function send(method: string, skillId: number, path: string, body?: BodyIn
 
 export const templateApi = {
   /** 등록된 양식이 없으면 null */
-  info: async (skillId: number, format = 'hwpx'): Promise<TemplateInfo | null> => {
+  info: async (skillId: FormTarget, format = 'hwpx'): Promise<TemplateInfo | null> => {
     const res = await send('GET', skillId, `?format=${format}`)
     return res.status === 204 ? null : res.json()
   },
-  slots: async (skillId: number): Promise<FormatSlot[]> => (await send('GET', skillId, '/formats')).json(),
-  put: async (skillId: number, file: File): Promise<TemplateInfo> => {
+  slots: async (skillId: FormTarget): Promise<FormatSlot[]> => (await send('GET', skillId, '/formats')).json(),
+  put: async (skillId: FormTarget, file: File): Promise<TemplateInfo> => {
     const form = new FormData()
     form.append('file', file)
     return (await send('PUT', skillId, '', form)).json()
   },
-  remove: async (skillId: number, format = 'hwpx'): Promise<void> => { await send('DELETE', skillId, `?format=${format}`) },
-  plan: async (skillId: number, result: string, format = 'hwpx'): Promise<TemplatePlan> => (await send('POST', skillId, '/plan', { format, result })).json(),
-  draft: async (skillId: number, result: string, key: string, format = 'hwpx'): Promise<string> => (await send('POST', skillId, '/draft', { format, result, key })).json().then((r: { value: string }) => r.value),
-  preview: async (skillId: number, values: Record<string, string>, format = 'hwpx'): Promise<PreviewBlock[]> => (await send('POST', skillId, '/preview', { format, values })).json().then((r: { blocks: PreviewBlock[] }) => r.blocks),
+  remove: async (skillId: FormTarget, format = 'hwpx'): Promise<void> => { await send('DELETE', skillId, `?format=${format}`) },
+  plan: async (skillId: FormTarget, result: string, format = 'hwpx'): Promise<TemplatePlan> => (await send('POST', skillId, '/plan', { format, result })).json(),
+  draft: async (skillId: FormTarget, result: string, key: string, format = 'hwpx'): Promise<string> => (await send('POST', skillId, '/draft', { format, result, key })).json().then((r: { value: string }) => r.value),
+  preview: async (skillId: FormTarget, values: Record<string, string>, format = 'hwpx'): Promise<PreviewBlock[]> => (await send('POST', skillId, '/preview', { format, values })).json().then((r: { blocks: PreviewBlock[] }) => r.blocks),
   /** 값을 채운 양식 파일(형식에 맞는 확장자)을 내려받는다 */
-  render: async (skillId: number, values: Record<string, string>, title: string, format = 'hwpx'): Promise<void> => {
+  render: async (skillId: FormTarget, values: Record<string, string>, title: string, format = 'hwpx'): Promise<void> => {
     const res = await send('POST', skillId, '/render', { format, values, title })
     const cd = res.headers.get('Content-Disposition') ?? ''
     const enc = /filename\*=UTF-8''([^;]+)/.exec(cd)?.[1]

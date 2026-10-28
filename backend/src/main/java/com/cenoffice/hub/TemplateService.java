@@ -51,6 +51,23 @@ public class TemplateService {
         this.db = db; this.skills = skills; this.json = json; this.llm = llm; this.audit = audit;
     }
 
+    // ───────────────────────── 개인 양식 ─────────────────────────
+
+    /** 내 양식(예: 내 회의록 양식)의 키. 도구 번호와 겹치지 않게 사용자 번호의 음수를 쓴다. */
+    public Long myKey(String user) { return -skills.userId(user); }
+
+    /** 도구 양식이면 그 도구를 볼 수 있어야 하고, 개인 양식이면 본인 것이어야 한다 */
+    private void canRead(Long id, String user, boolean admin) {
+        if (id < 0) { if (!id.equals(myKey(user))) throw noTemplate(); }
+        else skills.visible(id, user, admin);
+    }
+
+    /** 도구 양식이면 제작자·관리자만, 개인 양식이면 본인만 고칠 수 있다 */
+    private void canWrite(Long id, String user, boolean admin) {
+        if (id < 0) { if (!id.equals(myKey(user))) throw noTemplate(); }
+        else skills.editable(id, user, admin);
+    }
+
     // ───────────────────────── 양식 형식 ─────────────────────────
 
     /** 양식으로 받을 수 있는 문서 형식. supported=false 는 아직 채우는 기능이 없는 형식이다. */
@@ -62,7 +79,7 @@ public class TemplateService {
 
     /** 형식별 칸. 올려 둔 양식이 있으면 template 에 담긴다. */
     public List<Slot> slots(Long skillId, String user, boolean admin) {
-        skills.visible(skillId, user, admin);
+        canRead(skillId, user, admin);
         return FORMATS.stream().map(f -> new Slot(f.format(), f.label(), f.supported(), find(skillId, f.format()).orElse(null))).toList();
     }
 
@@ -70,7 +87,7 @@ public class TemplateService {
 
     /** 제작자·관리자만 등록한다(스킬 수정 권한과 같다). 같은 스킬에 다시 올리면 교체된다. */
     public Info put(Long skillId, String user, boolean admin, String fileName, byte[] data) {
-        skills.editable(skillId, user, admin);
+        canWrite(skillId, user, admin);
         String name = fileName == null ? "" : fileName.strip();
         FormEngine engine = FormEngine.Registry.byFileName(name);
         if (engine == null) throw new ApiException(HttpStatus.BAD_REQUEST, "한글(.hwpx)·워드(.docx)·엑셀(.xlsx)·파워포인트(.pptx) 파일만 올릴 수 있습니다.");
@@ -88,7 +105,7 @@ public class TemplateService {
 
     /** 이 사용자가 볼 수 있는 스킬의 양식 정보. 양식이 없으면 비어 있다. */
     public Optional<Info> info(Long skillId, String user, boolean admin, String format) {
-        skills.visible(skillId, user, admin);
+        canRead(skillId, user, admin);
         return find(skillId, FormEngine.Registry.get(format).format());
     }
 
@@ -117,7 +134,7 @@ public class TemplateService {
     }
 
     public void delete(Long skillId, String user, boolean admin, String format) {
-        skills.editable(skillId, user, admin);
+        canWrite(skillId, user, admin);
         db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = ?", skillId, FormEngine.Registry.get(format).format());
     }
 
@@ -150,7 +167,7 @@ public class TemplateService {
                 if (v != null) items.put(key, new PlanItem(key, items.get(key).label(), v, "AI"));
             }
         }
-        audit.log(user, "TEMPLATE_PLAN", "hub-skill:" + skillId, aiUsed ? "ai" : "rule"); // 결과 내용은 기록하지 않는다
+        audit.log(user, "TEMPLATE_PLAN", (skillId < 0 ? "my-form:" : "hub-skill:") + Math.abs(skillId), aiUsed ? "ai" : "rule"); // 결과 내용은 기록하지 않는다
         return new Plan(List.copyOf(items.values()), aiUsed);
     }
 
@@ -163,7 +180,7 @@ public class TemplateService {
             String raw = llm.generateJson(DRAFT_SYSTEM, "<field>" + key + "</field>\n<result>\n" + limit(result) + "\n</result>");
             JsonNode v = json.readTree(raw).path("value");
             if (v.isTextual() && !v.asText().isBlank()) {
-                audit.log(user, "TEMPLATE_DRAFT", "hub-skill:" + skillId, "ai");
+                audit.log(user, "TEMPLATE_DRAFT", (skillId < 0 ? "my-form:" : "hub-skill:") + Math.abs(skillId), "ai");
                 return cut(v.asText());
             }
         } catch (LlmProvider.LlmException | JsonProcessingException | RuntimeException e) {
@@ -181,7 +198,7 @@ public class TemplateService {
     public byte[] render(Long skillId, String user, boolean admin, String format, Map<String, String> values) {
         FormEngine engine = FormEngine.Registry.get(format);
         require(skillId, user, admin, engine.format());
-        audit.log(user, "TEMPLATE_RENDER", "hub-skill:" + skillId, engine.format()); // 내용은 기록하지 않는다
+        audit.log(user, "TEMPLATE_RENDER", (skillId < 0 ? "my-form:" : "hub-skill:") + Math.abs(skillId), engine.format()); // 내용은 기록하지 않는다
         return engine.fill(data(skillId, engine.format()), sane(values));
     }
 

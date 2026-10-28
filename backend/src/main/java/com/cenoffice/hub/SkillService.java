@@ -472,6 +472,11 @@ public class SkillService {
 
     String teamOf(String username) { return users.findByUsername(username).map(UserAccount::getTeam).orElse(null); }
 
+    /** 사용자 번호(개인 양식의 키를 만들 때 쓴다) */
+    public long userId(String username) {
+        return users.findByUsername(username).map(com.cenoffice.domain.UserAccount::getId).orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다"));
+    }
+
     String displayName(String username) {
         if (BuiltinSkillSeeder.OWNER.equals(username)) return BuiltinSkillSeeder.AUTHOR_NAME; // 내장 도구의 제작자 표시
         return users.findByUsername(username).map(UserAccount::getDisplayName).orElse(username);
