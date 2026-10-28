@@ -65,7 +65,7 @@ function MinutesDownloadList({ items, initial }: { items: PendingMinutes[]; init
     setBusy(id); setErr(null)
     try {
       const r = await downloadMinutes(id, format)
-      const how = r.how === 'me' ? '내 양식' : r.how === 'company' ? '회사 양식' : '기본 문서'
+      const how = r.how === 'me' ? '내 양식' : r.how === 'company' ? '공용 양식' : '양식 없이 받기'
       setDone((cur) => ({ ...cur, [id]: `${how}(${dlLabel(r.format)})으로 받았습니다.${r.missing.length ? ` 비어 있는 항목: ${r.missing.join(', ')}` : ''}` }))
     } catch (e) { setErr((e as Error).message) } finally { setBusy(null) }
   }

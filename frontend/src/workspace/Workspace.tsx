@@ -60,7 +60,7 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="hub-shell absolute inset-x-0 bottom-0 top-[72px] flex border-t border-white/8 z-[5]">
-      <nav className={`${collapsed ? 'w-14' : 'w-52'} shrink-0 border-r border-white/8 p-2 overflow-hidden hidden md:flex md:flex-col transition-[width] duration-150`}>
+      <nav className={`${collapsed ? 'w-14' : 'w-52'} shrink-0 border-r border-white/8 p-2 overflow-hidden hidden lg:flex lg:flex-col transition-[width] duration-150`}>
         <button onClick={toggleNav} aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'} title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
           className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between px-3'} py-2 mb-2 rounded-lg text-slate-400 hover:bg-white/5 hover:text-white`}>
           {!collapsed && <span className="text-[9px] tracking-[0.18em] text-slate-500">YOUR AI WORKSPACE</span>}
@@ -81,13 +81,13 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
         <div className="pt-2 mt-2 border-t border-white/8">
           {MORE.map((m) => <button key={m.key} onClick={() => setPage(m.key)} aria-current={page === m.key ? 'page' : undefined} title={m.label} aria-label={m.label} className={`w-full ${collapsed ? 'text-center px-0' : 'text-left px-3'} py-2 rounded-lg text-sm ${page === m.key ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}>{collapsed ? '⚙' : m.label}</button>)}        </div>
       </nav>
-      <nav aria-label="업무 메뉴" data-coach="menu" className="md:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav aria-label="업무 메뉴" data-coach="menu" className="lg:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[...MENU, ...MORE].map((m) => (
           <button key={m.key} data-coach={`menu-${m.key}`} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
             className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${isOn(m.key) ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
         ))}
       </nav>
-      <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden md:pt-0 pt-14' : 'overflow-y-auto p-6 md:pt-6 pt-16'}`} onKeyDown={(e) => e.stopPropagation()}>
+      <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden lg:pt-0 pt-14' : 'overflow-y-auto p-6 lg:pt-6 pt-16'}`} onKeyDown={(e) => e.stopPropagation()}>
         {user ? <div className={user && page === 'dashboard' ? 'h-full' : 'max-w-[1200px] mx-auto'}>{body()}</div> : (
           <div className="h-full grid place-items-center">
             <div className="text-center space-y-3">

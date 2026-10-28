@@ -69,7 +69,7 @@
 .chat-home .ha-examples{justify-content:center;margin-top:0}
 .chat-home .ha-note{text-align:center;margin:8px 2px 0;min-height:16px}
 .ha-bot>p.ha-sub{display:block;font-size:12px;font-weight:650;color:var(--c-muted);margin:12px 0 4px;background:none;border:0;padding:0}
-@media(max-width:768px){.chat-home .ha-thread{padding:16px 12px 8px}.chat-home .ha-dock{padding:6px 12px 10px}}
+@media(max-width:1023px){.chat-home .ha-thread{padding:16px 12px 8px}.chat-home .ha-dock{padding:6px 12px 10px}}
 
 /* 일반 답변: 줄바꿈을 살리고 근거로 쓴 정보를 작게 보여 준다 */
 .ha-bot>p.ha-answer{white-space:pre-wrap;display:block;line-height:1.8;overflow-wrap:anywhere}

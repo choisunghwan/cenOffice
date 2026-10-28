@@ -3,7 +3,7 @@ import { templateApi, type FormTarget } from '../hub/templateApi'
 import { minutesApi } from '../meeting/minutesApi'
 
 export type DlFormat = 'hwpx' | 'docx' | 'xlsx' | 'pptx' | 'pdf'
-/** me: 내 양식 · company: 회사 양식 · basic: 양식 없이 기본 문서 */
+/** me: 내 양식 · company: 공용 양식 · basic: 양식 없이 받기 */
 export interface DlResult { how: 'me' | 'company' | 'basic'; format: DlFormat; missing: string[] }
 
 export const DL_FORMATS: { key: DlFormat; label: string }[] = [
@@ -11,7 +11,7 @@ export const DL_FORMATS: { key: DlFormat; label: string }[] = [
 ]
 export const dlLabel = (f: DlFormat) => DL_FORMATS.find((x) => x.key === f)?.label ?? f
 
-/** 회의록 도구(cen-meeting-minutes)에 관리자가 올려 둔 회사 양식의 대상. 없으면 null */
+/** 회의록 도구(cen-meeting-minutes)에 관리자가 올려 둔 공용 양식의 대상. 없으면 null */
 async function companyTarget(): Promise<FormTarget | null> {
   try {
     const page = await hub.skills({ q: 'cen-meeting-minutes', size: 5 })
@@ -19,7 +19,7 @@ async function companyTarget(): Promise<FormTarget | null> {
   } catch { return null }
 }
 
-/** 이 대상(내 양식/회사 양식)에서 쓸 형식을 찾는다. 형식을 정했으면 그 형식, 아니면 올려 둔 첫 형식. PDF 는 양식이 없다. */
+/** 이 대상(내 양식/공용 양식)에서 쓸 형식을 찾는다. 형식을 정했으면 그 형식, 아니면 올려 둔 첫 형식. PDF 는 양식이 없다. */
 async function pickForm(target: FormTarget, want: DlFormat | null): Promise<DlFormat | null> {
   if (want === 'pdf') return null
   try {
@@ -30,7 +30,7 @@ async function pickForm(target: FormTarget, want: DlFormat | null): Promise<DlFo
 }
 
 /**
- * 확정된 회의록을 내려받는다. 양식이 있으면 내 양식 → 회사 양식 순으로 그 양식에 채워 받고, 없으면 기본 문서로 받는다.
+ * 확정된 회의록을 내려받는다. 양식이 있으면 내 양식 → 공용 양식 순으로 그 양식에 채워 받고, 없으면 기본 문서로 받는다.
  * 양식에서 근거를 못 찾은 항목은 채팅에서 지어내거나 AI 로 채우지 않고 비워 둔 채, 어떤 항목인지만 알려 준다.
  */
 export async function downloadMinutes(meetingId: string, want: DlFormat | null): Promise<DlResult> {
