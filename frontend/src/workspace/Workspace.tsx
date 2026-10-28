@@ -4,7 +4,8 @@ import { AgentsPage, ComingSoonPage, MonitoringPage, OfficeManagementPage, Requi
 import { ProjectsPage } from './Projects'
 import { HubPage } from '../hub/HubPage'
 import { ChatHistory } from '../home/ChatHistory'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense } from 'react'
+import { useUi } from '../ui/uiStore'
 const MeetingsPage = lazy(() => import('../meeting/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
 
 const CalendarPage = lazy(() => import('../calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
@@ -25,13 +26,8 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
   const user = useOffice((s) => s.user)
   const page = useOffice((s) => s.workspacePage)
   const setPage = useOffice((s) => s.setWorkspacePage)
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem('workspace-nav-collapsed') === '1' } catch { return false }
-  })
-  const toggleNav = () => setCollapsed((c) => {
-    try { localStorage.setItem('workspace-nav-collapsed', c ? '0' : '1') } catch { /* 저장 못 해도 동작에는 지장 없음 */ }
-    return !c
-  })
+  const collapsed = useUi((s) => s.navCollapsed)
+  const toggleNav = () => useUi.getState().setNavCollapsed(!collapsed)
 
   // 도구 관련 화면(내 도구·도구 만들기·공개 승인)은 사이드바의 '도구' 아래에 있는 것으로 본다
   const isOn = (key: string) => (key === 'home' ? page === 'home' || page.startsWith('hub-') : page === key)

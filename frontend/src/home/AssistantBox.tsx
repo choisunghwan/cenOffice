@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useChat } from './chatStore'
+import { runUiAction } from './uiActions'
 import { TurnRail, type RailItem } from './TurnRail'
 import { TemplateFill } from './TemplateFill'
 import { Flow } from './Workflow'
@@ -12,6 +13,7 @@ import { api } from '../api'
 import { hub } from '../hubApi'
 import { ExportButtons } from '../hub/ExportButtons'
 import { formatDue, isoDate, type MyItem, type PendingMinutes } from '../meeting/minutesApi'
+import { askConfirm } from '../ui/confirm'
 import { meetingsApi } from '../meeting/api'
 import { assistantApi, type Ambiguity, type Draft, type HistoryTurn, type Reply, type Room, type ToolPick } from './assistantApi'
 
@@ -155,6 +157,11 @@ export function AssistantBox() {
       setAi(reply.ai || ai)
       const bot: Turn = { id: nextId.current++, role: 'assistant', reply, input: value, draft: reply.draft, ambiguous: reply.ambiguous, tool: reply.tool, room: reply.room ?? null, rooms: reply.rooms ?? [], target: reply.target ?? null, candidates: reply.candidates ?? [], state: 'open' }
       commit((cur) => [...cur, bot].slice(-30))
+      // 화면 조작은 답과 함께 바로 실행한다(되돌릴 수 있는 동작이라 확인 카드를 거치지 않는다). 로그아웃만 확인을 받는다.
+      if (reply.intent === 'UI_ACTION' && reply.uiAction) {
+        if (reply.uiAction === 'LOGOUT') { if (await askConfirm({ title: '로그아웃할까요?', message: '로그아웃하면 로그인 화면으로 돌아갑니다.', okText: '로그아웃' })) runUiAction('LOGOUT') }
+        else runUiAction(reply.uiAction)
+      }
     } catch (e) {
       if (here()) previous.current = null
       const failed: Turn = { id: nextId.current++, role: 'assistant', input: value, draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open',

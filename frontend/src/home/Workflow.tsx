@@ -34,6 +34,7 @@ export function stepsFor(t: Bot): Step[] {
       return steps
     }
     case 'ANSWER': return [understood, { label: '내 업무 정보 확인', state: 'done', note: t.reply.references?.length ? `${t.reply.references.length}건` : undefined }, { label: 'AI 답변', state: 'done' }]
+    case 'UI_ACTION': return [understood, { label: '화면 조작', state: 'done' }]
     case 'CLARIFY': return [understood, { label: '추가 정보', state: 'ready', note: '더 알려 주세요' }]
     case 'UNSUPPORTED': return [understood, { label: '처리', state: 'fail', note: '할 수 없는 요청' }]
     default: return [understood, { label: '정보 조회', state: 'done' }, { label: '답변', state: 'done' }]

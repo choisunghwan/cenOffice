@@ -1,19 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useUi } from '../ui/uiStore'
 
-const KEY = 'cen-office-appearance'
+/** 다크/라이트 모드. 값은 공통 화면 설정 저장소(uiStore)에 있어서 홈 입력창에서도 같이 바뀐다. */
 export function useAppearance() {
-  const [appearance, setAppearance] = useState<'light' | 'dark'>(() => {
-    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light' } catch { return 'light' }
-  })
-  useEffect(() => {
-    try { localStorage.setItem(KEY, appearance) } catch { /* Session preference still works. */ }
-  }, [appearance])
-  useEffect(() => {
-    const sync = (e: StorageEvent) => {
-      if (e.key === KEY) setAppearance(e.newValue === 'dark' ? 'dark' : 'light')
-    }
-    window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
-  }, [])
-  return { appearance, toggleAppearance: () => setAppearance((current) => current === 'light' ? 'dark' : 'light') }
+  const appearance = useUi((s) => s.appearance)
+  return { appearance, toggleAppearance: () => useUi.getState().toggleAppearance() }
 }
