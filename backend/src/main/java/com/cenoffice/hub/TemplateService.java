@@ -115,7 +115,7 @@ public class TemplateService {
         Map<String, String> found = labelled(text, info.fields().stream().map(f -> norm(f.label())).collect(java.util.stream.Collectors.toSet()));
         var items = new LinkedHashMap<String, PlanItem>();
         for (var f : info.fields()) {
-            String v = found.get(norm(f.label()));
+            String v = lookup(found, norm(f.label()));
             items.put(f.key(), v == null ? new PlanItem(f.key(), f.label(), null, "MISSING") : new PlanItem(f.key(), f.label(), cut(v), "RESULT"));
         }
         boolean aiUsed = false;
@@ -202,18 +202,56 @@ public class TemplateService {
             }
             Matcher m = INLINE.matcher(line);
             boolean labelLine = m.matches();
+            String[] row = tableRow(line);
+            if (row != null && row.length == 2 && !row[0].isBlank() && !row[1].isBlank() && !row[0].equals("항목")) { // "| 일시 | 값 |" 표 줄도 라벨 → 값으로 읽는다
+                byLine.putIfAbsent(norm(row[0]), row[1].replace("**", "").strip());
+            }
             if (labelLine && current != null && knownLabels.contains(norm(m.group(1)))) { // 양식의 다른 항목 줄을 만나면 제목 본문은 거기서 끝난다
                 if (!body.toString().isBlank()) byHeading.putIfAbsent(current, body.toString().strip());
                 current = null;
                 body.setLength(0);
             }
-            if (current != null) body.append(line).append('\n');
+            if (current != null) { String t = plainRow(line); if (t != null) body.append(t).append('\n'); }
             if (labelLine) byLine.putIfAbsent(norm(m.group(1)), m.group(2).replace("**", "").strip());
         }
         if (current != null && !body.toString().isBlank()) byHeading.putIfAbsent(current, body.toString().strip());
         var all = new LinkedHashMap<>(byHeading);
         all.putAll(byLine);
         return all;
+    }
+
+    /** 같은 뜻으로 흔히 쓰는 이름. 양식의 항목 이름이 도구 결과와 조금 달라도 찾는다. */
+    private static final Map<String, List<String>> ALIASES = Map.of(
+            "회의명", List.of("회의 제목", "제목"), "회의 제목", List.of("회의명", "제목"),
+            "일시", List.of("회의 일시", "일자", "날짜"), "참석자", List.of("참여자", "참석 인원"),
+            "이슈", List.of("이슈 · 확인 필요"), "이슈 · 확인 필요", List.of("이슈", "확인 필요"));
+
+    private static String lookup(Map<String, String> found, String label) {
+        String v = found.get(label);
+        if (v != null) return v;
+        for (String alias : ALIASES.getOrDefault(label, List.of())) { v = found.get(norm(alias)); if (v != null) return v; }
+        return null;
+    }
+
+
+    /** "| a | b |" 한 줄을 칸으로 나눈다. 표 줄이 아니거나 구분선(|---|)이면 null */
+    private static String[] tableRow(String line) {
+        String t = line.strip();
+        if (!t.startsWith("|") || !t.endsWith("|") || t.length() < 3 || isRule(t)) return null;
+        String[] cells = t.substring(1, t.length() - 1).split("\\|", -1);
+        for (int i = 0; i < cells.length; i++) cells[i] = cells[i].strip();
+        return cells;
+    }
+
+    private static boolean isRule(String t) { return t.startsWith("|") && t.chars().allMatch(c -> c == '|' || c == '-' || c == ':' || c == ' '); }
+
+    /** 제목 아래 본문에 넣을 줄. 표 줄은 사람이 읽는 줄로 풀고, 구분선은 버린다. */
+    private static String plainRow(String line) {
+        if (isRule(line.strip())) return null;
+        String[] cells = tableRow(line);
+        if (cells == null) return line;
+        if (cells.length >= 3 && cells[0].matches("\\d+")) return cells[0] + ". " + cells[1] + " (" + String.join(" · ", java.util.Arrays.copyOfRange(cells, 2, cells.length)) + ")";
+        return String.join(" · ", cells);
     }
 
     private static String norm(String label) { return label.replaceAll("[*`#]", "").replaceAll("[:：]\\s*$", "").replaceAll("\\s+", " ").strip(); }

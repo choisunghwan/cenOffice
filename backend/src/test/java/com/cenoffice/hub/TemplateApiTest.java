@@ -138,6 +138,40 @@ class TemplateApiTest {
         assertTrue(item(plan, "소속").path("value").isMissingNode() || item(plan, "소속").path("value").isNull()); // 서버는 null 필드를 빼고 보낸다
     }
 
+    /** 내장 회의록 도구가 내는 모양(표 + 제목 아래 본문 + 액션 표)을 그대로 읽는다 */
+    @Test void planReadsTablesAndAliasesFromMeetingMinutesTool() throws Exception {
+        upload(admin, "m.hwpx", form("회의명", "일시", "참석자", "결정 사항", "액션 아이템", "논의 내용")).andExpect(status().isOk());
+        String result =
+                "# 회의록 정리 초안\n"
+                + "\n"
+                + "| 항목 | 내용 |\n"
+                + "|---|---|\n"
+                + "| 회의 제목 | 주간 팀 회의 |\n"
+                + "| 일시 | 2026-10-28 |\n"
+                + "| 참석자 | 김대리, 박과장 |\n"
+                + "\n"
+                + "## 결정 사항\n"
+                + "- 견적서는 금요일까지 확정하기로 함\n"
+                + "\n"
+                + "## 액션 아이템\n"
+                + "| No | 내용 | 담당 | 기한(원문 표현) |\n"
+                + "|---|---|---|---|\n"
+                + "| 1 | 견적서 작성 | 김대리 | 금요일 |\n"
+                + "\n"
+                + "## 논의 내용\n"
+                + "- 일정 공유\n"
+                + "\n";
+        var plan = postJson("/plan", admin, Map.of("result", result));
+        assertEquals("주간 팀 회의", item(plan, "회의명").path("value").asText()); // '회의 제목'을 '회의명'으로 찾는다
+        assertEquals("2026-10-28", item(plan, "일시").path("value").asText());
+        assertEquals("김대리, 박과장", item(plan, "참석자").path("value").asText());
+        assertTrue(item(plan, "결정 사항").path("value").asText().contains("금요일까지 확정"));
+        String action = item(plan, "액션 아이템").path("value").asText();
+        assertTrue(action.contains("1. 견적서 작성 (김대리 · 금요일)"), action);
+        assertFalse(action.contains("|---"), action); // 표 구분선이 칸에 섞이지 않는다
+        assertEquals("RESULT", item(plan, "액션 아이템").path("source").asText());
+    }
+
     @Test void planNeverInventsValues() throws Exception {
         upload(admin, "a.hwpx", form("성명", "소속")).andExpect(status().isOk());
         var plan = postJson("/plan", admin, Map.of("result", "오늘 날씨가 좋습니다. 관련 없는 문장입니다."));
