@@ -17,7 +17,7 @@ final class RuleParser {
     private RuleParser() {}
 
     /** BOOK_ROOM: 회의실 예약 · DELETE_ITEM: 일정/예약 삭제 · MOVE_EVENT: 일정 시간·제목 변경 */
-    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, UNSUPPORTED }
+    enum Kind { CREATE_EVENT, LIST_EVENTS, LIST_TASKS, LIST_PENDING, BRIEFING, BOOK_ROOM, DELETE_ITEM, MOVE_EVENT, START_MEETING, JOIN_MEETING, UNSUPPORTED }
 
     /** 변경할 값. 비어 있는(null) 칸은 "그대로 둔다". */
     record MoveSpec(LocalDate date, LocalTime start, LocalTime end, String title) {
@@ -57,7 +57,12 @@ final class RuleParser {
     private static final Pattern WEEK_DAY = Pattern.compile("(이번|다음|다다음)\\s*주\\s*([월화수목금토일])\\s*요일?");
     private static final Pattern BARE_DAY = Pattern.compile("(?<![가-힣])([월화수목금토일])요일");
     private static final Pattern WEEK_ONLY = Pattern.compile("(이번|다음|다다음)\\s*주(?![가-힣])");
-    private static final Pattern MONTH_ONLY = Pattern.compile("(이번|다음)\\s*달");
+    /** 화상회의 참여 코드(32자리 16진수) */
+    private static final Pattern MEETING_CODE = Pattern.compile("(?<![0-9a-fA-F])[0-9a-fA-F]{32}(?![0-9a-fA-F])");
+    /** "회의 시작해줘", "화상회의 열어줘": 지금 모이는 회의를 만드는 말(날짜·시각이 없을 때만 일정이 아니라 회의 시작으로 본다) */
+    private static final Pattern START_MEETING = Pattern.compile("(?:회의|미팅)\\s*(?:를|을|좀|하나)?\\s*(?:시작|열어|열자|열기|개설)|화상\\s*(?:회의|미팅)\\s*(?:를|을|좀)?\\s*(?:만들|열|시작)");
+    private static final Pattern START_COMMAND = Pattern.compile("\\s*(?:을|를|좀|하나)?\\s*(?:시작|열어|열자|열기|개설|만들|열)\\S*\\s*$");
+    private static final Pattern MONTH_ONLY =Pattern.compile("(이번|다음)\\s*달");
     private static final Pattern CLOCK = Pattern.compile("(?<!\\d)(\\d{1,2}):(\\d{2})(?!\\d)");
     private static final Pattern KOR_TIME = Pattern.compile("(오전|오후|아침|저녁|밤|새벽)?\\s*(\\d{1,2})\\s*시(?!간)(?:\\s*(?:(\\d{1,2})\\s*분|(반)))?"); // "2시간"은 시각이 아니라 길이
     private static final Pattern DURATION = Pattern.compile("(\\d{1,2})\\s*시간(?:\\s*(?:동안|짜리|정도))?");
@@ -72,6 +77,8 @@ final class RuleParser {
     static Intent parse(String text, LocalDate today, List<String> directoryNames, List<String> roomNames) {
         String t = text == null ? "" : text.strip();
         if (t.isEmpty()) return Intent.unsupported("무엇을 도와드릴까요? 예: “내일 오후 3시에 팀 회의 잡아줘”");
+        var code = MEETING_CODE.matcher(t);
+        if (code.find()) return new Intent(Kind.JOIN_MEETING, null, null, null, false, false, null, false, List.of(), null, null, null, null, code.group().toLowerCase(), null);
         boolean create = CREATE.matcher(t).find();
         boolean list = LIST.matcher(t).find();
         boolean strongCreate = STRONG_CREATE.matcher(t).find();
@@ -82,6 +89,7 @@ final class RuleParser {
         if (DELETE.matcher(t).find() && !strongCreate) return deleteIntent(t, d);
         if (MOVE.matcher(t).find() && !strongCreate && !booking) return moveIntent(t, d, directoryNames);
         if (booking) return bookRoomIntent(t, d, directoryNames, roomNames);
+        if (START_MEETING.matcher(t).find() && d == null && !KOR_TIME.matcher(t).find() && !CLOCK.matcher(t).find()) return startMeetingIntent(t);
 
         // 내 상황을 묻는 말: 오늘 브리핑 · 확정할 회의록 · 할 일 (읽기 전용 답변)
         if (!strongCreate) {
@@ -97,6 +105,13 @@ final class RuleParser {
         // 일정과 관련된 말이 없으면 "오늘 날씨 어때"처럼 상관없는 질문을 일정 조회로 오해하지 않는다
         if (TOPIC.matcher(t).find() && (list || d != null)) return listIntent(t, d, today);
         return Intent.unsupported(""); // 안내 문구는 서비스가 상황(AI 연결 여부)에 맞게 붙인다
+    }
+
+    /** 말에서 명령 부분을 떼고 남은 말이 회의 이름이다. "회의"·"화상회의"처럼 이름이 아닌 말이면 이름 없음(서비스가 기본 이름을 쓴다). */
+    private static Intent startMeetingIntent(String t) {
+        String name = START_COMMAND.matcher(t).replaceFirst("").strip();
+        if (name.matches("(?:화상\\s*)?(?:회의|미팅)?")) name = "";
+        return new Intent(Kind.START_MEETING, name.isEmpty() ? null : name, null, null, false, false, null, false, List.of(), null, null, null);
     }
 
     private static boolean mentionsRoom(String t, List<String> roomNames) {

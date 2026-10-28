@@ -167,6 +167,20 @@ class AssistantLlmTest {
         return new Object[0];
     }
 
+    @Test void toolQuestionsAreAnsweredFromTheToolList() throws Exception {
+        answerFlow("{\"answer\":\"도구는 7개 있습니다.\"}");
+        var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "도구 몇개야?")).andExpect(status().isOk()));
+        assertEquals("ANSWER", r.path("intent").asText(), r.toString());
+        boolean ref = false;
+        for (var x : r.path("references")) if (x.asText().equals("도구 목록")) ref = true;
+        assertTrue(ref, r.path("references").toString());
+        var prompts = ArgumentCaptor.forClass(String.class);
+        verify(llm, times(2)).generateJson(anyString(), prompts.capture());
+        String answer = prompts.getAllValues().get(1);
+        assertTrue(answer.contains("## 사용할 수 있는 도구") && answer.contains("SQL 점검"), answer);
+        assertTrue(answer.matches("(?s).*총 \\d+개.*"), "도구 개수가 근거에 들어 있어야 한다");
+    }
+
     @Test void generalQuestionsAreAnsweredFromWhatTheUserMayReadAndNeverFromTheTranscript() throws Exception {
         db.update("delete from meeting_action_items");
         String t1 = "견적회의" + UUID.randomUUID().toString().substring(0, 4);

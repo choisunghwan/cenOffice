@@ -307,6 +307,21 @@ class AssistantApiTest {
         assertEquals("SQL 점검", sql.path("tool").path("title").asText());
     }
 
+    @Test void startingAMeetingIsAProposalAndCreatesNothingYet() throws Exception {
+        int before = read(req(get("/api/meetings"), admin, null).andExpect(status().isOk())).size();
+        var r = ask(admin, "주간 회의 시작해줘");
+        assertEquals("START_MEETING", r.path("intent").asText(), r.toString());
+        assertEquals("주간 회의", r.path("meeting").path("title").asText());
+        assertEquals(before, read(req(get("/api/meetings"), admin, null)).size()); // 사용자가 확인 카드에서 눌러야 만들어진다
+        assertEquals("새 회의", ask(admin, "회의 시작해줘").path("meeting").path("title").asText());
+    }
+
+    @Test void joinCodeProposalEchoesTheCode() throws Exception {
+        var r = ask(admin, "이 코드로 회의 참여해줘 0123456789abcdef0123456789abcdef");
+        assertEquals("JOIN_MEETING", r.path("intent").asText(), r.toString());
+        assertEquals("0123456789abcdef0123456789abcdef", r.path("meeting").path("code").asText());
+    }
+
     @Test void toolWithRegisteredTemplateIsMarkedAsHavingOne() throws Exception {
         long id = builtinTool("cen-sql-reviewer").path("id").asLong();
         byte[] form = req(post("/api/hub/documents/export"), admin, Map.of("format", "hwpx", "title", "양식", "markdown", "{{사업명}}")).andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();

@@ -16,6 +16,27 @@ class RuleParserTest {
     Intent p(String s) { return RuleParser.parse(s, TODAY, NAMES); }
     static LocalDateTime at(int mo, int d, int h, int mi) { return LocalDateTime.of(2026, mo, d, h, mi); }
 
+    @Test void startingAMeetingNowIsNotACalendarEvent() {
+        assertEquals(Kind.START_MEETING, p("회의 시작해줘").kind());
+        assertNull(p("회의 시작해줘").title()); // 이름이 없으면 서비스가 기본 이름을 쓴다
+        var named = p("주간 회의 시작해줘");
+        assertEquals(Kind.START_MEETING, named.kind());
+        assertEquals("주간 회의", named.title());
+        assertEquals(Kind.START_MEETING, p("화상회의 열어줘").kind());
+    }
+
+    @Test void meetingsWithADateOrTimeStayCalendarEvents() {
+        assertEquals(Kind.CREATE_EVENT, p("내일 오후 3시에 팀 회의 잡아줘").kind());
+        assertEquals(Kind.CREATE_EVENT, p("내일 회의 만들어줘").kind());
+        assertEquals(Kind.BOOK_ROOM, p("회의실 예약해줘").kind());
+    }
+
+    @Test void joinCodeStartsAJoin() {
+        var i = p("회의 참여해줘 0123456789ABCDEF0123456789abcdef");
+        assertEquals(Kind.JOIN_MEETING, i.kind());
+        assertEquals("0123456789abcdef0123456789abcdef", i.targetQuery()); // 코드는 소문자로 통일
+    }
+
     @Test void tomorrowAfternoonMeeting() {
         var i = p("내일 오후 3시에 팀 회의 잡아줘");
         assertEquals(Kind.CREATE_EVENT, i.kind());
