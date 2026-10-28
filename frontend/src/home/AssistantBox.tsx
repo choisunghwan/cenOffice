@@ -75,12 +75,12 @@ function MinutesDownloadList({ items, initial }: { items: PendingMinutes[]; init
         <button type="button" role="radio" aria-checked={format === null} className={format === null ? 'on' : ''} onClick={() => setFormat(null)} title="내 양식 → 회사 양식 → 기본 문서 순으로 정합니다">자동</button>
         {DL_FORMATS.map((f) => <button key={f.key} type="button" role="radio" aria-checked={format === f.key} className={format === f.key ? 'on' : ''} onClick={() => setFormat(f.key)}>{f.label}</button>)}
       </div>
-      <ul className="home-list compact ha-list">
+      <ul className="ha-dl-list">
         {items.map((p) => {
           const e = new Date(p.endedAt)
           return (
             <li key={p.meetingId} className="ha-dl-row">
-              <div><b>{p.meetingTitle}</b><small>{e.getMonth() + 1}월 {e.getDate()}일 확정{done[p.meetingId] ? ` · ${done[p.meetingId]}` : ''}</small></div>
+              <div className="ha-dl-info"><b>{p.meetingTitle}</b><small>{e.getMonth() + 1}월 {e.getDate()}일 확정{done[p.meetingId] ? ` · ${done[p.meetingId]}` : ''}</small></div>
               <button type="button" className="cal-primary" disabled={!!busy} onClick={() => void go(p.meetingId)}>{busy === p.meetingId ? '만드는 중…' : done[p.meetingId] ? '다시 받기' : '받기'}</button>
             </li>
           )

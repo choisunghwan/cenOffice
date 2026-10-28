@@ -213,3 +213,11 @@
 .ha-suggest button:disabled{opacity:.5;cursor:not-allowed}
 .ha-stop{background:#b64545;border-color:#b64545;display:inline-flex;align-items:center;gap:6px}
 .ha-stop:hover{background:#9b3636}
+
+/* 회의록 내려받기 카드: 기존 목록(.home-list) 스타일과 겹치지 않게 따로 둔다 */
+.ha-dl-list{display:flex;flex-direction:column;gap:8px;margin:8px 0 0;padding:0;list-style:none}
+.ha-dl-list .ha-dl-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid rgba(127,140,156,.35);border-radius:12px;background:rgba(127,140,156,.06)}
+.ha-dl-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ha-dl-info b{font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.ha-dl-info small{font-size:12px;color:var(--c-muted);overflow-wrap:anywhere}
+.ha-dl-list .ha-dl-row .cal-primary{flex:none;width:auto;min-width:84px}
