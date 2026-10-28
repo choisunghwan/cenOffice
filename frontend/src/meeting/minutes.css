@@ -54,3 +54,11 @@
 .email-warn{font-size:11.5px;line-height:1.6;color:#8a5a00;background:#fff4dc;border:1px solid #f0d9a3;border-radius:8px;padding:7px 9px;margin:0}
 .email-ok{color:#1f7a4d;font-size:12px;margin:0}.email-err{color:#c0262d;font-size:12px;margin:0}
 .email-hint,.email-ok,.email-err,.email-warn{overflow-wrap:anywhere;padding-right:2px}.email-form{min-width:0}
+
+/* 회의록 내보내기: 한 카드 안에서 탭으로 고른다 */
+.export-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0 14px;border-bottom:1px solid #dce4ed}
+.export-tabs button{padding:8px 14px;font-size:13px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:#6b7d91}
+.export-tabs button:hover{color:#172d46}
+.export-tabs button.on{color:#2768a5;border-bottom-color:#2768a5;font-weight:700}
+.export-body>.minutes-muted{margin:0 0 10px}
+.minutes-export .tf-box{margin-top:0;padding:0;border:0;background:transparent}
