@@ -24,3 +24,7 @@
 .skill-editor > p { color: #a3b3c8; font-size: 13px; margin-bottom: 16px; }
 .skill-editor textarea { font-family: ui-monospace, Consolas, monospace; line-height: 1.8; }
 @media (max-width: 640px) { .skill-register-body, .skill-register-footer { padding: 20px; } .skill-register-tabs { padding: 0 20px; } .skill-register-sharing { grid-template-columns: 1fr; gap: 12px; } .skill-register-footer > div > div { width: 100%; } .skill-register-footer button { flex: 1; } }
+
+.form-upload{margin-top:14px;padding:18px 16px}
+.form-upload-clear{margin-top:8px;font-size:12px;text-decoration:underline;opacity:.75}
+.form-upload-clear:hover{opacity:1}

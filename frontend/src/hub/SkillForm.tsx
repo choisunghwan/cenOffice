@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { askConfirm } from '../ui/confirm'
+import { templateApi } from './templateApi'
 import { hub, type HubCategory } from '../hubApi'
 import { Btn, ErrorNote, Input, Select, Textarea, errMsg } from '../workspace/kit'
 import { Field } from './shared'
@@ -32,6 +34,7 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
   const [category, setCategory] = useState('')
   const [tags, setTags] = useState('')
   const [visibility, setVisibility] = useState('PUBLIC')
+  const [form, setForm] = useState<File | null>(null) // 결과물 양식(선택)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -44,6 +47,12 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
       const d = mode === 'upload'
         ? await hub.upload(file!, { ...common, tags })
         : await hub.registerMd({ skillMd: md, ...common, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })
+      if (form) {
+        // 양식은 도구가 만들어진 뒤에 붙인다. 실패해도 도구는 저장된 상태라, 알리고 상세 화면에서 다시 올릴 수 있게 한다.
+        try { await templateApi.put(d.summary.id, form) } catch (x) {
+          await askConfirm({ title: '양식을 올리지 못했어요', message: `도구는 저장되었습니다. ${(x as Error).message} 도구 화면에서 양식을 다시 올릴 수 있어요.`, okText: '확인', cancelText: '닫기' })
+        }
+      }
       onDone(d.summary.id)
     } catch (x) { setErr(errMsg(x)) } finally { setBusy(false) }
   }
@@ -67,6 +76,13 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
         ) : (
           <div className="skill-editor"><p>아래 예시를 내 업무 지침으로 바꿔주세요.</p><Textarea aria-label="스킬 내용" rows={16} value={md} onChange={(e) => setMd(e.target.value)} /></div>
         )}
+        <label className="skill-upload-area form-upload">
+          <span className="skill-upload-symbol" aria-hidden="true">▤</span>
+          <strong>{form ? form.name : '결과물 양식 (선택)'}</strong>
+          <span>{form ? `${(form.size / 1024).toFixed(1)} KB · 도구 결과가 이 양식에 맞춰 채워집니다` : '정해진 양식이 있다면 올려 두세요. 결과를 그 양식에 맞춰 받을 수 있어요. (한글 .hwpx)'}</span>
+          <input aria-label="결과물 양식" type="file" accept=".hwpx" onChange={(e) => { setErr(null); setForm(e.target.files?.[0] ?? null) }} />
+          {form && <button type="button" className="form-upload-clear" onClick={(e) => { e.preventDefault(); setForm(null) }}>양식 빼기</button>}
+        </label>
         <div className="skill-register-sharing"><Field label="공개 범위"><Select value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="PUBLIC">전사 공개 (승인 후)</option><option value="TEAM">우리 팀만 (승인 후)</option></Select></Field><p>관리자 검토가 끝나면 선택한 범위에 공개됩니다.</p></div>
         <details className="skill-register-options"><summary>추가 설정 <span>카테고리 · 태그</span></summary><div className="grid gap-4 md:grid-cols-2 mt-5">
           <Field label="카테고리">
