@@ -96,7 +96,3 @@
 /* 월/주 보기에서 제목 길이가 달라도 도구 줄이 움직이지 않도록 항상 두 줄로 고정 */
 .cal-head{flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:10px}
 .cal-head h1{white-space:nowrap;line-height:1.2;min-height:36px}
-.cal-tools{width:100
-/* 월/주 보기에서 제목 길이가 달라도 도구 줄이 움직이지 않도록 항상 두 줄로 고정 */
-.cal-head{flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:10px}
-.cal-head h1{white-space:nowrap;line-height:1.2;min-height:36px}
