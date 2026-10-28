@@ -50,7 +50,11 @@ export function Flow({ turn }: { turn?: Bot }) {
     <ol className="ha-flow" aria-label="처리 단계">
       {steps.map((s, idx) => (
         <li key={idx} className={s.state} aria-current={s.state === 'active' || s.state === 'ready' ? 'step' : undefined}>
-          <span className="ha-flow-dot" aria-hidden="true">{s.state === 'done' ? '✓' : s.state === 'fail' ? '!' : ''}</span>
+          <span className="ha-flow-dot" aria-hidden="true">{s.state === 'done' ? (
+            <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6.3 5 8.8 9.5 3.5" /></svg>
+          ) : s.state === 'fail' ? (
+            <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 2.5v4M6 9v.01" /></svg>
+          ) : null}</span>
           <span className="ha-flow-label">{s.label}{s.note && <small>{s.note}</small>}</span>
         </li>
       ))}
