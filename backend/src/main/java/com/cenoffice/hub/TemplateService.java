@@ -26,8 +26,10 @@ public class TemplateService {
     public record Info(String fileName, String format, List<HwpxTemplate.Field> fields) {}
 
     /** source: RESULT(스킬 결과에서 라벨로 찾음) | AI(AI 가 결과에서 뽑음) | MISSING(근거를 찾지 못해 비워 둠; value 는 null) */
-    public record PlanItem(String key, String label, String value, String source, String kind, List<String> options) {
-        public PlanItem(String key, String label, String value, String source) { this(key, label, value, source, "cell", List.of()); }
+    /** kind: cell · choice(options = 선택지) · datetime · placeholder · rows(목록 표: options = 채울 열 이름, rows = 채울 수 있는 줄 수) */
+    public record PlanItem(String key, String label, String value, String source, String kind, List<String> options, int rows) {
+        public PlanItem(String key, String label, String value, String source) { this(key, label, value, source, "cell", List.of(), 0); }
+        public PlanItem(String key, String label, String value, String source, String kind, List<String> options) { this(key, label, value, source, kind, options, 0); }
     }
 
     public record Plan(List<PlanItem> items, boolean aiUsed) {}
@@ -166,18 +168,21 @@ public class TemplateService {
         var items = new LinkedHashMap<String, PlanItem>();
         for (var f : info.fields()) {
             // 같은 이름이 또 나오는 항목("일시 (2)": 다음 회의 일시 등)은 어느 값인지 알 수 없어 결과에서 찾지 않고 비워 둔다
-            String v = f.key().equals(f.label()) ? lookup(found, norm(f.label())) : null;
+            boolean first = f.key().equals(f.label());
+            String v = first ? lookup(found, norm(f.label())) : null;
             if (f.kind().equals("choice")) v = pickOption(v, f.options()); // 선택지는 결과에 분명히 적힌 것만 고르고, 아니면 사람이 고르게 둔다
-            items.put(f.key(), v == null ? new PlanItem(f.key(), f.label(), null, "MISSING", f.kind(), f.options()) : new PlanItem(f.key(), f.label(), cut(v), "RESULT", f.kind(), f.options()));
+            if (f.kind().equals("rows")) v = first ? rowsFromResult(text, f.label(), f.options(), f.rows()) : null; // 목록 표는 결과의 같은 이름 목록·표에서 줄 단위로
+            items.put(f.key(), v == null ? new PlanItem(f.key(), f.label(), null, "MISSING", f.kind(), f.options(), f.rows())
+                    : new PlanItem(f.key(), f.label(), f.kind().equals("rows") ? v : cut(v), "RESULT", f.kind(), f.options(), f.rows()));
         }
         boolean aiUsed = false;
-        var missing = items.values().stream().filter(i -> i.source().equals("MISSING") && !i.kind().equals("choice")).map(PlanItem::key).toList(); // 선택지는 AI 가 고르지 않는다
+        var missing = items.values().stream().filter(i -> i.source().equals("MISSING") && !i.kind().equals("choice") && !i.kind().equals("rows")).map(PlanItem::key).toList(); // 선택지·목록 표는 AI 가 채우지 않는다
         if (!missing.isEmpty() && !text.isBlank() && llm.isReal()) {
             aiUsed = true;
             Map<String, String> ai = askAi(missing, text);
             for (String key : missing) {
                 String v = ai.get(key);
-                if (v != null) items.put(key, new PlanItem(key, items.get(key).label(), v, "AI", items.get(key).kind(), items.get(key).options()));
+                if (v != null) items.put(key, new PlanItem(key, items.get(key).label(), v, "AI", items.get(key).kind(), items.get(key).options(), items.get(key).rows()));
             }
         }
         audit.log(user, "TEMPLATE_PLAN", (skillId < 0 ? "my-form:" : "hub-skill:") + Math.abs(skillId), aiUsed ? "ai" : "rule"); // 결과 내용은 기록하지 않는다
@@ -307,6 +312,79 @@ public class TemplateService {
         if (cells == null) return line;
         if (cells.length >= 3 && cells[0].matches("\\d+")) return cells[0] + ". " + cells[1] + " (" + String.join(" · ", java.util.Arrays.copyOfRange(cells, 2, cells.length)) + ")";
         return String.join(" · ", cells);
+    }
+
+    /**
+     * 결과 안에서 label 과 같은 이름의 제목(## 액션 아이템) 아래를 찾아 목록 표의 줄로 만든다. 한 줄이 한 행이고 칸은 " | " 로 나눈다.
+     * 결과에 표가 있으면 머리글 이름으로 열을 맞추고(내용 ↔ 업무 내용, 담당 ↔ 담당자 …), 글머리 목록이면 첫 열에 넣는다. 없으면 null.
+     */
+    static String rowsFromResult(String text, String label, List<String> columns, int capacity) {
+        if (text == null || columns.isEmpty() || capacity <= 0) return null;
+        String want = compact(label);
+        var body = new ArrayList<String>();
+        boolean in = false;
+        for (String line : text.split("\\R")) {
+            Matcher h = HEADING.matcher(line);
+            if (h.matches()) {
+                if (in) break;
+                String t = compact(h.group(1));
+                if (t.equals(want) || (!want.isEmpty() && !t.isEmpty() && (t.contains(want) || want.contains(t)))) in = true;
+                continue;
+            }
+            if (in) body.add(line);
+        }
+        if (body.isEmpty()) return null;
+        String[] head = null;
+        var table = new ArrayList<String[]>();
+        for (String line : body) {
+            String[] cells = tableRow(line);
+            if (cells == null) continue;
+            if (head == null) head = cells; else table.add(cells);
+        }
+        var rows = new ArrayList<List<String>>();
+        if (head != null && !table.isEmpty()) {
+            int[] map = new int[columns.size()];
+            boolean any = false;
+            for (int i = 0; i < map.length; i++) {
+                map[i] = -1;
+                for (int j = 0; j < head.length; j++) if (sameColumn(columns.get(i), head[j])) { map[i] = j; any = true; break; }
+            }
+            for (String[] cells : table) {
+                var row = new ArrayList<String>();
+                for (int i = 0; i < map.length; i++) row.add(any ? (map[i] >= 0 && map[i] < cells.length ? cells[map[i]] : "") : (i + 1 < cells.length ? cells[i + 1] : ""));
+                rows.add(row);
+            }
+        } else {
+            for (String line : body) {
+                String t = line.strip().replaceFirst("^(?:[-*•]|\\d{1,2}[.)])\\s+", "").strip();
+                if (t.isEmpty() || t.equals(line.strip())) continue; // 글머리가 붙은 줄만
+                var row = new ArrayList<String>();
+                for (int i = 0; i < columns.size(); i++) row.add(i == 0 ? t : "");
+                rows.add(row);
+            }
+        }
+        var lines = new ArrayList<String>();
+        for (var row : rows) {
+            if (lines.size() >= capacity) break;
+            if (row.stream().allMatch(c -> c.isBlank() || c.strip().equals("없음") || c.strip().equals("미지정"))) continue;
+            lines.add(String.join(" | ", row.stream().map(c -> c.strip().replace("|", "／")).toList()));
+        }
+        return lines.isEmpty() ? null : String.join("\n", lines);
+    }
+
+    /** 공백·괄호 속 글을 뺀 이름(비교용) */
+    private static String compact(String s) { return s == null ? "" : s.replaceAll("\\([^)]*\\)", "").replaceAll("[\\s·ㆍ:：*#]", "").toLowerCase(); }
+
+    private static final List<List<String>> COLUMN_ALIASES = List.of(
+            List.of("업무내용", "내용", "작업", "할일", "결정내용"), List.of("담당자", "담당", "책임자"), List.of("기한", "마감", "마감일", "완료기한"));
+
+    /** 표 머리글 이름이 같은 열인가(같거나 한쪽이 다른 쪽을 포함하거나 같은 뜻의 이름) */
+    static boolean sameColumn(String formColumn, String resultColumn) {
+        String a = compact(formColumn), b = compact(resultColumn);
+        if (a.isEmpty() || b.isEmpty()) return false;
+        if (a.equals(b) || (b.length() >= 2 && a.contains(b)) || (a.length() >= 2 && b.contains(a))) return true;
+        for (var group : COLUMN_ALIASES) if (group.contains(a) && group.contains(b)) return true;
+        return false;
     }
 
     /** 결과에서 찾은 글이 선택지 중 정확히 하나를 가리키면 그 선택지, 아니면 null */

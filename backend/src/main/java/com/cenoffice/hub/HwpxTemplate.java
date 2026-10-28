@@ -25,9 +25,10 @@ final class HwpxTemplate {
     private HwpxTemplate() {}
 
     /** kind: placeholder({{항목}}) · cell(빈 칸) · choice(□ 선택지 — options 에 선택지) · datetime(날짜 틀만 적힌 칸) */
-    record Field(String key, String label, String kind, List<String> options) {
+    record Field(String key, String label, String kind, List<String> options, int rows) {
         Field { options = options == null ? List.of() : options; }
-        Field(String key, String label, String kind) { this(key, label, kind, List.of()); }
+        Field(String key, String label, String kind, List<String> options) { this(key, label, kind, options, 0); }
+        Field(String key, String label, String kind) { this(key, label, kind, List.of(), 0); }
     }
 
     static final int MAX_BYTES = 5 * 1024 * 1024;
@@ -107,11 +108,12 @@ final class HwpxTemplate {
     static List<Slot> slots(Loaded doc) {
         var out = new ArrayList<Slot>();
         var labelCount = new HashMap<String, Integer>();
-        for (Document d : doc.sections().values()) walk(d.getDocumentElement(), out, labelCount);
+        var last = new String[1]; // 직전 문단의 글(목록 표의 이름으로 쓴다)
+        for (Document d : doc.sections().values()) walk(d.getDocumentElement(), out, labelCount, last);
         return out;
     }
 
-    private static void walk(Element el, List<Slot> out, Map<String, Integer> labelCount) {
+    private static void walk(Element el, List<Slot> out, Map<String, Integer> labelCount, String[] last) {
         switch (el.getLocalName()) {
             case "p" -> {
                 String text = paraText(el);
@@ -126,11 +128,53 @@ final class HwpxTemplate {
                         out.add(new Slot(new Field(n == 1 ? label : label + " (" + n + ")", label, "choice", choices(c.group(2))), el));
                     }
                 }
+                if (!text.isBlank()) last[0] = text.strip();
             }
-            case "tbl" -> labelCells(el, out, labelCount);
+            case "tbl" -> { labelCells(el, out, labelCount); listTable(el, last[0], out, labelCount); }
             default -> { }
         }
-        for (Element c : children(el)) walk(c, out, labelCount);
+        for (Element c : children(el)) walk(c, out, labelCount, last);
+        if (el.getLocalName().equals("tbl")) last[0] = null; // 표 안의 글이 다음 표의 이름이 되지 않게
+    }
+
+    /** 번호 칸이 있는 목록 표(번호·업무 내용·담당자·기한 머리글 아래로 번호만 적힌 빈 줄이 이어지는 표)의 모양. cols 는 채울 열 번호, names 는 그 열의 머리글, rows 는 채울 수 있는 줄 수. */
+    record ListShape(List<Integer> cols, List<String> names, int rows) {}
+
+    private static final Pattern NUMBER_HEAD = Pattern.compile("^(번호|순번|연번|no\\.?|#)$", Pattern.CASE_INSENSITIVE);
+
+    /** grid: 표의 줄마다 칸 글자. 머리글에 번호 열이 있고 그 아래가 번호뿐인 줄들일 때만 목록 표로 본다(항목 이름 + 빈 칸 표와 구분하려는 조건). */
+    static ListShape listShape(List<List<String>> grid) {
+        if (grid.size() < 3) return null;
+        List<String> head = grid.get(0);
+        if (head.size() < 2) return null;
+        int num = -1;
+        for (int c = 0; c < head.size(); c++) {
+            String h = head.get(c).strip();
+            if (h.isEmpty() || !isName(h)) return null;
+            if (NUMBER_HEAD.matcher(h.replaceAll("\\s+", "")).matches()) num = c;
+        }
+        if (num < 0) return null;
+        for (int r = 1; r < grid.size(); r++) {
+            List<String> row = grid.get(r);
+            if (row.size() != head.size()) return null;
+            String n = row.get(num).strip();
+            if (!n.isEmpty() && !n.matches("\\d{1,3}")) return null;
+        }
+        var cols = new ArrayList<Integer>();
+        var names = new ArrayList<String>();
+        for (int c = 0; c < head.size(); c++) {
+            if (c == num) continue;
+            boolean blank = true;
+            for (int r = 1; r < grid.size(); r++) if (!grid.get(r).get(c).isBlank()) blank = false;
+            if (blank) { cols.add(c); names.add(head.get(c).strip()); } // 이미 글이 있는 열(진행 상태의 □ 선택지 등)은 건드리지 않는다
+        }
+        return cols.isEmpty() ? null : new ListShape(cols, names, grid.size() - 1);
+    }
+
+    /** 표 위의 글("4. 액션 아이템")에서 번호·기호를 뺀 이름. 알 수 없으면 "표" */
+    static String listLabel(String heading) {
+        String t = heading == null ? "" : heading.replaceAll("^[\\s0-9.)\\-·•※*]+", "").replaceAll("[※*:：]", "").strip();
+        return t.isEmpty() || t.length() > 30 ? "표" : t;
     }
 
     /** 선택지 칸의 체크 모양(□ ☐ ▢ 비어 있음 · ☑ ■ ✓ ☒ 고름) */
@@ -189,6 +233,39 @@ final class HwpxTemplate {
     /** 항목 이름으로 볼 수 있는 글인가. 번호(1, 2, 3)나 기호만 있는 칸은 항목 이름이 아니다. */
     static boolean isName(String label) { return label.length() <= 40 && label.codePoints().anyMatch(Character::isLetter); }
 
+    private static List<List<String>> gridOf(Element tbl) {
+        var grid = new ArrayList<List<String>>();
+        for (Element tr : children(tbl, "tr")) {
+            var row = new ArrayList<String>();
+            for (Element tc : children(tr, "tc")) row.add(cellText(tc).strip());
+            grid.add(row);
+        }
+        return grid;
+    }
+
+    /** 목록 표에서 채울 칸들(줄마다 채울 열의 칸). 줄 순서대로 돌려준다. */
+    static List<List<Element>> listCells(Element tbl) {
+        var shape = listShape(gridOf(tbl));
+        var out = new ArrayList<List<Element>>();
+        if (shape == null) return out;
+        var trs = children(tbl, "tr");
+        for (int r = 1; r < trs.size(); r++) {
+            var cells = children(trs.get(r), "tc");
+            var row = new ArrayList<Element>();
+            for (int c : shape.cols()) row.add(cells.get(c));
+            out.add(row);
+        }
+        return out;
+    }
+
+    private static void listTable(Element tbl, String heading, List<Slot> out, Map<String, Integer> labelCount) {
+        ListShape shape = listShape(gridOf(tbl));
+        if (shape == null) return;
+        String label = listLabel(heading);
+        int n = labelCount.merge(label, 1, Integer::sum);
+        out.add(new Slot(new Field(n == 1 ? label : label + " (" + n + ")", label, "rows", shape.names(), shape.rows()), tbl));
+    }
+
     private static void labelCells(Element tbl, List<Slot> out, Map<String, Integer> labelCount) {
         for (Element tr : children(tbl, "tr")) {
             List<Element> cells = children(tr, "tc");
@@ -232,6 +309,9 @@ final class HwpxTemplate {
                 }
                 m.appendTail(b);
                 if (changed) setParaText(s.target(), b.toString());
+            } else if (s.field().kind().equals("rows")) {
+                String v = values.get(s.field().key());
+                if (v != null && !v.isBlank()) fillRows(s.target(), v);
             } else {
                 String v = values.get(s.field().key());
                 if (v == null) continue;
@@ -244,6 +324,22 @@ final class HwpxTemplate {
                 if (para == null) continue;
                 if (s.field().kind().equals("choice")) setParaText(para, markChoice(paraText(para), s.field().options(), clean(v)));
                 else setParaText(para, clean(v));
+            }
+        }
+    }
+
+    /** 목록 표 채우기: 값의 한 줄이 표의 한 줄, 칸은 | 로 나눈다. 표에 있는 줄 수까지만 넣고 번호 열·이미 글이 있는 열은 그대로 둔다. */
+    private static void fillRows(Element tbl, String value) {
+        String[] lines = value.split("\\R");
+        var cells = listCells(tbl);
+        for (int r = 0; r < cells.size() && r < lines.length; r++) {
+            String[] parts = lines[r].split("\\|", -1);
+            for (int i = 0; i < cells.get(r).size() && i < parts.length; i++) {
+                String text = clean(parts[i]);
+                if (text.isBlank()) continue;
+                List<Element> subs = children(cells.get(r).get(i), "subList");
+                List<Element> paras = subs.isEmpty() ? List.of() : children(subs.get(0), "p");
+                if (!paras.isEmpty()) setParaText(paras.get(0), text);
             }
         }
     }
@@ -310,7 +406,10 @@ final class HwpxTemplate {
         Loaded doc = load(hwpx);
         List<Slot> slots = slots(doc);
         Map<Element, String> keyOf = new IdentityHashMap<>();
-        for (Slot s : slots) keyOf.putIfAbsent(s.target(), s.field().key());
+        for (Slot s : slots) {
+            if (s.field().kind().equals("rows")) { for (var row : listCells(s.target())) for (Element c : row) keyOf.putIfAbsent(c, s.field().key()); }
+            else keyOf.putIfAbsent(s.target(), s.field().key());
+        }
         apply(doc, slots, values);
         var out = new ArrayList<PreviewBlock>();
         for (Document d : doc.sections().values()) {

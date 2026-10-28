@@ -149,7 +149,7 @@ class HwpxTemplateTest {
         var fields = HwpxTemplate.analyze(minutesLikeForm());
         var byKey = new java.util.LinkedHashMap<String, HwpxTemplate.Field>();
         for (var f : fields) byKey.put(f.key(), f);
-        assertEquals(java.util.List.of("보안등급", "회의명", "일시", "장소", "회의 구분", "기록 방식"), new java.util.ArrayList<>(byKey.keySet()), byKey.toString());
+        assertEquals(java.util.List.of("보안등급", "회의명", "일시", "장소", "회의 구분", "기록 방식", "표"), new java.util.ArrayList<>(byKey.keySet()), byKey.toString());
         assertEquals("cell", byKey.get("회의명").kind()); // 표의 첫 줄이어도 채울 칸이다
         assertEquals("datetime", byKey.get("일시").kind());
         assertEquals("choice", byKey.get("회의 구분").kind());
@@ -158,6 +158,8 @@ class HwpxTemplateTest {
         assertEquals("choice", byKey.get("보안등급").kind()); // "라벨: □ … □ …" 문단
         assertFalse(byKey.containsKey("작성일")); // 이미 날짜가 적힌 칸은 건드리지 않는다
         assertFalse(byKey.containsKey("1")); // 번호 칸은 항목 이름이 아니다
+        assertEquals("rows", byKey.get("표").kind()); // 번호가 붙은 빈 표는 목록 표(위에 제목 문단이 없으면 이름은 "표")
+        assertEquals(java.util.List.of("안건명"), byKey.get("표").options());
     }
 
     @Test void fillMarksChosenOptionsAndWritesDatetime() throws Exception {
@@ -188,5 +190,49 @@ class HwpxTemplateTest {
         assertNull(TemplateService.pickOption("정기 또는 임시", java.util.List.of("정기", "임시", "기타"))); // 둘이 걸리면 사람이 고른다
         assertNull(TemplateService.pickOption("관련 없는 말", java.util.List.of("정기", "임시", "기타")));
         assertNull(TemplateService.pickOption(null, java.util.List.of("정기", "임시")));
+    }
+
+    /** 번호가 붙은 목록 표(액션 아이템 등): 머리글로 열을 알아보고 한 줄씩 채우며, 이미 글이 있는 열(□ 선택지)은 건드리지 않는다 */
+    static byte[] actionTableForm() throws Exception {
+        return form(List.of(
+                p("4. 액션 아이템"),
+                table(List.of(
+                        List.of("번호", "업무 내용", "담당자", "기한", "진행 상태"),
+                        List.of("1", "", "", "", "□ 대기  □ 진행  □ 완료"),
+                        List.of("2", "", "", "", "□ 대기  □ 진행  □ 완료"),
+                        List.of("3", "", "", "", "□ 대기  □ 진행  □ 완료")))));
+    }
+
+    @Test void numberedListTableIsOneRowsField() throws Exception {
+        var fields = HwpxTemplate.analyze(actionTableForm());
+        assertEquals(1, fields.size(), fields.toString());
+        var f = fields.get(0);
+        assertEquals("액션 아이템", f.key()); // 표 위의 글에서 번호를 뺀 이름
+        assertEquals("rows", f.kind());
+        assertEquals(java.util.List.of("업무 내용", "담당자", "기한"), f.options()); // 진행 상태(□)는 채울 열이 아니다
+        assertEquals(3, f.rows());
+    }
+
+    @Test void rowsAreFilledLineByLineAndLeaveOtherColumnsAlone() throws Exception {
+        var filled = HwpxTemplate.fill(actionTableForm(), java.util.Map.of("액션 아이템", "견적서 작성 | 김대리 | 금요일\n계약 검토 | 박과장 | 다음 주\n하나 더 | 홍 | 오늘\n넘치는 줄 | x | y"));
+        var table = HwpxTemplate.preview(filled, java.util.Map.of()).stream().filter(b -> b.rows() != null).findFirst().orElseThrow();
+        assertEquals("견적서 작성", table.rows().get(1).get(1).text());
+        assertEquals("김대리", table.rows().get(1).get(2).text());
+        assertEquals("금요일", table.rows().get(1).get(3).text());
+        assertEquals("박과장", table.rows().get(2).get(2).text());
+        assertEquals("하나 더", table.rows().get(3).get(1).text()); // 표에 있는 줄 수(3)까지만, 넘치는 줄은 들어가지 않는다
+        assertTrue(table.rows().get(1).get(4).text().contains("□ 대기"), table.rows().get(1).get(4).text()); // 진행 상태는 그대로
+        assertEquals("1", table.rows().get(1).get(0).text()); // 번호도 그대로
+    }
+
+    @Test void rowsComeFromTheResultTableOrBullets() {
+        String md = "## 결정 사항\n- STT 를 추가한다\n- 일정은 금요일\n\n## 액션 아이템\n| No | 내용 | 담당 | 기한(원문 표현) |\n|---|---|---|---|\n| 1 | 견적서 작성 | 김대리 | 금요일 |\n| 2 | 계약 검토 | 미지정 | 미지정 |\n";
+        assertEquals("견적서 작성 | 김대리 | 금요일\n계약 검토 | 미지정 | 미지정",
+                TemplateService.rowsFromResult(md, "액션 아이템", java.util.List.of("업무 내용", "담당자", "기한"), 5)); // 내용↔업무 내용, 담당↔담당자
+        assertEquals("STT 를 추가한다 |  | \n일정은 금요일 |  | ",
+                TemplateService.rowsFromResult(md, "결정 사항", java.util.List.of("결정 내용", "관련 안건", "비고"), 5)); // 글머리 목록은 첫 열에
+        assertEquals("STT 를 추가한다 |  | ", TemplateService.rowsFromResult(md, "결정 사항", java.util.List.of("결정 내용", "관련 안건", "비고"), 1)); // 줄 수 제한
+        assertNull(TemplateService.rowsFromResult(md, "없는 제목", java.util.List.of("내용"), 3));
+        assertNull(TemplateService.rowsFromResult("## 이슈 · 확인 필요\n- 없음\n", "이슈", java.util.List.of("내용"), 3)); // "없음" 은 채우지 않는다
     }
 }

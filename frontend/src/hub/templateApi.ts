@@ -1,12 +1,12 @@
 import { API_URL, tokenStore } from '../api'
 
 /** 양식에서 찾은 채울 자리. placeholder 는 본문의 {{이름}}, cell 은 표에서 라벨 칸 오른쪽의 빈 칸 */
-export interface TemplateField { key: string; label: string; kind: 'placeholder' | 'cell' | 'choice' | 'datetime'; options?: string[] }
+export interface TemplateField { key: string; label: string; kind: 'placeholder' | 'cell' | 'choice' | 'datetime' | 'rows'; options?: string[]; rows?: number }
 export interface TemplateInfo { fileName: string; format: string; fields: TemplateField[] }
 /** 형식 아이콘 한 칸. supported=false 는 아직 채우는 기능이 없는 형식, template 은 올려 둔 양식 */
 export interface FormatSlot { format: string; label: string; supported: boolean; template?: TemplateInfo | null }
 /** RESULT: 스킬 결과에서 찾음 · AI: AI 가 결과에서 뽑음 · MISSING: 근거를 못 찾아 비워 둠 */
-export interface PlanItem { key: string; label: string; value?: string | null; source: 'RESULT' | 'AI' | 'MISSING'; kind?: string; options?: string[] }
+export interface PlanItem { key: string; label: string; value?: string | null; source: 'RESULT' | 'AI' | 'MISSING'; kind?: string; options?: string[]; rows?: number }
 export interface TemplatePlan { items: PlanItem[]; aiUsed: boolean }
 export interface PreviewCell { text: string; fieldKey?: string | null }
 export interface PreviewBlock { type: 'p' | 'table'; text?: string | null; rows?: PreviewCell[][] | null; fieldKey?: string | null }

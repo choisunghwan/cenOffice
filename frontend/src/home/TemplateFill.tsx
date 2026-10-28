@@ -57,7 +57,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
     return () => clearTimeout(t)
   }, [items, values, skillId, format])
 
-  const missing = useMemo(() => (items ?? []).filter((i) => i.source === 'MISSING'), [items]) // 입력해도 줄이 사라지지 않게 처음 모습으로 고정
+  const missing = useMemo(() => (items ?? []).filter((i) => i.source === 'MISSING' || i.kind === 'rows'), [items]) // 입력해도 줄이 사라지지 않게 처음 모습으로 고정
   const unfilled = missing.filter((m) => !values[m.key]).length
   const aiCount = useMemo(() => [...aiKeys].filter((k) => values[k]).length, [aiKeys, values])
 
@@ -113,13 +113,18 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
                 <li key={m.key} className={`tfx-row ${state}`}>
                   <div className="tfx-label">
                     <label htmlFor={`tf-${m.key}`}>{m.label}</label>
-                    <span className={`tfx-badge ${state}`}>{state === 'empty' ? (m.kind === 'choice' ? '선택 필요' : '비어 있음') : state === 'ai' ? 'AI 초안' : m.kind === 'choice' ? '선택함' : '입력함'}</span>
+                    <span className={`tfx-badge ${state}`}>{state === 'empty' ? (m.kind === 'choice' ? '선택 필요' : '비어 있음') : state === 'ai' ? 'AI 초안' : m.kind === 'choice' ? '선택함' : m.kind === 'rows' && m.source === 'RESULT' ? '회의록에서' : '입력함'}</span>
                   </div>
                   {m.kind === 'choice' ? (
                     <div className="tfx-choices" role="radiogroup" aria-label={m.label}>
                       {(m.options ?? []).map((o) => (
                         <button key={o} type="button" role="radio" aria-checked={v === o} className={v === o ? 'on' : ''} onClick={() => setValue(m.key, v === o ? '' : o)}>{o}</button>
                       ))}
+                    </div>
+                  ) : m.kind === 'rows' ? (
+                    <div className="tfx-rows">
+                      <textarea id={`tf-${m.key}`} rows={Math.min(Math.max(m.rows ?? 3, 3), 6)} value={v} placeholder="한 줄이 표의 한 행입니다. 칸은 | 로 나눠 주세요." maxLength={4000} onChange={(e) => setValue(m.key, e.target.value)} />
+                      <p className="tfx-rowhint">칸 순서: <b>{(m.options ?? []).join(' | ')}</b> · 최대 {m.rows ?? 0}줄 (넘치는 줄은 들어가지 않습니다)</p>
                     </div>
                   ) : (
                     <>

@@ -76,11 +76,12 @@ final class OoxmlText implements FormEngine {
     private List<Slot> slots(Loaded doc) {
         var out = new ArrayList<Slot>();
         var labelCount = new HashMap<String, Integer>();
-        for (Document d : doc.docs().values()) walk(d.getDocumentElement(), out, labelCount);
+        var last = new String[1]; // 직전 문단의 글(목록 표의 이름으로 쓴다)
+        for (Document d : doc.docs().values()) walk(d.getDocumentElement(), out, labelCount, last);
         return out;
     }
 
-    private void walk(Element el, List<Slot> out, Map<String, Integer> labelCount) {
+    private void walk(Element el, List<Slot> out, Map<String, Integer> labelCount, String[] last) {
         switch (el.getLocalName()) {
             case "p" -> {
                 Matcher m = PLACEHOLDER.matcher(paraText(el));
@@ -94,11 +95,63 @@ final class OoxmlText implements FormEngine {
                         out.add(new Slot(new HwpxTemplate.Field(n == 1 ? label : label + " (" + n + ")", label, "choice", opts), el));
                     }
                 }
+                String t = paraText(el);
+                if (!t.isBlank()) last[0] = t.strip();
             }
-            case "tbl" -> labelCells(el, out, labelCount);
+            case "tbl" -> { labelCells(el, out, labelCount); listTable(el, last[0], out, labelCount); }
             default -> { }
         }
-        for (Element c : children(el)) walk(c, out, labelCount);
+        for (Element c : children(el)) walk(c, out, labelCount, last);
+        if (el.getLocalName().equals("tbl")) last[0] = null; // 표 안의 글이 다음 표의 이름이 되지 않게
+    }
+
+    private List<List<String>> gridOf(Element tbl) {
+        var grid = new ArrayList<List<String>>();
+        for (Element tr : children(tbl, "tr")) {
+            var row = new ArrayList<String>();
+            for (Element tc : children(tr, "tc")) row.add(cellText(tc).strip());
+            grid.add(row);
+        }
+        return grid;
+    }
+
+    /** 목록 표에서 채울 칸들(줄마다 채울 열의 칸) */
+    private List<List<Element>> listCells(Element tbl) {
+        var shape = HwpxTemplate.listShape(gridOf(tbl));
+        var out = new ArrayList<List<Element>>();
+        if (shape == null) return out;
+        var trs = children(tbl, "tr");
+        for (int r = 1; r < trs.size(); r++) {
+            var cells = children(trs.get(r), "tc");
+            var row = new ArrayList<Element>();
+            for (int c : shape.cols()) row.add(cells.get(c));
+            out.add(row);
+        }
+        return out;
+    }
+
+    private void listTable(Element tbl, String heading, List<Slot> out, Map<String, Integer> labelCount) {
+        var shape = HwpxTemplate.listShape(gridOf(tbl));
+        if (shape == null) return;
+        String label = HwpxTemplate.listLabel(heading);
+        int n = labelCount.merge(label, 1, Integer::sum);
+        out.add(new Slot(new HwpxTemplate.Field(n == 1 ? label : label + " (" + n + ")", label, "rows", shape.names(), shape.rows()), tbl));
+    }
+
+    /** 목록 표 채우기: 값의 한 줄이 표의 한 줄, 칸은 | 로 나눈다. 표에 있는 줄 수까지만 넣는다. */
+    private void fillRows(Element tbl, String value) {
+        String[] lines = value.split("\\R");
+        var cells = listCells(tbl);
+        for (int r = 0; r < cells.size() && r < lines.length; r++) {
+            String[] parts = lines[r].split("\\|", -1);
+            for (int i = 0; i < cells.get(r).size() && i < parts.length; i++) {
+                String text = clean(parts[i]);
+                if (text.isBlank()) continue;
+                var paras = new ArrayList<Element>();
+                descendants(cells.get(r).get(i), "p", paras);
+                if (!paras.isEmpty()) setParaText(paras.get(0), text);
+            }
+        }
     }
 
     private void labelCells(Element tbl, List<Slot> out, Map<String, Integer> labelCount) {
@@ -137,6 +190,9 @@ final class OoxmlText implements FormEngine {
                 }
                 m.appendTail(b);
                 if (changed) setParaText(s.target(), b.toString());
+            } else if (s.field().kind().equals("rows")) {
+                String v = values.get(s.field().key());
+                if (v != null && !v.isBlank()) fillRows(s.target(), v);
             } else {
                 String v = values.get(s.field().key());
                 if (v == null) continue;
@@ -222,7 +278,10 @@ final class OoxmlText implements FormEngine {
         Loaded doc = load(data);
         List<Slot> slots = slots(doc);
         Map<Element, String> keyOf = new IdentityHashMap<>();
-        for (Slot s : slots) keyOf.putIfAbsent(s.target(), s.field().key());
+        for (Slot s : slots) {
+            if (s.field().kind().equals("rows")) { for (var row : listCells(s.target())) for (Element c : row) keyOf.putIfAbsent(c, s.field().key()); }
+            else keyOf.putIfAbsent(s.target(), s.field().key());
+        }
         apply(slots, values);
         var out = new ArrayList<HwpxTemplate.PreviewBlock>();
         int n = 0;
