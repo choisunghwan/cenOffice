@@ -79,8 +79,8 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
         <label className="skill-upload-area form-upload">
           <span className="skill-upload-symbol" aria-hidden="true">▤</span>
           <strong>{form ? form.name : '결과물 양식 (선택)'}</strong>
-          <span>{form ? `${(form.size / 1024).toFixed(1)} KB · 도구 결과가 이 양식에 맞춰 채워집니다` : '정해진 양식이 있다면 올려 두세요. 결과를 그 양식에 맞춰 받을 수 있어요. (한글 .hwpx)'}</span>
-          <input aria-label="결과물 양식" type="file" accept=".hwpx" onChange={(e) => { setErr(null); setForm(e.target.files?.[0] ?? null) }} />
+          <span>{form ? `${(form.size / 1024).toFixed(1)} KB · 도구 결과가 이 양식에 맞춰 채워집니다` : '정해진 양식이 있다면 올려 두세요. 결과를 그 양식에 맞춰 받을 수 있어요. (한글·워드·엑셀·파워포인트)'}</span>
+          <input aria-label="결과물 양식" type="file" accept=".hwpx,.docx,.xlsx,.pptx" onChange={(e) => { setErr(null); setForm(e.target.files?.[0] ?? null) }} />
           {form && <button type="button" className="form-upload-clear" onClick={(e) => { e.preventDefault(); setForm(null) }}>양식 빼기</button>}
         </label>
         <div className="skill-register-sharing"><Field label="공개 범위"><Select value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="PUBLIC">전사 공개 (승인 후)</option><option value="TEAM">우리 팀만 (승인 후)</option></Select></Field><p>관리자 검토가 끝나면 선택한 범위에 공개됩니다.</p></div>

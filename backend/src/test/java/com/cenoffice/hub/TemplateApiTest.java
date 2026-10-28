@@ -102,16 +102,17 @@ class TemplateApiTest {
         assertEquals("hwpx", before.get(0).path("format").asText());
         assertTrue(before.get(0).path("supported").asBoolean());
         assertTrue(before.get(0).path("template").isMissingNode() || before.get(0).path("template").isNull());
-        assertFalse(before.get(1).path("supported").asBoolean()); // 워드·엑셀·파워포인트는 아직 채우는 기능이 없다
+        for (int i = 0; i < 4; i++) assertTrue(before.get(i).path("supported").asBoolean()); // 네 형식 모두 채울 수 있다
         upload(admin, "a.hwpx", form("성명")).andExpect(status().isOk());
         var after = read(req(get(url() + "/formats"), admin, null).andExpect(status().isOk()));
         assertEquals("a.hwpx", after.get(0).path("template").path("fileName").asText());
         assertTrue(after.get(2).path("template").isMissingNode() || after.get(2).path("template").isNull());
     }
 
-    @Test void unsupportedFormatsGetClearMessage() throws Exception {
+    @Test void brokenOfficeFilesGetClearMessage() throws Exception {
         var res = read(upload(admin, "a.xlsx", new byte[]{1, 2, 3}).andExpect(status().isBadRequest()));
         assertTrue(res.toString().contains("엑셀"), res.toString());
+        upload(admin, "a.txt", new byte[]{1}).andExpect(status().isBadRequest()); // 모르는 확장자
     }
 
     @Test void invalidFileGets400WithKoreanMessage() throws Exception {

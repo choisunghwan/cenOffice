@@ -1,26 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { askConfirm } from '../ui/confirm'
 import { Btn, Card, ErrorNote } from '../workspace/kit'
+import { FormatIcon } from './FormatIcon'
 import { templateApi, type FormatSlot } from './templateApi'
-
-/** 형식별 아이콘 색과 글자. 상표 로고 대신 문서 모양에 글자만 얹는다. */
-const LOOK: Record<string, { color: string; mark: string }> = {
-  hwpx: { color: '#2f6fb0', mark: '한' },
-  docx: { color: '#2b579a', mark: 'W' },
-  xlsx: { color: '#1e7145', mark: 'X' },
-  pptx: { color: '#d24726', mark: 'P' },
-}
-
-function FormatIcon({ format, on }: { format: string; on: boolean }) {
-  const { color, mark } = LOOK[format] ?? { color: '#64748b', mark: '?' }
-  return (
-    <svg viewBox="0 0 40 48" width="40" height="48" aria-hidden="true" className="tpl-icon-svg">
-      <path d="M6 2h20l10 10v32a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill={on ? color : 'currentColor'} opacity={on ? 1 : 0.18} />
-      <path d="M26 2v8a2 2 0 0 0 2 2h8z" fill="#fff" opacity={on ? 0.45 : 0.3} />
-      <text x="20" y="36" textAnchor="middle" fontSize="18" fontWeight="800" fill={on ? '#fff' : 'currentColor'} opacity={on ? 1 : 0.5} fontFamily="inherit">{mark}</text>
-    </svg>
-  )
-}
 
 /** 제작자용: 이 도구의 결과물 양식을 형식별(한글·워드·엑셀·파워포인트)로 올린다. 올린 형식은 켜지고, 안 올린 형식은 흐리게 보인다. */
 export function TemplateUploader({ skillId }: { skillId: number }) {
@@ -50,7 +32,7 @@ export function TemplateUploader({ skillId }: { skillId: number }) {
   const remove = async (s: FormatSlot) => {
     if (busy || !await askConfirm({ title: `${s.label} 양식을 삭제할까요?`, message: '삭제하면 이 형식으로는 결과를 받을 수 없습니다.', okText: '삭제', danger: true })) return
     setBusy(true); setErr(null)
-    try { await templateApi.remove(skillId); await load(); setPicked(null) } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
+    try { await templateApi.remove(skillId, s.format); await load(); setPicked(null) } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
   }
 
   const detail = slots?.find((s) => s.format === picked && s.template)

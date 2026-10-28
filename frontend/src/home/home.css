@@ -127,3 +127,7 @@
 .ha-flow li.fail .ha-flow-dot{background:#e0777d;border-color:#e0777d}
 @keyframes ha-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.ha-flow li.active .ha-flow-dot{animation:none}}
+
+.tf-formats{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.tf-formats button{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;border:1px solid var(--c-border);background:transparent;color:inherit}
+.tf-formats button.on{border-color:#2a6db2;background:rgba(42,109,178,.12);font-weight:700}

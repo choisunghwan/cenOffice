@@ -29,8 +29,8 @@ public class TemplateController {
     }
 
     @GetMapping
-    public ResponseEntity<TemplateService.Info> get(@PathVariable Long id, Authentication a) {
-        return templates.info(id, a.getName(), HubSkillController.admin(a)).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
+    public ResponseEntity<TemplateService.Info> get(@PathVariable Long id, @RequestParam(defaultValue = "hwpx") String format, Authentication a) {
+        return templates.info(id, a.getName(), HubSkillController.admin(a), format).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     /** 형식별 칸(한글·워드·엑셀·파워포인트): 지원 여부와 올려 둔 양식 */
@@ -38,33 +38,34 @@ public class TemplateController {
     public List<TemplateService.Slot> formats(@PathVariable Long id, Authentication a) { return templates.slots(id, a.getName(), HubSkillController.admin(a)); }
 
     @DeleteMapping @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize(WRITE)
-    public void delete(@PathVariable Long id, Authentication a) { templates.delete(id, a.getName(), HubSkillController.admin(a)); }
+    public void delete(@PathVariable Long id, @RequestParam(defaultValue = "hwpx") String format, Authentication a) { templates.delete(id, a.getName(), HubSkillController.admin(a), format); }
 
-    public record PlanRequest(String result) {}
-    public record DraftRequest(String result, String key) {}
+    public record PlanRequest(String format, String result) {}
+    public record DraftRequest(String format, String result, String key) {}
     public record DraftResponse(String value) {}
-    public record ValuesRequest(Map<String, String> values) {}
+    public record ValuesRequest(String format, Map<String, String> values) {}
     public record PreviewResponse(List<HwpxTemplate.PreviewBlock> blocks) {}
-    public record RenderRequest(Map<String, String> values, String title) {}
+    public record RenderRequest(String format, Map<String, String> values, String title) {}
 
     /** 스킬 결과에서 양식 항목별 값을 찾는다. 근거가 없는 항목은 MISSING 으로 비워 둔다. */
     @PostMapping("/plan") @PreAuthorize(WRITE)
-    public TemplateService.Plan plan(@PathVariable Long id, @RequestBody PlanRequest r, Authentication a) { return templates.plan(id, a.getName(), HubSkillController.admin(a), r.result()); }
+    public TemplateService.Plan plan(@PathVariable Long id, @RequestBody PlanRequest r, Authentication a) { return templates.plan(id, a.getName(), HubSkillController.admin(a), r.format(), r.result()); }
 
     /** 칸 하나의 AI 초안 */
     @PostMapping("/draft") @PreAuthorize(WRITE)
-    public DraftResponse draft(@PathVariable Long id, @RequestBody DraftRequest r, Authentication a) { return new DraftResponse(templates.draft(id, a.getName(), HubSkillController.admin(a), r.result(), r.key())); }
+    public DraftResponse draft(@PathVariable Long id, @RequestBody DraftRequest r, Authentication a) { return new DraftResponse(templates.draft(id, a.getName(), HubSkillController.admin(a), r.format(), r.result(), r.key())); }
 
     @PostMapping("/preview") @PreAuthorize(WRITE)
-    public PreviewResponse preview(@PathVariable Long id, @RequestBody ValuesRequest r, Authentication a) { return new PreviewResponse(templates.preview(id, a.getName(), HubSkillController.admin(a), r.values())); }
+    public PreviewResponse preview(@PathVariable Long id, @RequestBody ValuesRequest r, Authentication a) { return new PreviewResponse(templates.preview(id, a.getName(), HubSkillController.admin(a), r.format(), r.values())); }
 
     /** 값을 채운 hwpx 파일 내려받기 */
     @PostMapping("/render") @PreAuthorize(WRITE)
     public ResponseEntity<byte[]> render(@PathVariable Long id, @RequestBody RenderRequest r, Authentication a) {
-        byte[] data = templates.render(id, a.getName(), HubSkillController.admin(a), r.values());
+        FormEngine engine = FormEngine.Registry.get(r.format());
+        byte[] data = templates.render(id, a.getName(), HubSkillController.admin(a), engine.format(), r.values());
         String title = r.title() == null || r.title().isBlank() ? "result" : r.title().strip().replaceAll("[\\\\/:*?\"<>|\r\n]", "_");
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/vnd.hancom.hwpx"))
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + URLEncoder.encode(title + ".hwpx", StandardCharsets.UTF_8).replace("+", "%20"))
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(engine.mime()))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + URLEncoder.encode(title + "." + engine.format(), StandardCharsets.UTF_8).replace("+", "%20"))
             .body(data);
     }
 }

@@ -55,17 +55,15 @@ public class TemplateService {
 
     /** 양식으로 받을 수 있는 문서 형식. supported=false 는 아직 채우는 기능이 없는 형식이다. */
     public record FormatDef(String format, String label, boolean supported) {}
-    public static final List<FormatDef> FORMATS = List.of(
-            new FormatDef("hwpx", "한글", true), new FormatDef("docx", "워드", false),
-            new FormatDef("xlsx", "엑셀", false), new FormatDef("pptx", "파워포인트", false));
+    public static final List<FormatDef> FORMATS = FormEngine.Registry.ALL.stream().map(e -> new FormatDef(e.format(), e.label(), true)).toList();
+
     /** 화면의 형식 아이콘 한 칸: 지원 여부와 이 도구에 올려 둔 양식 */
     public record Slot(String format, String label, boolean supported, Info template) {}
 
     /** 형식별 칸. 올려 둔 양식이 있으면 template 에 담긴다. */
     public List<Slot> slots(Long skillId, String user, boolean admin) {
         skills.visible(skillId, user, admin);
-        var hwpx = find(skillId).orElse(null);
-        return FORMATS.stream().map(f -> new Slot(f.format(), f.label(), f.supported(), f.format().equals("hwpx") ? hwpx : null)).toList();
+        return FORMATS.stream().map(f -> new Slot(f.format(), f.label(), f.supported(), find(skillId, f.format()).orElse(null))).toList();
     }
 
     // ───────────────────────── 저장 ─────────────────────────
@@ -74,62 +72,67 @@ public class TemplateService {
     public Info put(Long skillId, String user, boolean admin, String fileName, byte[] data) {
         skills.editable(skillId, user, admin);
         String name = fileName == null ? "" : fileName.strip();
-        String lower = name.toLowerCase();
-        for (var f : FORMATS) if (!f.supported() && lower.endsWith("." + f.format())) throw new ApiException(HttpStatus.BAD_REQUEST, f.label() + " 양식은 아직 지원하지 않습니다. 지금은 한글(.hwpx) 양식만 올릴 수 있습니다.");
-        if (!lower.endsWith(".hwpx")) throw new ApiException(HttpStatus.BAD_REQUEST, "한글 hwpx 파일만 올릴 수 있습니다. 한글에서 .hwpx 로 저장해 올려 주세요.");
-        List<HwpxTemplate.Field> fields = HwpxTemplate.analyze(data);
+        FormEngine engine = FormEngine.Registry.byFileName(name);
+        if (engine == null) throw new ApiException(HttpStatus.BAD_REQUEST, "한글(.hwpx)·워드(.docx)·엑셀(.xlsx)·파워포인트(.pptx) 파일만 올릴 수 있습니다.");
+        List<HwpxTemplate.Field> fields = engine.analyze(data);
         if (name.length() > 200) name = name.substring(name.length() - 200);
         try {
-            db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", skillId);
-            db.update("INSERT INTO hub_skill_templates (skill_id, file_name, format, data, fields, created_by, created_at) VALUES (?, ?, 'hwpx', ?, ?, ?, ?)",
-                skillId, name, data, json.writeValueAsString(fields), user, Timestamp.from(Instant.now()));
+            db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = ?", skillId, engine.format());
+            db.update("INSERT INTO hub_skill_templates (skill_id, file_name, format, data, fields, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                skillId, name, engine.format(), data, json.writeValueAsString(fields), user, Timestamp.from(Instant.now()));
         } catch (JsonProcessingException e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "양식을 저장하지 못했습니다.");
         }
-        return new Info(name, "hwpx", fields);
+        return new Info(name, engine.format(), fields);
     }
 
     /** 이 사용자가 볼 수 있는 스킬의 양식 정보. 양식이 없으면 비어 있다. */
-    public Optional<Info> info(Long skillId, String user, boolean admin) {
+    public Optional<Info> info(Long skillId, String user, boolean admin, String format) {
         skills.visible(skillId, user, admin);
-        return find(skillId);
+        return find(skillId, FormEngine.Registry.get(format).format());
     }
 
     /** 권한 확인 없이 양식 정보를 찾는다(이미 권한을 확인한 호출자용) */
     public Optional<Info> find(Long skillId) {
-        var rows = db.query("SELECT file_name, format, fields FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", (rs, i) -> {
+        for (var e : FormEngine.Registry.ALL) { var found = find(skillId, e.format()); if (found.isPresent()) return found; }
+        return Optional.empty();
+    }
+
+    /** 권한 확인 없이 이 형식의 양식 정보를 찾는다 */
+    public Optional<Info> find(Long skillId, String format) {
+        var rows = db.query("SELECT file_name, format, fields FROM hub_skill_templates WHERE skill_id = ? AND format = ?", (rs, i) -> {
             try {
                 return new Info(rs.getString(1), rs.getString(2), json.readValue(rs.getString(3), new TypeReference<List<HwpxTemplate.Field>>() {}));
             } catch (JsonProcessingException e) {
                 throw new IllegalStateException(e);
             }
-        }, skillId);
+        }, skillId, format);
         return rows.stream().findFirst();
     }
 
-    public byte[] data(Long skillId) {
-        var rows = db.query("SELECT data FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", (rs, i) -> rs.getBytes(1), skillId);
+    public byte[] data(Long skillId, String format) {
+        var rows = db.query("SELECT data FROM hub_skill_templates WHERE skill_id = ? AND format = ?", (rs, i) -> rs.getBytes(1), skillId, format);
         if (rows.isEmpty()) throw noTemplate();
         return rows.get(0);
     }
 
-    public void delete(Long skillId, String user, boolean admin) {
+    public void delete(Long skillId, String user, boolean admin, String format) {
         skills.editable(skillId, user, admin);
-        db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = 'hwpx'", skillId);
+        db.update("DELETE FROM hub_skill_templates WHERE skill_id = ? AND format = ?", skillId, FormEngine.Registry.get(format).format());
     }
 
     // ───────────────────────── 채우기 ─────────────────────────
 
-    private Info require(Long skillId, String user, boolean admin) {
-        return info(skillId, user, admin).orElseThrow(TemplateService::noTemplate);
+    private Info require(Long skillId, String user, boolean admin, String format) {
+        return info(skillId, user, admin, format).orElseThrow(TemplateService::noTemplate);
     }
 
     /**
      * 스킬 결과에서 항목별 값을 찾는다. 1) 결과 안의 "라벨: 값" 줄이나 "# 라벨" 제목 아래 글에서 찾고,
      * 2) 남은 항목은 AI 가 연결되어 있으면 결과에서 뽑게 한다. 근거를 못 찾으면 비워 둔다(지어내지 않는다).
      */
-    public Plan plan(Long skillId, String user, boolean admin, String result) {
-        Info info = require(skillId, user, admin);
+    public Plan plan(Long skillId, String user, boolean admin, String format, String result) {
+        Info info = require(skillId, user, admin, format);
         String text = result == null ? "" : result;
         Map<String, String> found = labelled(text, info.fields().stream().map(f -> norm(f.label())).collect(java.util.stream.Collectors.toSet()));
         var items = new LinkedHashMap<String, PlanItem>();
@@ -152,8 +155,8 @@ public class TemplateService {
     }
 
     /** 칸 하나에 들어갈 초안을 AI 가 쓴다. 사용자가 [AI 초안]을 눌렀을 때만 호출된다. */
-    public String draft(Long skillId, String user, boolean admin, String result, String key) {
-        Info info = require(skillId, user, admin);
+    public String draft(Long skillId, String user, boolean admin, String format, String result, String key) {
+        Info info = require(skillId, user, admin, format);
         if (info.fields().stream().noneMatch(f -> f.key().equals(key))) throw new ApiException(HttpStatus.BAD_REQUEST, "양식에 없는 항목입니다.");
         if (!llm.isReal()) throw new ApiException(HttpStatus.BAD_REQUEST, "AI 가 연결되어 있지 않습니다. 직접 입력하거나 비워 두세요.");
         try {
@@ -169,15 +172,17 @@ public class TemplateService {
         throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 가 초안을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
 
-    public List<HwpxTemplate.PreviewBlock> preview(Long skillId, String user, boolean admin, Map<String, String> values) {
-        require(skillId, user, admin);
-        return HwpxTemplate.preview(data(skillId), sane(values));
+    public List<HwpxTemplate.PreviewBlock> preview(Long skillId, String user, boolean admin, String format, Map<String, String> values) {
+        FormEngine engine = FormEngine.Registry.get(format);
+        require(skillId, user, admin, engine.format());
+        return engine.preview(data(skillId, engine.format()), sane(values));
     }
 
-    public byte[] render(Long skillId, String user, boolean admin, Map<String, String> values) {
-        require(skillId, user, admin);
-        audit.log(user, "TEMPLATE_RENDER", "hub-skill:" + skillId, "hwpx"); // 내용은 기록하지 않는다
-        return HwpxTemplate.fill(data(skillId), sane(values));
+    public byte[] render(Long skillId, String user, boolean admin, String format, Map<String, String> values) {
+        FormEngine engine = FormEngine.Registry.get(format);
+        require(skillId, user, admin, engine.format());
+        audit.log(user, "TEMPLATE_RENDER", "hub-skill:" + skillId, engine.format()); // 내용은 기록하지 않는다
+        return engine.fill(data(skillId, engine.format()), sane(values));
     }
 
     // ───────────────────────── 도우미 ─────────────────────────

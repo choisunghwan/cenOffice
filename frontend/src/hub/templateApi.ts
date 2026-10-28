@@ -25,8 +25,8 @@ async function send(method: string, skillId: number, path: string, body?: BodyIn
 
 export const templateApi = {
   /** 등록된 양식이 없으면 null */
-  info: async (skillId: number): Promise<TemplateInfo | null> => {
-    const res = await send('GET', skillId, '')
+  info: async (skillId: number, format = 'hwpx'): Promise<TemplateInfo | null> => {
+    const res = await send('GET', skillId, `?format=${format}`)
     return res.status === 204 ? null : res.json()
   },
   slots: async (skillId: number): Promise<FormatSlot[]> => (await send('GET', skillId, '/formats')).json(),
@@ -35,18 +35,18 @@ export const templateApi = {
     form.append('file', file)
     return (await send('PUT', skillId, '', form)).json()
   },
-  remove: async (skillId: number): Promise<void> => { await send('DELETE', skillId, '') },
-  plan: async (skillId: number, result: string): Promise<TemplatePlan> => (await send('POST', skillId, '/plan', { result })).json(),
-  draft: async (skillId: number, result: string, key: string): Promise<string> => (await send('POST', skillId, '/draft', { result, key })).json().then((r: { value: string }) => r.value),
-  preview: async (skillId: number, values: Record<string, string>): Promise<PreviewBlock[]> => (await send('POST', skillId, '/preview', { values })).json().then((r: { blocks: PreviewBlock[] }) => r.blocks),
-  /** 값을 채운 hwpx 파일을 내려받는다 */
-  render: async (skillId: number, values: Record<string, string>, title: string): Promise<void> => {
-    const res = await send('POST', skillId, '/render', { values, title })
+  remove: async (skillId: number, format = 'hwpx'): Promise<void> => { await send('DELETE', skillId, `?format=${format}`) },
+  plan: async (skillId: number, result: string, format = 'hwpx'): Promise<TemplatePlan> => (await send('POST', skillId, '/plan', { format, result })).json(),
+  draft: async (skillId: number, result: string, key: string, format = 'hwpx'): Promise<string> => (await send('POST', skillId, '/draft', { format, result, key })).json().then((r: { value: string }) => r.value),
+  preview: async (skillId: number, values: Record<string, string>, format = 'hwpx'): Promise<PreviewBlock[]> => (await send('POST', skillId, '/preview', { format, values })).json().then((r: { blocks: PreviewBlock[] }) => r.blocks),
+  /** 값을 채운 양식 파일(형식에 맞는 확장자)을 내려받는다 */
+  render: async (skillId: number, values: Record<string, string>, title: string, format = 'hwpx'): Promise<void> => {
+    const res = await send('POST', skillId, '/render', { format, values, title })
     const cd = res.headers.get('Content-Disposition') ?? ''
     const enc = /filename\*=UTF-8''([^;]+)/.exec(cd)?.[1]
     const url = URL.createObjectURL(await res.blob())
     const a = document.createElement('a')
-    a.href = url; a.download = enc ? decodeURIComponent(enc) : `${title}.hwpx`; a.click()
+    a.href = url; a.download = enc ? decodeURIComponent(enc) : `${title}.${format}`; a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   },
 }
