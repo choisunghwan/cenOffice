@@ -12,10 +12,12 @@ import org.springframework.stereotype.Component;
 /**
  * 샘플 Skill/Agent(error-detective, requirement-analyst 등)를 등록한다.
  * 실제 등록 리소스와 구분하기 위해 sample=true 이며 소유자는 로그인 불가능한 시스템 계정(hub-sample)이다.
+ * app.hub.seed-samples=true 일 때만 동작한다(기본 꺼짐: 실제로 동작하지 않는 예시라 사용자에게 혼란을 준다. 테스트는 켠다).
  * 샘플은 모든 KPI/통계(등록 수, 실행 수, 활성 사용자)에서 제외된다. SKILL.md 는 일반 등록과 같은 검증기를 통과해야 한다.
  */
 @Component
 @Order(10)
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.hub.seed-samples", havingValue = "true")
 public class HubSampleSeeder implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(HubSampleSeeder.class);
     public static final String OWNER = "hub-sample";

@@ -74,5 +74,6 @@ app:
     from: ${MAIL_FROM:}                               # 비우면 SMTP 계정(MAIL_USERNAME) 주소 사용
     base-url: ${APP_BASE_URL:http://localhost:5180}   # 메일 안의 링크가 가리킬 CEN OFFICE 주소
   hub:
+    seed-samples: ${HUB_SEED_SAMPLES:false}      # true: 동작하지 않는 예시 도구(샘플)를 등록한다. 기본은 등록하지 않음
     ai-engine: ${HUB_AI_ENGINE:false}          # true: 승인된 Skill 을 LLM(app.llm.*)으로 실행. 입력이 해당 LLM 서비스로 전송됨
     runtime: ${HUB_RUNTIME:none}               # none | mock | llm  (기본: 실행 런타임 없음 = 실행 연동 준비 중)

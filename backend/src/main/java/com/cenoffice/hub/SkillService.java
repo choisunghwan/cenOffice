@@ -472,7 +472,10 @@ public class SkillService {
 
     String teamOf(String username) { return users.findByUsername(username).map(UserAccount::getTeam).orElse(null); }
 
-    String displayName(String username) { return users.findByUsername(username).map(UserAccount::getDisplayName).orElse(username); }
+    String displayName(String username) {
+        if (BuiltinSkillSeeder.OWNER.equals(username)) return BuiltinSkillSeeder.AUTHOR_NAME; // 내장 도구의 제작자 표시
+        return users.findByUsername(username).map(UserAccount::getDisplayName).orElse(username);
+    }
 
     RuntimeInfo runtimeInfo() {
         AgentRuntimeAdapter a = runtime.current();

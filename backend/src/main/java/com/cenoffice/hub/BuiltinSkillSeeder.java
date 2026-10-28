@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Order(11)
 public class BuiltinSkillSeeder implements CommandLineRunner {
     public static final String OWNER = "hub-builtin";
+    /** 화면의 제작자 칸에 보이는 이름(내장 도구는 계정이 없는 시스템 소유자라 따로 지정) */
+    public static final String AUTHOR_NAME = "최성환";
     public static final List<String> NAMES = List.of("cen-fp-estimator", "cen-proposal-writer", "cen-log-analyzer", "cen-sql-reviewer", "cen-meeting-minutes", "cen-weekly-report", "cen-test-case-writer");
     /** 파일 업로드(문서 입력)로 쓰는 도구. 나머지는 텍스트 입력 도구 */
     public static final List<String> DOCUMENT_TOOLS = List.of("cen-fp-estimator", "cen-proposal-writer");
