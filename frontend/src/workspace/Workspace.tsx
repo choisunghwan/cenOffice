@@ -66,9 +66,9 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
           {!collapsed && <span className="text-[9px] tracking-[0.18em] text-slate-500">YOUR AI WORKSPACE</span>}
           <span className="text-base">{collapsed ? '»' : '«'}</span>
         </button>
-        <div className="space-y-0.5">
+        <div className="space-y-0.5" data-coach="menu">
         {MENU.map((m) => (
-          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
+          <button key={m.key} data-coach={`menu-${m.key}`} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
             title={collapsed ? m.label : undefined} aria-label={m.label}
             className={`w-full text-left ${collapsed ? 'justify-center px-0' : 'px-3'} py-2 rounded-lg text-sm flex items-center gap-2.5 transition ${isOn(m.key) ? 'bg-sky-500/15 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
             <span className="text-base">{m.icon}</span>
@@ -77,13 +77,13 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
           </button>
         ))}
         </div>
-        <div className="flex-1 min-h-0 flex flex-col">{user && <ChatHistory collapsed={collapsed} />}</div>
+        <div className="flex-1 min-h-0 flex flex-col" data-coach="chat-history">{user && <ChatHistory collapsed={collapsed} />}</div>
         <div className="pt-2 mt-2 border-t border-white/8">
           {MORE.map((m) => <button key={m.key} onClick={() => setPage(m.key)} aria-current={page === m.key ? 'page' : undefined} title={m.label} aria-label={m.label} className={`w-full ${collapsed ? 'text-center px-0' : 'text-left px-3'} py-2 rounded-lg text-sm ${page === m.key ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'}`}>{collapsed ? '⚙' : m.label}</button>)}        </div>
       </nav>
-      <nav aria-label="업무 메뉴" className="md:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav aria-label="업무 메뉴" data-coach="menu" className="md:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[...MENU, ...MORE].map((m) => (
-          <button key={m.key} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
+          <button key={m.key} data-coach={`menu-${m.key}`} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
             className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${isOn(m.key) ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
         ))}
       </nav>

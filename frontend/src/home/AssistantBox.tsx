@@ -478,7 +478,7 @@ export function AssistantBox() {
       </div>
 
       <div className="ha-dock">
-      <form className="ha-form" onSubmit={(e) => { e.preventDefault(); void send() }}>
+      <form className="ha-form" data-coach="home-input" onSubmit={(e) => { e.preventDefault(); void send() }}>
         <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder="일정·회의실 예약, 할 일 확인, 회의 메모 정리까지 무엇이든 말씀하세요" aria-label="입력창" disabled={busy}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send() } }} />

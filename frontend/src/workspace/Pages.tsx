@@ -1,5 +1,6 @@
 import { askText } from '../ui/confirm'
 import { useEffect, useState } from 'react'
+import { startTour } from '../ui/coach'
 import { api, type ServerSnapshot } from '../api'
 import { useOffice } from '../store'
 import { theme } from '../theme'
@@ -250,7 +251,7 @@ export function SettingsPage() {
             <div className="flex justify-between"><dt className="text-slate-400">아이디</dt><dd>{user?.username}</dd></div>
             <div className="flex justify-between"><dt className="text-slate-400">권한</dt><dd>{user?.role === 'ADMIN' ? '관리자' : '일반 사용자'}</dd></div>
           </dl>
-          <div className="mt-4"><Btn tone="ghost" onClick={logout}>로그아웃</Btn></div>
+          <div className="mt-4 flex gap-2 flex-wrap"><Btn tone="ghost" onClick={() => startTour()}>사용법 다시 보기</Btn><Btn tone="ghost" onClick={logout}>로그아웃</Btn></div>
         </Card>
         <Card title="연결 / 환경">
           <dl className="text-sm space-y-2">

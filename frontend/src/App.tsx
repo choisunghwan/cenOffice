@@ -1,4 +1,5 @@
 ﻿import { ConfirmHost } from './ui/confirm'
+import { CoachHost } from './ui/coach'
 import { useEffect, useState } from 'react'
 import { useOffice, type Conn } from './store'
 import { theme } from './theme'
@@ -73,7 +74,7 @@ export default function App() {
         ))}
       </div>
 
-      <div className="glass absolute right-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-3 z-10 text-xs max-w-[30vw] whitespace-nowrap">
+      <div data-coach="topbar-right" className="glass absolute right-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-3 z-10 text-xs max-w-[30vw] whitespace-nowrap">
         {mode === 'workspace' && <button className="appearance-toggle" onClick={toggleAppearance} aria-label={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'} title={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}><span aria-hidden="true">{appearance === 'light' ? '☾' : '☀'}</span></button>}
         <details className="hidden lg:block">
           <summary className="cursor-pointer list-none" title={c.label}><span style={{ color: c.color }}>●</span><span className="sr-only">연결 상태</span></summary>
@@ -111,6 +112,7 @@ export default function App() {
       {mode === 'workspace' && <Workspace onLogin={() => setLoginOpen(true)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       <ConfirmHost />
+      <CoachHost />
 
       {mode === 'office' && conn === 'online' && panel === 'none' && <ChatDock />}
 

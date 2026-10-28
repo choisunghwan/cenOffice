@@ -1,0 +1,21 @@
+/* 코치 마크: 화면을 어둡게 하고 안내할 곳만 밝게 남긴 뒤, 옆에 설명 말풍선을 띄운다 */
+.coach-layer { position: fixed; inset: 0; z-index: 400; }
+.coach-block { position: absolute; inset: 0; }
+.coach-hole { position: absolute; border-radius: 12px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(8, 14, 24, .66), 0 0 0 2px rgba(131, 184, 235, .95); transition: left .2s, top .2s, width .2s, height .2s; }
+.coach-card { position: absolute; width: min(330px, calc(100vw - 24px)); padding: 16px 18px 14px; border-radius: 16px; background: #fff; color: #172d46; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); animation: coach-pop .16s ease-out; }
+[data-workspace-theme=dark] .coach-card { background: #19283c; color: #edf3fa; border: 1px solid #2b3d54; }
+.coach-step { margin: 0 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #2a6db2; }
+[data-workspace-theme=dark] .coach-step { color: #83b8eb; }
+.coach-card h2 { margin: 0 0 6px; font-size: 16px; font-weight: 700; }
+.coach-card p#coach-body { margin: 0; font-size: 13.5px; line-height: 1.65; opacity: .86; overflow-wrap: anywhere; }
+.coach-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.coach-spacer { flex: 1; }
+.coach-skip { padding: 6px 4px; font-size: 12.5px; background: transparent; color: inherit; opacity: .6; border: 0; }
+.coach-skip:hover { opacity: 1; text-decoration: underline; }
+.coach-btn { min-width: 64px; height: 36px; padding: 0 16px; border-radius: 10px; font-size: 13.5px; font-weight: 600; border: 1px solid rgba(127, 140, 156, .4); background: transparent; color: inherit; }
+.coach-btn:hover { background: rgba(127, 140, 156, .14); }
+.coach-btn.primary { background: #1a62d6; border-color: #1a62d6; color: #fff; }
+.coach-btn.primary:hover { background: #144fb0; }
+.coach-btn:focus-visible, .coach-skip:focus-visible { outline: 2px solid #83b8eb; outline-offset: 2px; }
+@keyframes coach-pop { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .coach-hole { transition: none; } .coach-card { animation: none; } }
