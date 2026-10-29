@@ -22,7 +22,7 @@ export const AI_STATUS_COLOR: Record<AiStatus, string> = {
 
 /** AI 직원 아리. 실제 직원과 달리 접속 계정이 아니며 AI 배지·역할·작업 상태를 표시한다. (현재 Mock AI) */
 export function AiStaff() {
-  const status = useOffice((s) => (s.conn === 'online' && s.serverAiStatus ? s.serverAiStatus : s.aiStatus))
+  const status = useOffice((s) => s.aiStatus)
   const open = useOffice((s) => s.open)
   const bubble = useMultiplayer((s) => s.bubbles['ai:ari']?.text)
   return (

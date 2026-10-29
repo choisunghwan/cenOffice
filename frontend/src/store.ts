@@ -35,7 +35,6 @@ interface OfficeState {
   infoTarget: InteractableDef | null
   aiStatus: AiStatus
   /** 서버(AI PM)의 실제 작업 상태. 온라인일 때 아리 이름표/상태에 우선 사용 */
-  serverAiStatus: AiStatus | null
   messages: ChatMessage[]
   // 백엔드 세션
   user: UserView | null
@@ -81,23 +80,10 @@ export const useOffice = create<OfficeState>((set, get) => {
       set((s) => ({ commands: { ...s.commands, [e.payload.id]: e.payload } }))
       if (TERMINAL.includes(e.payload.status)) waiters.get(e.payload.id)?.(e.payload.status)
     } else if (e.type === 'workspace.changed') {
-      if (e.payload.kind === 'aitask' || e.payload.kind === 'approval') void refreshAiStatus()
       window.dispatchEvent(new CustomEvent('workspace-changed', { detail: e.payload }))
     } else if (e.type === 'reservation.changed') {
       window.dispatchEvent(new CustomEvent('reservations-changed'))
     }
-  }
-
-  /** 서버의 AI PM 작업 상태로 아리의 상태를 계산한다 (완료되지 않은 작업을 완료로 표시하지 않는다) */
-  const refreshAiStatus = async () => {
-    try {
-      const list = (await api.aiTasks()).filter((t) => t.type === 'DRAFT_SPEC')
-      let st: AiStatus = 'idle'
-      if (list.some((t) => t.status === 'RUNNING' || t.status === 'QUEUED')) st = 'working'
-      else if (list.some((t) => t.status === 'NEEDS_INPUT' || t.status === 'WAITING_APPROVAL')) st = 'approval'
-      else if (list[0]?.status === 'FAILED') st = 'error'
-      set({ serverAiStatus: st })
-    } catch { /* 다음 이벤트에서 갱신 */ }
   }
 
   const goOnline = async (token: string) => {
@@ -105,7 +91,6 @@ export const useOffice = create<OfficeState>((set, get) => {
     set({ conn: 'connecting' })
     const list = await api.devices()
     list.forEach(applyDevice)
-    void refreshAiStatus()
     useMultiplayer.getState().setMe(get().user?.username ?? '')
     disconnect = connectRealtime(token, handleEvent, (c) => {
       set({ conn: c })
@@ -150,7 +135,6 @@ export const useOffice = create<OfficeState>((set, get) => {
     nearby: null,
     infoTarget: null,
     aiStatus: 'idle',
-    serverAiStatus: null,
     messages: [
       { id: 0, role: 'ai', text: '안녕하세요, AI 직원 아리입니다. 서버 상태 확인, 문서 요약, 보고서 작성, 코드 분석, 조명 제어 등을 도와드릴게요. (현재 Mock AI 모드)' },
     ],
@@ -215,7 +199,7 @@ export const useOffice = create<OfficeState>((set, get) => {
       useMultiplayer.getState().reset()
       tokenStore.set(null)
       clearAssistantMemory()
-      set({ user: null, conn: 'local', devices: {}, commands: {}, serverAiStatus: null, authChecked: true })
+      set({ user: null, conn: 'local', devices: {}, commands: {}, authChecked: true })
     },
 
     continueLocal: () => set({ authChecked: true, conn: 'local' }),

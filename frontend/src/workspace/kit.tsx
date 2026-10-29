@@ -111,11 +111,3 @@ export function Stat({ label, value, tone }: { label: string; value: ReactNode; 
 }
 
 export const fmtTime = (iso: string) => new Date(iso).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-
-export const ACTION_LABEL: Record<string, string> = {
-  PROJECT_CREATED: '프로젝트 생성', PROJECT_UPDATED: '프로젝트 수정', PROJECT_DELETED: '프로젝트 삭제',
-  REQUIREMENT_CREATED: '요구사항 등록', REQUIREMENT_UPDATED: '요구사항 수정', REQUIREMENT_DELETED: '요구사항 삭제',
-  TASK_CREATED: '작업 생성', TASK_UPDATED: '작업 수정', TASK_DELETED: '작업 삭제',
-  AI_TASK_CREATED: 'AI 작업 접수', AI_TASK_DENIED: 'AI 작업 거부',
-  APPROVAL_REQUESTED: '승인 요청', APPROVAL_APPROVED: '승인', APPROVAL_REJECTED: '거절',
-}

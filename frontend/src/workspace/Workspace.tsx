@@ -1,7 +1,6 @@
 import { useOffice } from '../store'
 import { Btn } from './kit'
-import { AgentsPage, ComingSoonPage, MonitoringPage, OfficeManagementPage, RequirementsPage, SettingsPage } from './Pages'
-import { ProjectsPage } from './Projects'
+import { ComingSoonPage, MonitoringPage, OfficeManagementPage, SettingsPage } from './Pages'
 import { HubPage } from '../hub/HubPage'
 import { ChatHistory } from '../home/ChatHistory'
 import { lazy, Suspense } from 'react'
@@ -41,9 +40,6 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
       case 'hub-mine': return <HubPage key="mine" initialTab="mine" />
       case 'hub-register': return <HubPage key="register" initialTab="register" />
       case 'hub-review': return user?.role === 'ADMIN' ? <HubPage key="review" initialTab="review" /> : <HubPage />
-      case 'projects': return <ProjectsPage />
-      case 'requirements': return <RequirementsPage />
-      case 'agents': return <AgentsPage />
       case 'aihub': return <HubPage />
       case 'monitoring': return <MonitoringPage />
       case 'office': return <OfficeManagementPage />

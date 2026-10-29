@@ -44,7 +44,7 @@ export default function App() {
   }, [authChecked, user, asked])
   const c = CONN[conn]
   const lightKnown = conn === 'online' && light ? light.state.power : lightOn
-  const aiStatus = useOffice((s) => (s.conn === 'online' && s.serverAiStatus ? s.serverAiStatus : s.aiStatus))
+  const aiStatus = useOffice((s) => s.aiStatus)
 
   const menu = [
     { icon: '🏢', label: '공간', action: () => useOffice.getState().close() },

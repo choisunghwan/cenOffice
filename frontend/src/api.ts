@@ -65,37 +65,6 @@ export interface ServerSnapshot {
   events: { at: string; level: 'INFO' | 'WARN' | 'ERROR'; message: string }[]
 }
 
-export type Priority = 'LOW' | 'MEDIUM' | 'HIGH'
-export type RequirementStatus = 'DRAFT' | 'APPROVED' | 'IN_PROGRESS' | 'DONE'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'
-export type Environment = 'DEV' | 'STG' | 'PROD'
-export type AiTaskType = 'STATUS_QUERY' | 'ANALYZE_REQUIREMENT' | 'DRAFT_SPEC' | 'GENERATE_TASKS' | 'CODE_CHANGE' | 'RUN_TESTS'
-export type AiTaskStatus = 'QUEUED' | 'RUNNING' | 'NEEDS_INPUT' | 'WAITING_APPROVAL' | 'DONE' | 'FAILED' | 'REJECTED'
-
-export interface Project {
-  id: number; name: string; description?: string; status: 'ACTIVE' | 'ARCHIVED'; owner: string
-  createdAt: string; updatedAt: string; requirementCount: number; taskCount: number; doneCount: number
-}
-export interface RequirementItem {
-  id: number; projectId: number; title: string; description?: string; priority: Priority
-  status: RequirementStatus; createdBy: string; createdAt: string; updatedAt: string
-}
-export interface TaskItem {
-  id: number; projectId: number; requirementId?: number; title: string; description?: string
-  status: TaskStatus; assigneeAgentId?: number; createdBy: string; createdAt: string; updatedAt: string
-}
-export interface Agent { id: number; code: string; name: string; role: 'PM' | 'DEV' | 'QA'; enabled: boolean; allowedEnvironments: string }
-export interface AiTaskItem {
-  id: number; projectId: number; taskId?: number; agentId: number; type: AiTaskType; environment: Environment
-  status: AiTaskStatus; input?: string; result?: string; requestedBy: string; createdAt: string; updatedAt: string
-}
-export interface ExecutionItem { id: number; aiTaskId: number; step: string; status: string; detail?: string; startedAt: string }
-export interface ApprovalItem {
-  id: number; aiTaskId: number; kind: string; summary: string; payload?: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  requestedBy: string; decidedBy?: string; decidedAt?: string; comment?: string; createdAt: string
-}
-export interface HistoryItem { id: number; actor: string; action: string; target?: string; detail?: string; at: string }
-export interface WorkspaceSummary { projects: number; openTasks: number; doneTasks: number; pendingApprovals: number; queuedAiTasks: number; recent: HistoryItem[] }
 
 export interface Avatar { username: string; displayName: string; team: string; x: number; z: number; r: number; m: boolean }
 export interface MoveItem { u: string; x: number; z: number; r: number; m: boolean }
@@ -107,15 +76,6 @@ export interface ChatMessage {
   id: number; roomId: number; senderType: 'USER' | 'AI'; sender: string; senderName: string; content: string; createdAt: string
 }
 export interface Person { username: string; displayName: string; team: string; online: boolean }
-
-export interface PmInfo { provider: string; real: boolean; model: string; note: string }
-export interface PmState {
-  phase: string; projectName: string; text: string; answers: string[]; questions: string[]; spec?: string
-  requirements: { title: string; description: string; priority: Priority }[]
-  tasks: { title: string; description: string; requirementIndex?: number }[]
-  planSha256?: string; approvalId?: number; provider?: string; error?: string
-}
-export interface PmDetail { task: AiTaskItem; executions: ExecutionItem[]; state: PmState | null }
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -176,40 +136,6 @@ export const api = {
   chatMessages: (roomId: number, limit = 50) => request<ChatMessage[]>(`/api/chat/rooms/${roomId}/messages?limit=${limit}`),
   sendChat: (roomId: number, content: string) =>
     request<ChatMessage>(`/api/chat/rooms/${roomId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
-  // AI PM
-  pmInfo: () => request<PmInfo>('/api/pm/info'),
-  pmIntake: (projectId: number, text: string) => request<AiTaskItem>('/api/pm/intake', { method: 'POST', body: JSON.stringify({ projectId, text }) }),
-  pmDetail: (id: number) => request<PmDetail>(`/api/pm/tasks/${id}`),
-  pmAnswer: (id: number, answers: string) => request<void>(`/api/pm/tasks/${id}/answers`, { method: 'POST', body: JSON.stringify({ answers }) }),
-  // WORKSPACE
-  summary: () => request<WorkspaceSummary>('/api/workspace/summary'),
-  projects: () => request<Project[]>('/api/projects'),
-  createProject: (b: { name: string; description?: string }) => request<Project>('/api/projects', { method: 'POST', body: JSON.stringify(b) }),
-  updateProject: (id: number, b: { name: string; description?: string; status?: string }) => request<Project>(`/api/projects/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
-  deleteProject: (id: number) => request<void>(`/api/projects/${id}`, { method: 'DELETE' }),
-  requirements: (pid: number) => request<RequirementItem[]>(`/api/projects/${pid}/requirements`),
-  createRequirement: (pid: number, b: { title: string; description?: string; priority?: Priority }) =>
-    request<RequirementItem>(`/api/projects/${pid}/requirements`, { method: 'POST', body: JSON.stringify(b) }),
-  updateRequirement: (id: number, b: { title: string; description?: string; priority?: Priority; status?: RequirementStatus }) =>
-    request<RequirementItem>(`/api/requirements/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
-  deleteRequirement: (id: number) => request<void>(`/api/requirements/${id}`, { method: 'DELETE' }),
-  tasks: (pid: number) => request<TaskItem[]>(`/api/projects/${pid}/tasks`),
-  createTask: (pid: number, b: { title: string; description?: string; requirementId?: number | null; assigneeAgentId?: number | null }) =>
-    request<TaskItem>(`/api/projects/${pid}/tasks`, { method: 'POST', body: JSON.stringify(b) }),
-  updateTask: (id: number, b: { title: string; description?: string; requirementId?: number | null; status?: TaskStatus; assigneeAgentId?: number | null }) =>
-    request<TaskItem>(`/api/tasks/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
-  deleteTask: (id: number) => request<void>(`/api/tasks/${id}`, { method: 'DELETE' }),
-  agents: () => request<Agent[]>('/api/agents'),
-  aiTasks: (projectId?: number) => request<AiTaskItem[]>(`/api/ai-tasks${projectId ? `?projectId=${projectId}` : ''}`),
-  createAiTask: (b: { projectId: number; taskId?: number | null; agentId: number; type: AiTaskType; environment: Environment; input?: string }) =>
-    request<AiTaskItem>('/api/ai-tasks', { method: 'POST', body: JSON.stringify(b) }),
-  executions: (id: number) => request<ExecutionItem[]>(`/api/ai-tasks/${id}/executions`),
-  requestApproval: (aiTaskId: number, b: { kind: string; summary: string; payload?: string }) =>
-    request<ApprovalItem>(`/api/ai-tasks/${aiTaskId}/approval-requests`, { method: 'POST', body: JSON.stringify(b) }),
-  approvals: (status?: string) => request<ApprovalItem[]>(`/api/approvals${status ? `?status=${status}` : ''}`),
-  decide: (id: number, approve: boolean, comment?: string) =>
-    request<ApprovalItem>(`/api/approvals/${id}/decision`, { method: 'POST', body: JSON.stringify({ approve, comment }) }),
-  history: (target: string) => request<HistoryItem[]>(`/api/history?target=${encodeURIComponent(target)}`),
   auditLogs: () => request<{ id: number; actor: string; action: string; target?: string; detail?: string; createdAt: string }[]>('/api/audit-logs?limit=30'),
 }
 
