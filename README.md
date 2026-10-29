@@ -141,7 +141,7 @@ npm run dev
 #### 테스트
 ```bash
 cd backend
-mvn test        # 280개 (2026-10-28 기준 전부 통과)
+mvn test        # 270개 (2026-10-29 기준 전부 통과)
 cd ../frontend
 npx tsc --noEmit -p . && npx vite build
 ```
@@ -160,7 +160,7 @@ npx tsc --noEmit -p . && npx vite build
 | `HUB_AI_ENGINE` | 도구의 AI 모델 실행 허용(입력이 LLM 서비스로 전송됨) | false (개발 스크립트는 true) |
 | `HUB_RUNTIME` | 도구 실행 런타임: `none` / `mock`(테스트용·KPI 제외) / `llm` | none |
 | `HUB_SEED_SAMPLES` | 동작하지 않는 예시(샘플) 도구를 등록할지 | false |
-| `LLM_PROVIDER` / `GEMINI_API_KEY` 등 | AI PM·도구·홈 입력창의 LLM (키는 코드·저장소에 넣지 말고 로컬 설정으로) | mock |
+| `LLM_PROVIDER` / `GEMINI_API_KEY` 등 | 도구·홈 입력창·회의 AI의 LLM (키는 코드·저장소에 넣지 말고 로컬 설정으로) | mock |
 | `MAIL_HOST` / `MAIL_USERNAME` 등, `APP_BASE_URL` | 회의록 확정·할 일 알림 메일(비우면 화면 알림만) | 비어 있음 |
 | `VITE_API_URL` (프론트) | 백엔드 주소 | `http://localhost:8080` |
 
@@ -190,25 +190,21 @@ npx tsc --noEmit -p . && npx vite build
 - 양식: 항목 이름이 위, 빈 칸이 아래인 **세로 배치 표는 읽지 못합니다**. 값 안의 줄바꿈은 공백으로 합쳐집니다. 목록 표는 양식에 있는 줄 수까지만 채웁니다. 옛 `.hwp` 는 지원하지 않습니다(`.hwpx` 로 저장). 실제 한글·워드·엑셀·파워포인트 프로그램에서 열어 확인한 것은 일부이며 대부분은 자동 테스트와 미리보기로 검증했습니다.
 - 회의록: 삭제 기능이 없습니다. 요약은 항상 정해진 틀(요약·결정·액션·이슈)로 나오므로, 양식에만 있는 항목(안건·장소 등)은 비어 있습니다.
 - 홈 입력창은 정해 둔 자료(내 일정·할 일·도구·도움말)만 근거로 답하며, 못 답한 질문을 모아 보는 기능은 없습니다.
-- 외부 AI 도구 연동(스킬 내려받기·MCP)은 API만 있고 화면이 없습니다. 프로젝트·요구사항·AI PM ‘아리’(WORKSPACE) 화면은 코드와 API가 남아 있지만 현재 사이드바 메뉴에는 노출하지 않습니다.
+- 외부 AI 도구 연동(스킬 내려받기·MCP)은 API만 있고 화면이 없습니다. 프로젝트·요구사항·AI PM 기능은 사용하지 않아 제거했습니다.
 - 음성 기록은 브라우저의 음성 인식 기능을 쓰므로, 브라우저에 따라 음성이 제공사 서버로 전송될 수 있습니다.
 - 서버 모니터링 데이터는 **Mock**입니다. `MqttDeviceAdapter` / `HttpDeviceAdapter` 는 미구현(해당 타입 장비에 명령하면 FAILED). AI 직원(3D 채팅)은 Mock입니다.
 - 스키마는 Flyway와 함께 `ddl-auto=update` 도 켜져 있어, 운영 전에 정리가 필요합니다. 예약 중복 방지는 SERIALIZABLE 트랜잭션 기반이며 단일 인스턴스를 가정합니다.
 - 푸시·운영 배포·사내망·실제 카메라/마이크 품질 검증은 별도입니다.
 
-## 환경 경계와 승인 (WORKSPACE)
+## 환경 경계 (장비 명령)
 
-- 환경 경계(서버 강제): DEV 읽기·테스트·개발 / STG 읽기·테스트 / PROD 읽기 전용이며 **어떤 AI 에이전트에도 PROD 권한 없음**. 운영 배포 실행 기능은 존재하지 않습니다.
-- 승인: 요청자 본인은 승인 불가(관리자 제외), 이미 처리된 요청은 재처리 불가.
 - 장비 명령 상태는 `REQUESTED → SENT → CONFIRMED / FAILED / TIMEOUT` 이며 **장비가 확인(보고)한 값만 화면/DB 상태에 반영**합니다(전송했다는 이유로 성공 처리하지 않음).
 
-## AI PM (아리)
+## LLM 연결
 
-흐름: 요구사항 접수 → 분석 → (부족하면 질문, 최대 2라운드) → 기능 명세 초안 → 요구사항/작업 목록 생성 → **사용자 승인 요청** → 승인되면 서버가 검증 후 프로젝트에 등록.
-
-- **LLM Provider 는 인터페이스**(`LlmProvider`)로 분리: `MockLlmProvider`(기본, 규칙 기반) / `GeminiLlmProvider` / `AnthropicLlmProvider` / `OpenAiLlmProvider`. 실제 LLM 은 `LLM_PROVIDER=gemini` + `GEMINI_API_KEY`(모델 `GEMINI_MODEL`, 기본 gemini-2.5-flash), `anthropic` + `ANTHROPIC_API_KEY`, `openai` + `OPENAI_API_KEY`(`OPENAI_MODEL`, 기본 gpt-4o-mini) 환경변수가 있을 때만 사용되며, **입력 원문이 외부 서비스로 전송**됩니다. 키가 없으면 자동으로 Mock.
-- **AI 출력은 신뢰하지 않음**: 서버가 스키마·개수·길이·허용 값을 검증(`PlanValidator`)하고, 통과한 계획만 저장합니다. 승인 요청에는 계획의 SHA-256 만 담기며, 승인 시 서버가 저장된 계획의 해시를 다시 대조하고 재검증·환경 권한 확인 후에만 적용합니다. 승인 전에는 프로젝트 데이터가 바뀌지 않습니다.
-- Gemini 는 실제 키로 전체 흐름을 검증했습니다. Anthropic/OpenAI 는 유효한 키로 성공 호출을 검증하지 못했습니다(응답 파싱은 단위 테스트).
+- **LLM Provider 는 인터페이스**(`LlmProvider`, 패키지 `llm`)로 분리: `MockLlmProvider`(기본, 규칙 기반) / `GeminiLlmProvider` / `AnthropicLlmProvider` / `OpenAiLlmProvider`. 실제 LLM 은 `LLM_PROVIDER=gemini` + `GEMINI_API_KEY`(모델 `GEMINI_MODEL`, 기본 gemini-2.5-flash), `anthropic` + `ANTHROPIC_API_KEY`, `openai` + `OPENAI_API_KEY`(`OPENAI_MODEL`, 기본 gpt-4o-mini) 환경변수가 있을 때만 사용되며, **입력 원문이 외부 서비스로 전송**됩니다. 키가 없으면 자동으로 Mock.
+- **AI 출력은 신뢰하지 않음**: 홈 입력창·양식 채우기·회의 AI 모두 AI가 돌려준 값을 서버가 다시 검증한 뒤에만 사용하고, 실제 변경은 사람이 확인해야 실행됩니다.
+- Gemini 는 실제 키로 검증했습니다. Anthropic/OpenAI 는 유효한 키로 성공 호출을 검증하지 못했습니다.
 
 ## 멀티플레이어 / 채팅 (3D 오피스)
 
