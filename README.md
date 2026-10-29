@@ -188,7 +188,7 @@ npx tsc --noEmit -p . && npx vite build
 - 앱으로 설치(PWA): 크롬·엣지의 “앱 설치”로 독립 창에서 실행(HTTPS 주소에서만 설치·마이크 사용 가능, localhost는 예외)
 - 백엔드 구조 규칙(Controller → Service → Repository)을 자동 테스트(`LayeringTest`)로 검사
 - 3D 사무실, 멀티플레이어, 장비 관리(조명·에어컨·회의실 예약·서버실 패널), JWT 로그인(ADMIN/USER), 감사 로그
-- DB는 Flyway(`V1`~`V14`)로 관리
+- DB는 Flyway(`V1`~`V16`)로 관리(V15에서 예전 Hibernate 자동 생성 테이블도 기록으로 옮김)
 
 **아직 아닌 것 / 한계 (정직하게)**
 - 양식: 항목 이름이 위, 빈 칸이 아래인 **세로 배치 표는 읽지 못합니다**. 값 안의 줄바꿈은 공백으로 합쳐집니다. 목록 표는 양식에 있는 줄 수까지만 채웁니다. 옛 `.hwp` 는 지원하지 않습니다(`.hwpx` 로 저장). 실제 한글·워드·엑셀·파워포인트 프로그램에서 열어 확인한 것은 일부이며 대부분은 자동 테스트와 미리보기로 검증했습니다.
@@ -197,9 +197,9 @@ npx tsc --noEmit -p . && npx vite build
 - 외부 AI 도구 연동(스킬 내려받기·MCP)은 API만 있고 화면이 없습니다. 프로젝트·요구사항·AI PM 기능은 사용하지 않아 제거했습니다.
 - 음성 기록은 브라우저의 음성 인식 기능을 쓰므로, 브라우저에 따라 음성이 제공사 서버로 전송될 수 있습니다.
 - 서버 모니터링 데이터는 **Mock**입니다. `MqttDeviceAdapter` / `HttpDeviceAdapter` 는 미구현(해당 타입 장비에 명령하면 FAILED). AI 직원(3D 채팅)은 Mock입니다.
-- 스키마는 Flyway와 함께 `ddl-auto=update` 도 켜져 있어, 운영 전에 정리가 필요합니다. 예약 중복 방지는 SERIALIZABLE 트랜잭션 기반이며 단일 인스턴스를 가정합니다.
+- 테이블 구조는 Flyway(`db/migration`)로만 바꿉니다. `ddl-auto=validate`라서 코드와 DB 구조가 다르면 서버가 시작하지 않고 알려 줍니다. `hub_*` 테이블은 이 검사에서 제외되어 있습니다. 예전 AI PM 기능이 남긴 테이블(`projects`, `requirements`, `project_tasks`, `ai_tasks`, `agent_executions`, `approval_requests`)은 아직 DB에 남아 있습니다(코드는 쓰지 않음). 예약 중복 방지는 SERIALIZABLE 트랜잭션 기반이며 단일 인스턴스를 가정합니다.
 - 회의 AI 센은 “센아” 호출어 자동 감지·말 끼어들기가 없고(버튼으로 질문), 실제 LLM·TTS 키가 있어야 켜집니다. 첫 음성이 나오기까지 15~18초가 걸렸습니다.
-- 3D 오피스의 AI 직원 “아리”는 대화만 할 수 있습니다(LLM이 없으면 Mock 응답). 예전 AI PM 때 쓰던 `role`·`allowedEnvironments` 열은 DB에 남아 있으며 지금은 쓰이지 않습니다.
+- 3D 오피스의 AI 직원 “아리”는 대화만 할 수 있습니다(LLM이 없으면 Mock 응답).
 - 푸시·운영 배포(HTTPS 주소 포함)·사내망·실제 카메라/마이크 품질 검증은 별도입니다. 다른 PC에서 쓰려면 서버·HTTPS·접속 주소 설정이 먼저 필요합니다.
 
 ## 환경 경계 (장비 명령)

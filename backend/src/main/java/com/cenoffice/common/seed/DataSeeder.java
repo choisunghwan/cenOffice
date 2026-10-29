@@ -17,9 +17,6 @@ import com.cenoffice.office.chat.Office;
 import com.cenoffice.office.chat.OfficeRepository;
 import com.cenoffice.office.agent.AiAgent;
 import com.cenoffice.office.agent.AiAgentRepository;
-import com.cenoffice.office.agent.WsEnums.AgentRole;
-import com.cenoffice.office.agent.WsEnums.Environment;
-import java.util.Set;
 import java.security.SecureRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +59,8 @@ public class DataSeeder implements CommandLineRunner {
         if (devices.findByCode("ac-main").isEmpty())
             devices.save(new Device("ac-main", "메인 에어컨", DeviceType.AIR_CONDITIONER, AdapterType.MOCK, "ac"));
 
-        // 3D 오피스의 AI 직원 '아리'(채팅 상대). 예전 AI PM 기능과 함께 쓰던 역할·환경 값은 DB 열이 남아 있어 그대로 채운다.
-        seedAgent("ari", "아리", AgentRole.PM, Set.of(Environment.DEV, Environment.STG));
+        // 3D 오피스의 AI 직원 '아리'(채팅 상대)
+        seedAgent("ari", "아리");
         retireOldAgents();
 
         Office office = offices.findAll().stream().findFirst().orElseGet(() -> offices.save(new Office("본사 오피스")));
@@ -77,9 +74,9 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void seedAgent(String code, String name, AgentRole role, Set<Environment> envs) {
+    private void seedAgent(String code, String name) {
         var existing = agents.findByCode(code);
-        if (existing.isEmpty()) { agents.save(new AiAgent(code, name, role, envs)); return; }
+        if (existing.isEmpty()) { agents.save(new AiAgent(code, name)); return; }
         // 이미 만들어진 데이터의 이름이 예전 AI PM 시절 이름이면 새 이름으로 바꾼다
         if ("아리 (AI PM)".equals(existing.get().getName())) { existing.get().rename(name); agents.save(existing.get()); }
     }

@@ -7,8 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.cenoffice.common.seed.DataSeeder;
 import com.cenoffice.office.agent.AiAgent;
 import com.cenoffice.office.agent.AiAgentRepository;
-import com.cenoffice.office.agent.WsEnums;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +26,7 @@ class AgentSeedTest {
         AiAgent ari = agents.findByCode("ari").orElseThrow();
         ari.rename("아리 (AI PM)");
         agents.save(ari);
-        agents.save(new AiAgent("dev-bot", "데브 (AI 개발자)", WsEnums.AgentRole.DEV, Set.of(WsEnums.Environment.DEV)));
+        agents.save(new AiAgent("dev-bot", "데브 (AI 개발자)"));
 
         seeder.run();
 
