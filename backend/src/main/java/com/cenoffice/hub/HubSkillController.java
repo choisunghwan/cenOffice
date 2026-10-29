@@ -1,5 +1,7 @@
 package com.cenoffice.hub;
 
+import com.cenoffice.hub.domain.HubCategoryRepository;
+
 import com.cenoffice.api.ApiException;
 import com.cenoffice.hub.HubDtos.*;
 import java.io.IOException;
@@ -36,7 +38,7 @@ public class HubSkillController {
         this.categories = categories;
     }
 
-    static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(x -> x.getAuthority().equals("ROLE_ADMIN")); }
+    public static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(x -> x.getAuthority().equals("ROLE_ADMIN")); }
 
     private static List<String> csv(String s) {
         return s == null || s.isBlank() ? null : Arrays.stream(s.split(",")).map(String::trim).filter(x -> !x.isEmpty()).toList();

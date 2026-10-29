@@ -1,5 +1,10 @@
 package com.cenoffice.hub;
 
+import com.cenoffice.hub.domain.HubSkill;
+import com.cenoffice.hub.domain.HubSkillRepository;
+import com.cenoffice.hub.domain.HubSkillVersion;
+import com.cenoffice.hub.domain.HubSkillVersionRepository;
+
 import java.time.Instant;
 import java.util.List;
 import org.springframework.boot.CommandLineRunner;

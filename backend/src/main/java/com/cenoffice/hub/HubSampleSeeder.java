@@ -1,5 +1,18 @@
 package com.cenoffice.hub;
 
+import com.cenoffice.hub.domain.HubAgent;
+import com.cenoffice.hub.domain.HubAgentRepository;
+import com.cenoffice.hub.domain.HubAgentSkill;
+import com.cenoffice.hub.domain.HubAgentSkillRepository;
+import com.cenoffice.hub.domain.HubAgentVersion;
+import com.cenoffice.hub.domain.HubAgentVersionRepository;
+import com.cenoffice.hub.domain.HubSkill;
+import com.cenoffice.hub.domain.HubSkillRepository;
+import com.cenoffice.hub.domain.HubSkillTag;
+import com.cenoffice.hub.domain.HubSkillTagRepository;
+import com.cenoffice.hub.domain.HubSkillVersion;
+import com.cenoffice.hub.domain.HubSkillVersionRepository;
+
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;

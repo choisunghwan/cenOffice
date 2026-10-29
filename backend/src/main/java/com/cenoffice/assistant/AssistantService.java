@@ -1,5 +1,7 @@
 package com.cenoffice.assistant;
 
+import com.cenoffice.hub.form.TemplateService;
+
 import com.cenoffice.api.ApiException;
 import com.cenoffice.api.AuditService;
 import com.cenoffice.calendar.CalendarService;
@@ -125,11 +127,11 @@ public class AssistantService {
     private final MinutesService minutes;
     private final CollaborationService collab;
     private final int maxPerMinute;
-    private final com.cenoffice.hub.TemplateService templates;
+    private final com.cenoffice.hub.form.TemplateService templates;
     private final HelpCatalog help;
     private final Map<String, Deque<Instant>> recent = new ConcurrentHashMap<>();
 
-    public AssistantService(HelpCatalog help, com.cenoffice.hub.TemplateService templates, CalendarService calendar, ToolCatalog tools,MeetingRoomRepository roomRepo, ReservationRepository reservations, MinutesService minutes, CollaborationService collab,
+    public AssistantService(HelpCatalog help, com.cenoffice.hub.form.TemplateService templates, CalendarService calendar, ToolCatalog tools,MeetingRoomRepository roomRepo, ReservationRepository reservations, MinutesService minutes, CollaborationService collab,
                             LlmProvider llm, ObjectMapper json, AuditService audit,
                             @org.springframework.beans.factory.annotation.Value("${app.assistant.max-per-minute:20}") int maxPerMinute) {
         this.maxPerMinute = maxPerMinute;
@@ -194,7 +196,7 @@ public class AssistantService {
 
     private ToolPick pick(ToolCatalog.Tool t) {
         String templateFormat = null;
-        try { templateFormat = templates.find(t.id()).map(com.cenoffice.hub.TemplateService.Info::format).orElse(null); } catch (RuntimeException e) { log.warn("양식 정보를 읽지 못했습니다: {}", e.toString()); }
+        try { templateFormat = templates.find(t.id()).map(com.cenoffice.hub.form.TemplateService.Info::format).orElse(null); } catch (RuntimeException e) { log.warn("양식 정보를 읽지 못했습니다: {}", e.toString()); }
         return new ToolPick(t.id(), t.title(), t.description(), t.icon(), t.category(), t.engine(), t.engine().equals("ai") && llm.isReal(), templateFormat);
     }
 

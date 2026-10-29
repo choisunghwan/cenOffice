@@ -1,5 +1,9 @@
 package com.cenoffice.hub;
 
+import com.cenoffice.hub.domain.HubSkill;
+import com.cenoffice.hub.domain.HubSkillRepository;
+import com.cenoffice.hub.domain.HubSkillVersionRepository;
+
 import com.cenoffice.api.ApiException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

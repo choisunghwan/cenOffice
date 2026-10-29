@@ -1,5 +1,11 @@
 package com.cenoffice.hub;
 
+import com.cenoffice.hub.domain.HubExecutionRepository;
+import com.cenoffice.hub.domain.HubSkill;
+import com.cenoffice.hub.domain.HubSkillRepository;
+import com.cenoffice.hub.domain.HubUsageEvent;
+import com.cenoffice.hub.domain.HubUsageEventRepository;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;

@@ -1,5 +1,15 @@
 package com.cenoffice.hub;
 
+import com.cenoffice.hub.domain.HubAgent;
+import com.cenoffice.hub.domain.HubExecution;
+import com.cenoffice.hub.domain.HubExecutionRepository;
+import com.cenoffice.hub.domain.HubSkill;
+import com.cenoffice.hub.domain.HubSkillRepository;
+import com.cenoffice.hub.domain.HubSkillVersion;
+import com.cenoffice.hub.domain.HubSkillVersionRepository;
+import com.cenoffice.hub.domain.HubUsageEvent;
+import com.cenoffice.hub.domain.HubUsageEventRepository;
+
 import com.cenoffice.api.ApiException;
 import com.cenoffice.api.AuditService;
 import com.cenoffice.hub.HubDtos.ExecuteRequest;

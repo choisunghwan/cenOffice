@@ -1,5 +1,7 @@
 package com.cenoffice.hub.runtime;
 
+import com.cenoffice.hub.domain.HubSkill;
+
 import com.cenoffice.pm.LlmProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +48,10 @@ public class RuntimeRegistry {
 
     public AgentRuntimeAdapter current() { return adapter; }
     /** engine=ai 요청이면 (켜져 있을 때) AI 엔진, 아니면 기본 선택 */
-    public AgentRuntimeAdapter forSkill(com.cenoffice.hub.HubSkill skill, boolean useAi) {
+    public AgentRuntimeAdapter forSkill(com.cenoffice.hub.domain.HubSkill skill, boolean useAi) {
         return useAi && ai != null ? ai : forSkill(skill);
     }
-    public AgentRuntimeAdapter forSkill(com.cenoffice.hub.HubSkill skill) {
+    public AgentRuntimeAdapter forSkill(com.cenoffice.hub.domain.HubSkill skill) {
         return com.cenoffice.hub.BuiltinSkillSeeder.trusted(skill) ? builtin : adapter;
     }
 }
