@@ -32,9 +32,10 @@ spring:
       max-request-size: 6MB
   jpa:
     hibernate:
-      ddl-auto: update
+      # 테이블 구조는 Flyway(db/migration)만 바꾼다. Hibernate 는 코드(엔티티)와 DB 구조가 다르면 서버를 시작하지 않고 알려 주기만 한다.
+      ddl-auto: validate
     properties:
-      # hub_* 테이블은 Flyway 만 관리한다 (Hibernate update 가 컬럼을 되돌리는 것을 방지)
+      # hub_* 테이블은 검사 대상에서 뺀다(Flyway 가 만든 열 타입과 엔티티 표기가 달라 생기는 잡음을 피함)
       hibernate.hbm2ddl.schema_filter_provider: com.cenoffice.common.config.FlywayOwnedTablesFilterProvider
     open-in-view: false
   jackson:
