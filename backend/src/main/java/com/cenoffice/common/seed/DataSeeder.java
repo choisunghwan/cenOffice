@@ -62,10 +62,9 @@ public class DataSeeder implements CommandLineRunner {
         if (devices.findByCode("ac-main").isEmpty())
             devices.save(new Device("ac-main", "메인 에어컨", DeviceType.AIR_CONDITIONER, AdapterType.MOCK, "ac"));
 
-        // AI 에이전트: 운영(PROD) 환경 권한은 어떤 에이전트에도 부여하지 않는다.
-        seedAgent("ari", "아리 (AI PM)", AgentRole.PM, Set.of(Environment.DEV, Environment.STG));
-        seedAgent("dev-bot", "데브 (AI 개발자)", AgentRole.DEV, Set.of(Environment.DEV));
-        seedAgent("qa-bot", "큐에이 (AI 테스터)", AgentRole.QA, Set.of(Environment.DEV, Environment.STG));
+        // 3D 오피스의 AI 직원 '아리'(채팅 상대). 예전 AI PM 기능과 함께 쓰던 역할·환경 값은 DB 열이 남아 있어 그대로 채운다.
+        seedAgent("ari", "아리", AgentRole.PM, Set.of(Environment.DEV, Environment.STG));
+        retireOldAgents();
 
         Office office = offices.findAll().stream().findFirst().orElseGet(() -> offices.save(new Office("본사 오피스")));
         String officeKey = "office:" + office.getId();
@@ -79,7 +78,16 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedAgent(String code, String name, AgentRole role, Set<Environment> envs) {
-        if (agents.findByCode(code).isEmpty()) agents.save(new AiAgent(code, name, role, envs));
+        var existing = agents.findByCode(code);
+        if (existing.isEmpty()) { agents.save(new AiAgent(code, name, role, envs)); return; }
+        // 이미 만들어진 데이터의 이름이 예전 AI PM 시절 이름이면 새 이름으로 바꾼다
+        if ("아리 (AI PM)".equals(existing.get().getName())) { existing.get().rename(name); agents.save(existing.get()); }
+    }
+
+    /** 화면에서 쓰지 않던 AI 개발자·테스터(AI PM 흐름용)는 지우지 않고 꺼 둔다. 새로 만들지도 않는다. */
+    private void retireOldAgents() {
+        for (String code : new String[] {"dev-bot", "qa-bot"})
+            agents.findByCode(code).filter(AiAgent::isEnabled).ifPresent(a -> { a.disable(); agents.save(a); });
     }
 
     private void seedUser(String username, String display, Role role, String configured, String team) {

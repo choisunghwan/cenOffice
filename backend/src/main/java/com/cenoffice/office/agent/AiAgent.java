@@ -38,6 +38,10 @@ public class AiAgent {
     public boolean isEnabled() { return enabled; }
     public String getAllowedEnvironments() { return allowedEnvironments; }
 
+    public void rename(String newName) { this.name = newName; }
+
+    public void disable() { this.enabled = false; }
+
     public Set<WsEnums.Environment> environments() {
         Set<WsEnums.Environment> s = EnumSet.noneOf(WsEnums.Environment.class);
         Arrays.stream(allowedEnvironments.split(",")).filter(x -> !x.isBlank()).forEach(x -> s.add(WsEnums.Environment.valueOf(x.trim())));

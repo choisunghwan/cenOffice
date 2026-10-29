@@ -34,7 +34,6 @@ interface OfficeState {
   nearby: InteractableDef | null
   infoTarget: InteractableDef | null
   aiStatus: AiStatus
-  /** 서버(AI PM)의 실제 작업 상태. 온라인일 때 아리 이름표/상태에 우선 사용 */
   messages: ChatMessage[]
   // 백엔드 세션
   user: UserView | null

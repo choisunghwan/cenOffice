@@ -34,7 +34,7 @@ export function AiStaff() {
     >
       <Character shirt="#a06bff" pants="#3a2f5c" hair="#e8e2ff" seated />
       <group position={[0, 0.3, 0]}>
-        <NameTag name="아리" tagKey="ai:ari" bubble={bubble} ai={{ role: 'PM', status: AI_STATUS_LABEL[status], statusColor: AI_STATUS_COLOR[status] }} />
+        <NameTag name="아리" tagKey="ai:ari" bubble={bubble} ai={{ role: 'AI 직원', status: AI_STATUS_LABEL[status], statusColor: AI_STATUS_COLOR[status] }} />
       </group>
     </group>
   )

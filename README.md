@@ -142,7 +142,7 @@ npm run dev
 #### 테스트
 ```bash
 cd backend
-mvn test        # 271개 (2026-10-29 기준 전부 통과)
+mvn test        # 272개 (2026-10-29 기준 전부 통과)
 cd ../frontend
 npx tsc --noEmit -p . && npx vite build
 ```
@@ -199,7 +199,7 @@ npx tsc --noEmit -p . && npx vite build
 - 서버 모니터링 데이터는 **Mock**입니다. `MqttDeviceAdapter` / `HttpDeviceAdapter` 는 미구현(해당 타입 장비에 명령하면 FAILED). AI 직원(3D 채팅)은 Mock입니다.
 - 스키마는 Flyway와 함께 `ddl-auto=update` 도 켜져 있어, 운영 전에 정리가 필요합니다. 예약 중복 방지는 SERIALIZABLE 트랜잭션 기반이며 단일 인스턴스를 가정합니다.
 - 회의 AI 센은 “센아” 호출어 자동 감지·말 끼어들기가 없고(버튼으로 질문), 실제 LLM·TTS 키가 있어야 켜집니다. 첫 음성이 나오기까지 15~18초가 걸렸습니다.
-- 3D 오피스의 AI 직원 “아리”는 예전 AI PM 시절 이름(`아리 (AI PM)`)이 시드 데이터에 남아 있습니다. AI PM 기능 자체는 제거되었습니다.
+- 3D 오피스의 AI 직원 “아리”는 대화만 할 수 있습니다(LLM이 없으면 Mock 응답). 예전 AI PM 때 쓰던 `role`·`allowedEnvironments` 열은 DB에 남아 있으며 지금은 쓰이지 않습니다.
 - 푸시·운영 배포(HTTPS 주소 포함)·사내망·실제 카메라/마이크 품질 검증은 별도입니다. 다른 PC에서 쓰려면 서버·HTTPS·접속 주소 설정이 먼저 필요합니다.
 
 ## 환경 경계 (장비 명령)
