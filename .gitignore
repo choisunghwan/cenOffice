@@ -40,3 +40,4 @@ backend/.local-mail.txt
 
 # 로컬 실행 로그
 backend/run-backend.log.err
+*.err
