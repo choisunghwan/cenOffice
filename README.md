@@ -264,6 +264,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop-meeting-demo.
 
 ## 회의 AI 센 — 버튼으로 음성 질문하기
 
+![회의 중 AI 센이 질문에 답하는 화면](assets/readme/meeting-cen.png)
+
+> 회의 화면 오른쪽 아래 **센** 패널. 질문과 답이 글로 남고, 답은 같은 시간에 참석자 모두에게 소리로 들립니다. 위 화면은 실제 Gemini 답변을 받은 시연 캡처입니다.
+
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-meeting-demo.ps1 -WithAi
 ```
