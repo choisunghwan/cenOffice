@@ -577,4 +577,30 @@ public class SkillService {
     private static boolean notBlank(String s) { return s != null && !s.isBlank(); }
 
     static String limit(String s, int n) { return s == null ? null : (s.length() > n ? s.substring(0, n) : s); }
+
+    // ── 컨트롤러가 저장소를 직접 쓰지 않도록 여는 조회 ──
+
+    public List<CategoryView> categories() {
+        return categories.findAll().stream().sorted(java.util.Comparator.comparingInt(c -> c.sortOrder)).map(c -> new CategoryView(c.code, c.name)).toList();
+    }
+
+    /** 로그인한 사용자의 AI HUB 권한 요약 */
+    public Map<String, Object> profile(String username, boolean admin) {
+        var u = users.findByUsername(username).orElse(null);
+        return Map.of("username", username, "displayName", u == null ? username : u.getDisplayName(), "team", u == null || u.getTeam() == null ? "" : u.getTeam(),
+                "role", admin ? "ADMIN" : "USER", "canRegister", true, "canApprove", admin);
+    }
+
+    public Optional<HubSkill> findByName(String name) { return skills.findByName(name); }
+
+    /** 내장 문서 도구 중 이 사용자에게 보이는 것의 상세 */
+    public List<SkillDetail> builtinDocumentTools(String username, boolean admin) {
+        return BuiltinSkillSeeder.DOCUMENT_TOOLS.stream().map(skills::findByName).flatMap(Optional::stream).filter(BuiltinSkillSeeder::trusted)
+            .map(s -> detail(s.id, null, username, admin)).toList();
+    }
+
+    /** 이름순 전체 도구(내보내기용) */
+    public List<HubSkill> allByName() { return skills.findAll(org.springframework.data.domain.Sort.by("name")); }
+
+    public Optional<HubSkillVersion> versionById(Long id) { return versions.findById(id); }
 }

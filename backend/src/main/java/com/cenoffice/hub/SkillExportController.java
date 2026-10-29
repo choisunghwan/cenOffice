@@ -1,8 +1,6 @@
 package com.cenoffice.hub;
 
 import com.cenoffice.hub.domain.HubSkill;
-import com.cenoffice.hub.domain.HubSkillRepository;
-import com.cenoffice.hub.domain.HubSkillVersionRepository;
 
 import com.cenoffice.api.ApiException;
 import java.io.ByteArrayInputStream;
@@ -26,13 +24,11 @@ import org.springframework.web.bind.annotation.*;
 public class SkillExportController {
     private static final int MAX_FILES = 200;
     private static final long MAX_BYTES = 20L * 1024 * 1024;
-    private final HubSkillRepository skills;
-    private final HubSkillVersionRepository versions;
     private final SkillService service;
     private final com.cenoffice.api.AuditService audit;
 
-    public SkillExportController(HubSkillRepository skills, HubSkillVersionRepository versions, SkillService service, com.cenoffice.api.AuditService audit) {
-        this.skills = skills; this.versions = versions; this.service = service; this.audit = audit;
+    public SkillExportController(SkillService service, com.cenoffice.api.AuditService audit) {
+        this.service = service; this.audit = audit;
     }
 
     @GetMapping(value = "/export.zip")
@@ -45,12 +41,12 @@ public class SkillExportController {
         List<String> included = new ArrayList<>();
         long total = 0;
         try (var zip = new ZipOutputStream(out)) {
-            for (HubSkill s : skills.findAll(org.springframework.data.domain.Sort.by("name"))) {
+            for (HubSkill s : service.allByName()) {
                 if (wanted != null && !wanted.contains(s.id)) continue;
                 if (wanted == null && s.sample && !includeSamples) continue;
                 if (!"APPROVED".equals(s.status) || s.publishedVersionId == null || !service.canView(s, me, admin)) continue;
                 if (!s.name.matches("[a-z0-9][a-z0-9-]{0,63}")) continue; // 폴더 이름으로 안전한 이름만
-                var v = versions.findById(s.publishedVersionId).orElse(null);
+                var v = service.versionById(s.publishedVersionId).orElse(null);
                 if (v == null || !"APPROVED".equals(v.status)) continue;
                 String md = BuiltinSkillSeeder.trusted(s) ? BuiltinSkillSeeder.bundledMd(s.name, v.skillMd) : withInternalName(v.skillMd, s.name, s.title);
                 total += put(zip, s.name + "/SKILL.md", md.getBytes(StandardCharsets.UTF_8));

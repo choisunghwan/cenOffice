@@ -1,8 +1,5 @@
 package com.cenoffice.calendar;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.repo.UserRepository;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
@@ -15,13 +12,11 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasAnyRole('USER','ADMIN')")
 public class CalendarController {
     public record ManagerRequest(boolean enabled) {}
-    public record UserRow(String username, String displayName, String team, String role, boolean calendarManager) {}
 
     private final CalendarService calendar;
-    private final UserRepository users;
-    private final AuditService audit;
+    private final CalendarManagerService managers;
 
-    public CalendarController(CalendarService calendar, UserRepository users, AuditService audit) { this.calendar = calendar; this.users = users; this.audit = audit; }
+    public CalendarController(CalendarService calendar, CalendarManagerService managers) { this.calendar = calendar; this.managers = managers; }
 
     private static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN")); }
 
@@ -46,18 +41,10 @@ public class CalendarController {
     // ── 관리자: 일정 관리자(팀장 등) 지정 ──
 
     @GetMapping("/api/admin/users") @PreAuthorize("hasRole('ADMIN')")
-    public List<UserRow> userList() {
-        return users.findAll().stream()
-            .map(u -> new UserRow(u.getUsername(), u.getDisplayName(), u.getTeam(), u.getRole().name(), u.isCalendarManager()))
-            .sorted((x, y) -> x.displayName().compareToIgnoreCase(y.displayName())).toList();
-    }
+    public List<CalendarManagerService.UserRow> userList() { return managers.userList(); }
 
     @PutMapping("/api/admin/users/{username}/calendar-manager") @PreAuthorize("hasRole('ADMIN')")
-    public UserRow setManager(@PathVariable String username, @RequestBody ManagerRequest r, Authentication a) {
-        var u = users.findByUsername(username).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"));
-        u.setCalendarManager(r.enabled());
-        users.save(u);
-        audit.log(a.getName(), "CALENDAR_MANAGER", "user:" + username, r.enabled() ? "일정 관리자 지정" : "일정 관리자 해제");
-        return new UserRow(u.getUsername(), u.getDisplayName(), u.getTeam(), u.getRole().name(), u.isCalendarManager());
+    public CalendarManagerService.UserRow setManager(@PathVariable String username, @RequestBody ManagerRequest r, Authentication a) {
+        return managers.setManager(a.getName(), username, r.enabled());
     }
 }

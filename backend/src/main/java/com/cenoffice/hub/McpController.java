@@ -1,7 +1,6 @@
 package com.cenoffice.hub;
 
 import com.cenoffice.hub.domain.HubSkill;
-import com.cenoffice.hub.domain.HubSkillRepository;
 
 import com.cenoffice.api.ApiException;
 import com.cenoffice.hub.HubDtos.*;
@@ -27,12 +26,11 @@ public class McpController {
 
     private final PersonalTokenService tokens;
     private final SkillService skills;
-    private final HubSkillRepository skillRepo;
     private final ExecutionService executions;
     private final ObjectMapper json;
 
-    public McpController(PersonalTokenService tokens, SkillService skills, HubSkillRepository skillRepo, ExecutionService executions, ObjectMapper json) {
-        this.tokens = tokens; this.skills = skills; this.skillRepo = skillRepo; this.executions = executions; this.json = json;
+    public McpController(PersonalTokenService tokens, SkillService skills, ExecutionService executions, ObjectMapper json) {
+        this.tokens = tokens; this.skills = skills; this.executions = executions; this.json = json;
     }
 
     @RequestMapping(value = "/mcp", method = {RequestMethod.GET, RequestMethod.DELETE})
@@ -108,7 +106,7 @@ public class McpController {
         JsonNode args = params.path("arguments");
         String input = args.path("input").asText("");
         String engine = args.path("engine").asText("");
-        HubSkill s = skillRepo.findByName(name).orElse(null);
+        HubSkill s = skills.findByName(name).orElse(null);
         if (s == null || !skills.canView(s, who.username(), who.admin()) || !"APPROVED".equals(s.status)) throw new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 도구입니다: " + name);
         ObjectNode result = json.createObjectNode();
         ArrayNode content = result.putArray("content");

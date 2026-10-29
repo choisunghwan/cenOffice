@@ -1,6 +1,5 @@
 package com.cenoffice.hub;
 
-import com.cenoffice.hub.domain.HubCategoryRepository;
 
 import com.cenoffice.api.ApiException;
 import com.cenoffice.hub.HubDtos.*;
@@ -29,13 +28,9 @@ public class HubSkillController {
     private static final String ADMIN = "hasRole('ADMIN')";
 
     private final SkillService skills;
-    private final com.cenoffice.repo.UserRepository users;
-    private final HubCategoryRepository categories;
 
-    public HubSkillController(SkillService skills, com.cenoffice.repo.UserRepository users, HubCategoryRepository categories) {
+    public HubSkillController(SkillService skills) {
         this.skills = skills;
-        this.users = users;
-        this.categories = categories;
     }
 
     public static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(x -> x.getAuthority().equals("ROLE_ADMIN")); }
@@ -46,15 +41,13 @@ public class HubSkillController {
 
     @GetMapping("/categories")
     public List<CategoryView> categories() {
-        return categories.findAll().stream().sorted(java.util.Comparator.comparingInt(c -> c.sortOrder)).map(c -> new CategoryView(c.code, c.name)).toList();
+        return skills.categories();
     }
 
     /** 현재 사용자의 AI HUB 권한 요약 (CREATOR 는 별도 역할이 아니라 USER 가 등록한 리소스의 제작자) */
     @GetMapping("/me")
     public Map<String, Object> me(Authentication a) {
-        var u = users.findByUsername(a.getName()).orElse(null);
-        return Map.of("username", a.getName(), "displayName", u == null ? a.getName() : u.getDisplayName(), "team", u == null || u.getTeam() == null ? "" : u.getTeam(),
-                "role", admin(a) ? "ADMIN" : "USER", "canRegister", true, "canApprove", admin(a));
+        return skills.profile(a.getName(), admin(a));
     }
 
     @GetMapping("/skills")

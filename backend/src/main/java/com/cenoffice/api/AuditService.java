@@ -2,6 +2,8 @@ package com.cenoffice.api;
 
 import com.cenoffice.domain.AuditLog;
 import com.cenoffice.repo.AuditLogRepository;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,5 +18,10 @@ public class AuditService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(String actor, String action, String target, String detail) {
         repo.save(new AuditLog(actor, action, target, detail));
+    }
+
+    /** 최근 감사 기록. 한 번에 최대 200건. */
+    public List<AuditLog> recent(int limit) {
+        return repo.findAllByOrderByCreatedAtDesc(PageRequest.of(0, Math.min(Math.max(limit, 1), 200)));
     }
 }

@@ -1,7 +1,5 @@
 package com.cenoffice.hub;
 
-import com.cenoffice.hub.domain.HubSkillRepository;
-
 import com.cenoffice.api.ApiException;
 import com.cenoffice.hub.HubDtos.*;
 import java.util.*;
@@ -14,17 +12,15 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/hub/builtins")
 public class BuiltinToolController {
-    private final HubSkillRepository skills;
     private final SkillService registry;
     private final BusinessDocumentReader reader;
     private final ExecutionService executions;
-    public BuiltinToolController(HubSkillRepository skills, SkillService registry, BusinessDocumentReader reader, ExecutionService executions) {
-        this.skills = skills; this.registry = registry; this.reader = reader; this.executions = executions;
+    public BuiltinToolController(SkillService registry, BusinessDocumentReader reader, ExecutionService executions) {
+        this.registry = registry; this.reader = reader; this.executions = executions;
     }
     @GetMapping
     public List<SkillDetail> list(Authentication a) {
-        return BuiltinSkillSeeder.DOCUMENT_TOOLS.stream().map(skills::findByName).flatMap(Optional::stream).filter(BuiltinSkillSeeder::trusted)
-            .map(s -> registry.detail(s.id, null, a.getName(), HubSkillController.admin(a))).toList();
+        return registry.builtinDocumentTools(a.getName(), HubSkillController.admin(a));
     }
     @PostMapping(value = "/{id}/documents", consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.ACCEPTED) @PreAuthorize("hasAnyRole('ADMIN','USER')")
