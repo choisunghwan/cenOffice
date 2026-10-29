@@ -1,5 +1,5 @@
 ﻿import { create } from 'zustand'
-import { INTERACTABLES, type InteractableDef } from './game/layout'
+import { INTERACTABLES, type InteractableDef } from './office/layout'
 import { clearAssistantMemory } from './home/assistantMemory'
 import { localPose,startPresenceSender, stopPresenceSender, useMultiplayer } from './multiplayer'
 import {

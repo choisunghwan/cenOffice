@@ -1,7 +1,7 @@
 package com.cenoffice.meeting;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.llm.LlmProvider;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.llm.LlmProvider;
 import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.sql.Timestamp;

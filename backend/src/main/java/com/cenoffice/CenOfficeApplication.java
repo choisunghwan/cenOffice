@@ -1,6 +1,6 @@
 package com.cenoffice;
 
-import com.cenoffice.config.AppProperties;
+import com.cenoffice.common.config.AppProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

@@ -1,8 +1,8 @@
 package com.cenoffice.calendar;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.notify.NotificationService;
-import com.cenoffice.repo.UserRepository;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.notify.NotificationService;
+import com.cenoffice.common.repo.UserRepository;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.sql.Timestamp;

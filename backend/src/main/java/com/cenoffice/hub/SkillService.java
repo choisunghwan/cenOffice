@@ -15,15 +15,15 @@ import com.cenoffice.hub.domain.HubSkillVersionRepository;
 import com.cenoffice.hub.domain.HubUsageEvent;
 import com.cenoffice.hub.domain.HubUsageEventRepository;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.domain.UserAccount;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
+import com.cenoffice.common.domain.UserAccount;
 import com.cenoffice.hub.HubDtos.*;
 import com.cenoffice.hub.SkillPackageReader.InvalidSkillException;
 import com.cenoffice.hub.SkillPackageReader.Parsed;
 import com.cenoffice.hub.runtime.AgentRuntimeAdapter;
 import com.cenoffice.hub.runtime.RuntimeRegistry;
-import com.cenoffice.repo.UserRepository;
+import com.cenoffice.common.repo.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -489,7 +489,7 @@ public class SkillService {
 
     /** 사용자 번호(개인 양식의 키를 만들 때 쓴다) */
     public long userId(String username) {
-        return users.findByUsername(username).map(com.cenoffice.domain.UserAccount::getId).orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다"));
+        return users.findByUsername(username).map(com.cenoffice.common.domain.UserAccount::getId).orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다"));
     }
 
     String displayName(String username) {

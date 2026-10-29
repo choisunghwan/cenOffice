@@ -58,7 +58,7 @@ class DocumentExporterTest {
     }
 
     @Test void rejectsUnknownFormatAndEmptyInput() {
-        assertThrows(com.cenoffice.api.ApiException.class, () -> ex.export("exe", "x", MD));
-        assertThrows(com.cenoffice.api.ApiException.class, () -> ex.export("xlsx", "x", " "));
+        assertThrows(com.cenoffice.common.api.ApiException.class, () -> ex.export("exe", "x", MD));
+        assertThrows(com.cenoffice.common.api.ApiException.class, () -> ex.export("xlsx", "x", " "));
     }
 }

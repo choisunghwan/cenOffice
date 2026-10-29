@@ -1,4 +1,4 @@
-import { askConfirm, askText } from '../ui/confirm'
+import { askConfirm, askText } from '../common/confirm'
 import { BusinessTools } from './BusinessTools'
 import { TemplateUploader } from './TemplateUploader'
 import { TextTool, TEXT_TOOLS } from './TextTool'

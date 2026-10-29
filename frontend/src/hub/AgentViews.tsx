@@ -1,4 +1,4 @@
-import { askText } from '../ui/confirm'
+import { askText } from '../common/confirm'
 import { ToolIntroduction } from './ToolIntroduction'
 import { useState } from 'react'
 import { hub } from '../hubApi'

@@ -1,6 +1,6 @@
 package com.cenoffice.hub;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.*;

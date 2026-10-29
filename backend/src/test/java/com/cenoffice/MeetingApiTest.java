@@ -92,7 +92,7 @@ class MeetingApiTest {
         req(post("/api/meetings/join"),guest,Map.of("code","unknown")).andExpect(status().isNotFound());
         var m=create();String id=m.path("id").asText();
         req(post("/api/meetings/"+id+"/messages"),host,Map.of("content","a".repeat(1001))).andExpect(status().isBadRequest());
-        doThrow(new com.cenoffice.api.ApiException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,"unavailable")).when(media).end(id);
+        doThrow(new com.cenoffice.common.api.ApiException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,"unavailable")).when(media).end(id);
         req(post("/api/meetings/"+id+"/end"),host,Map.of()).andExpect(status().isServiceUnavailable());
         assertEquals("OPEN",read(req(get("/api/meetings/"+id),host,null)).path("state").asText());
     }

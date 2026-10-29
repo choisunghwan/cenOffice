@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useOffice } from '../store'
-import { askConfirm } from '../ui/confirm'
+import { askConfirm } from '../common/confirm'
 import { useChat } from './chatStore'
 
 /** 사이드바의 채팅방 목록: 새 채팅 + 지난 대화. 목록이 길면 이 영역만 스크롤된다. */

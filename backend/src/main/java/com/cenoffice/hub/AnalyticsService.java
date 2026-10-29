@@ -10,7 +10,7 @@ import com.cenoffice.hub.domain.HubSkillReviewRepository;
 import com.cenoffice.hub.domain.HubSkillVersionRepository;
 import com.cenoffice.hub.domain.HubUsageEvent;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import com.cenoffice.hub.HubDtos.*;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;

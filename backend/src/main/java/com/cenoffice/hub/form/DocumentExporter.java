@@ -1,6 +1,6 @@
 package com.cenoffice.hub.form;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.File;

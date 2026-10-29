@@ -1,4 +1,4 @@
-import { askText } from '../ui/confirm'
+import { askText } from '../common/confirm'
 import { useState } from 'react'
 import { hub } from '../hubApi'
 import { Badge, Btn, Card, Empty, ErrorNote, errMsg, fmtTime, useLoad } from '../workspace/kit'

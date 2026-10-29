@@ -2,9 +2,9 @@ package com.cenoffice.hub.form;
 
 import com.cenoffice.hub.SkillService;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.llm.LlmProvider;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
+import com.cenoffice.common.llm.LlmProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;

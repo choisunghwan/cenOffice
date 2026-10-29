@@ -4,7 +4,7 @@ import { ComingSoonPage, MonitoringPage, OfficeManagementPage, SettingsPage } fr
 import { HubPage } from '../hub/HubPage'
 import { ChatHistory } from '../home/ChatHistory'
 import { lazy, Suspense } from 'react'
-import { useUi } from '../ui/uiStore'
+import { useUi } from '../common/uiStore'
 const MeetingsPage = lazy(() => import('../meeting/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
 
 const CalendarPage = lazy(() => import('../calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))

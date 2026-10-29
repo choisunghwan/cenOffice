@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { askConfirm } from '../ui/confirm'
+import { askConfirm } from '../common/confirm'
 import { FormatIcon } from '../hub/FormatIcon'
 import { templateApi, type FormatSlot, type FormTarget, type PlanItem, type PreviewBlock } from '../hub/templateApi'
 

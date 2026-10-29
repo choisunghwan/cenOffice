@@ -202,7 +202,7 @@ npx tsc --noEmit -p . && npx vite build
 
 ## LLM 연결
 
-- **LLM Provider 는 인터페이스**(`LlmProvider`, 패키지 `llm`)로 분리: `MockLlmProvider`(기본, 규칙 기반) / `GeminiLlmProvider` / `AnthropicLlmProvider` / `OpenAiLlmProvider`. 실제 LLM 은 `LLM_PROVIDER=gemini` + `GEMINI_API_KEY`(모델 `GEMINI_MODEL`, 기본 gemini-2.5-flash), `anthropic` + `ANTHROPIC_API_KEY`, `openai` + `OPENAI_API_KEY`(`OPENAI_MODEL`, 기본 gpt-4o-mini) 환경변수가 있을 때만 사용되며, **입력 원문이 외부 서비스로 전송**됩니다. 키가 없으면 자동으로 Mock.
+- **LLM Provider 는 인터페이스**(`LlmProvider`, 패키지 `common/llm`)로 분리: `MockLlmProvider`(기본, 규칙 기반) / `GeminiLlmProvider` / `AnthropicLlmProvider` / `OpenAiLlmProvider`. 실제 LLM 은 `LLM_PROVIDER=gemini` + `GEMINI_API_KEY`(모델 `GEMINI_MODEL`, 기본 gemini-2.5-flash), `anthropic` + `ANTHROPIC_API_KEY`, `openai` + `OPENAI_API_KEY`(`OPENAI_MODEL`, 기본 gpt-4o-mini) 환경변수가 있을 때만 사용되며, **입력 원문이 외부 서비스로 전송**됩니다. 키가 없으면 자동으로 Mock.
 - **AI 출력은 신뢰하지 않음**: 홈 입력창·양식 채우기·회의 AI 모두 AI가 돌려준 값을 서버가 다시 검증한 뒤에만 사용하고, 실제 변경은 사람이 확인해야 실행됩니다.
 - Gemini 는 실제 키로 검증했습니다. Anthropic/OpenAI 는 유효한 키로 성공 호출을 검증하지 못했습니다.
 
@@ -271,9 +271,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-meeting-demo
 - 재현: `PLAYWRIGHT_MODULE`을 Playwright 패키지 경로로 지정하고 `node scripts/test-meeting-assistant.cjs`. 합성 STT 이벤트를 사용하며 실제 LiveKit RTP 수신과 중단을 검사합니다. `-WithAi` 시 실제 API 사용료가 발생할 수 있습니다.
 - 검증(2026-10-28): 백엔드 전체 294개 테스트와 프론트 빌드 통과. Chrome/Edge에서 실제 Gemini 답변·TTS, 양쪽 AI 음성 수신, 참석자 중단, 답변 자연 종료 후 다음 질문을 검증했습니다. 첫 오디오 수신 약 15~18초. 마이크 인식 결과는 재현용 합성 이벤트이므로 실물 마이크/회의실 음향은 현장 확인이 필요합니다.
 
+## 폴더 구조
+
+백엔드(`backend/src/main/java/com/cenoffice/`)와 프론트엔드(`frontend/src/`)는 **같은 이름의 기능 폴더**로 나뉩니다. 한 기능을 고칠 때 양쪽에서 같은 이름의 폴더를 열면 됩니다.
+
+| 기능 | 폴더 이름 | 내용 |
+|---|---|---|
+| 홈 입력창 | `home` | 말로 일정·회의·도구·다운로드 요청, 도움말 답변, 대화 기록 |
+| 회의 | `meeting` | 화상회의, 음성 기록, 회의록, 회의 AI 센 |
+| 일정 | `calendar` | 개인·공용 일정 |
+| 도구 | `hub` | 도구 등록·승인·실행, 결과물 양식 채우기(`form`) |
+| 3D 오피스 | `office` | 3D 사무실, 채팅, 장비 명령, 회의실 예약 |
+| 공통 | `common` | 로그인·보안·설정·사용자·감사 로그·알림·LLM 연결(백엔드), 로그인 창·안내 투어·확인창(프론트) |
+
+백엔드는 `Controller → Service → Repository` 순서로만 호출하며, 컨트롤러가 DB를 직접 쓰지 않는지 `LayeringTest`가 검사합니다. 프론트의 `workspace`는 사이드바와 화면 전환을 맡는 앱 틀입니다.
+
 ## 설계 메모
 - AI는 **제안**만 하고, 일정 등록·삭제·도구 실행·파일 받기 같은 실제 변경은 사람이 확인한 뒤에만 합니다.
 - 근거가 없는 값은 **지어내지 않고 비워 둡니다**(양식 채우기, 도움말 답변 모두).
-- 충돌은 `@react-three/rapier` 대신 경량 자체 구현(`frontend/src/game/collision.ts`)을 사용합니다.
+- 충돌은 `@react-three/rapier` 대신 경량 자체 구현(`frontend/src/office/collision.ts`)을 사용합니다.
 - 색상/조명/상태색은 `frontend/src/theme.ts` 한 곳에서 관리합니다. 3D 오브젝트 ↔ 장비 매핑: `Device.objectId` = 프론트 `layout.ts` 의 interactable id.
 - 홈 입력창 도움말을 늘리려면 `backend/src/main/resources/assistant-help/*.md` 에 문서를 추가합니다(첫 줄 `# 제목`, `질문:`, `키워드:`, 빈 줄, 본문).

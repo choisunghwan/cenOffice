@@ -1,5 +1,5 @@
 import { useOffice } from '../store'
-import { useUi } from '../ui/uiStore'
+import { useUi } from '../common/uiStore'
 import { useChat } from './chatStore'
 
 /**

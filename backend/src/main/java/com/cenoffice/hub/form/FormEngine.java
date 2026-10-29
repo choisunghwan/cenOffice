@@ -1,6 +1,6 @@
 package com.cenoffice.hub.form;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;

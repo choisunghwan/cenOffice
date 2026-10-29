@@ -2,7 +2,7 @@ package com.cenoffice.hub;
 
 import com.cenoffice.hub.domain.HubSkill;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -25,9 +25,9 @@ public class SkillExportController {
     private static final int MAX_FILES = 200;
     private static final long MAX_BYTES = 20L * 1024 * 1024;
     private final SkillService service;
-    private final com.cenoffice.api.AuditService audit;
+    private final com.cenoffice.common.api.AuditService audit;
 
-    public SkillExportController(SkillService service, com.cenoffice.api.AuditService audit) {
+    public SkillExportController(SkillService service, com.cenoffice.common.api.AuditService audit) {
         this.service = service; this.audit = audit;
     }
 

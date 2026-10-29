@@ -11,8 +11,8 @@ import com.cenoffice.hub.domain.HubApprovalHistoryRepository;
 import com.cenoffice.hub.domain.HubSkill;
 import com.cenoffice.hub.domain.HubSkillRepository;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
 import com.cenoffice.hub.HubDtos.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { askConfirm } from '../ui/confirm'
+import { askConfirm } from '../common/confirm'
 import { Btn, Card, ErrorNote } from '../workspace/kit'
 import { FormatIcon } from './FormatIcon'
 import { templateApi, type FormatSlot, type FormTarget } from './templateApi'

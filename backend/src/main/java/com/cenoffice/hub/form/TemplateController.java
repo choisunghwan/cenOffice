@@ -2,7 +2,7 @@ package com.cenoffice.hub.form;
 
 import com.cenoffice.hub.HubSkillController;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;

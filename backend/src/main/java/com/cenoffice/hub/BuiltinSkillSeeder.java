@@ -25,8 +25,8 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
     private final HubSkillRepository skills;
     private final HubSkillVersionRepository versions;
     private final SkillPackageReader reader;
-    private final com.cenoffice.api.AuditService audit;
-    public BuiltinSkillSeeder(HubSkillRepository skills, HubSkillVersionRepository versions, SkillPackageReader reader, com.cenoffice.api.AuditService audit) {
+    private final com.cenoffice.common.api.AuditService audit;
+    public BuiltinSkillSeeder(HubSkillRepository skills, HubSkillVersionRepository versions, SkillPackageReader reader, com.cenoffice.common.api.AuditService audit) {
         this.skills = skills; this.versions = versions; this.reader = reader; this.audit = audit;
     }
     /** 번들된 최신 SKILL.md (DB 에 저장된 초기 버전보다 최신일 수 있다). 없으면 fallback */

@@ -1,6 +1,6 @@
 package com.cenoffice.meeting;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.*;

@@ -1,6 +1,6 @@
 package com.cenoffice.hub;
 
-import com.cenoffice.api.ApiException;
+import com.cenoffice.common.api.ApiException;
 import com.cenoffice.hub.HubDtos.*;
 import java.util.*;
 import org.springframework.http.HttpStatus;

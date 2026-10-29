@@ -13,7 +13,7 @@ import { EventEditor, type EditorInit } from '../calendar/EventEditor'
 import { api } from '../api'
 import { hub } from '../hubApi'
 import { ExportButtons } from '../hub/ExportButtons'
-import { askConfirm } from '../ui/confirm'
+import { askConfirm } from '../common/confirm'
 import { meetingsApi } from '../meeting/api'
 import { assistantApi, type Ambiguity, type Draft, type HistoryTurn, type Reply, type Room, type ToolPick } from './assistantApi'
 

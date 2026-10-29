@@ -1,8 +1,8 @@
 package com.cenoffice.meeting;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.repo.UserRepository;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
+import com.cenoffice.common.repo.UserRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;

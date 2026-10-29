@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.cenoffice.llm.LlmProvider;
+import com.cenoffice.common.llm.LlmProvider;
 import static org.mockito.Mockito.*;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.concurrent.CountDownLatch;
@@ -150,7 +150,7 @@ class MeetingAssistantApiTest {
             finally{release.countDown();}
             ending.get(3,TimeUnit.SECONDS);
             var e=assertThrows(java.util.concurrent.ExecutionException.class,()->granting.get(3,TimeUnit.SECONDS));
-            assertInstanceOf(com.cenoffice.api.ApiException.class,e.getCause());
+            assertInstanceOf(com.cenoffice.common.api.ApiException.class,e.getCause());
         }
     }
 }

@@ -3,10 +3,10 @@ package com.cenoffice.hub;
 import com.cenoffice.hub.domain.HubToken;
 import com.cenoffice.hub.domain.HubTokenRepository;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.domain.Enums.Role;
-import com.cenoffice.repo.UserRepository;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
+import com.cenoffice.common.domain.Enums.Role;
+import com.cenoffice.common.repo.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;

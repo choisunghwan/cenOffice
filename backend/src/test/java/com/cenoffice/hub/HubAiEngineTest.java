@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cenoffice.domain.Enums.Role;
-import com.cenoffice.domain.UserAccount;
-import com.cenoffice.repo.UserRepository;
+import com.cenoffice.common.domain.Enums.Role;
+import com.cenoffice.common.domain.UserAccount;
+import com.cenoffice.common.repo.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;

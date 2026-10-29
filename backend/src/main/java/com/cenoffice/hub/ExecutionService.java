@@ -10,8 +10,8 @@ import com.cenoffice.hub.domain.HubSkillVersionRepository;
 import com.cenoffice.hub.domain.HubUsageEvent;
 import com.cenoffice.hub.domain.HubUsageEventRepository;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
 import com.cenoffice.hub.HubDtos.ExecuteRequest;
 import com.cenoffice.hub.HubDtos.ExecutionView;
 import com.cenoffice.hub.HubDtos.PageView;

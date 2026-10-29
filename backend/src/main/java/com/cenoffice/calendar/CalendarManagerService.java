@@ -1,9 +1,9 @@
 package com.cenoffice.calendar;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.domain.UserAccount;
-import com.cenoffice.repo.UserRepository;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
+import com.cenoffice.common.domain.UserAccount;
+import com.cenoffice.common.repo.UserRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

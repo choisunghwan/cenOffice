@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { askConfirm } from '../ui/confirm'
+import { askConfirm } from '../common/confirm'
 import { templateApi } from './templateApi'
 import { hub, type HubCategory } from '../hubApi'
 import { Btn, ErrorNote, Input, Select, Textarea, errMsg } from '../workspace/kit'

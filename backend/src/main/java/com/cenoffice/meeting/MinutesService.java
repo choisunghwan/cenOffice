@@ -1,9 +1,9 @@
 package com.cenoffice.meeting;
 
-import com.cenoffice.api.ApiException;
-import com.cenoffice.api.AuditService;
-import com.cenoffice.notify.NotificationService;
-import com.cenoffice.llm.LlmProvider;
+import com.cenoffice.common.api.ApiException;
+import com.cenoffice.common.api.AuditService;
+import com.cenoffice.common.notify.NotificationService;
+import com.cenoffice.common.llm.LlmProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;

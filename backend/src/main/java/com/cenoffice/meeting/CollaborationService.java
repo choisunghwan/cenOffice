@@ -1,8 +1,8 @@
 package com.cenoffice.meeting;
 
-import com.cenoffice.api.*;
-import com.cenoffice.repo.UserRepository;
-import com.cenoffice.ws.WsEvents.UserEvent;
+import com.cenoffice.common.api.*;
+import com.cenoffice.common.repo.UserRepository;
+import com.cenoffice.office.ws.WsEvents.UserEvent;
 import java.sql.*;
 import java.time.*;
 import java.util.*;

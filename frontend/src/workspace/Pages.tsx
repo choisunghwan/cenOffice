@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { startTour } from '../ui/coach'
+import { startTour } from '../common/coach'
 import { api, type ServerSnapshot } from '../api'
 import { useOffice } from '../store'
 import { theme } from '../theme'

@@ -1,4 +1,4 @@
-import { askConfirm } from '../ui/confirm'
+import { askConfirm } from '../common/confirm'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOffice } from '../store'
 import { calendarApi, type Entry, type EventBody, type Person, type Scope } from './api'

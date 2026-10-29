@@ -35,7 +35,7 @@ spring:
       ddl-auto: update
     properties:
       # hub_* 테이블은 Flyway 만 관리한다 (Hibernate update 가 컬럼을 되돌리는 것을 방지)
-      hibernate.hbm2ddl.schema_filter_provider: com.cenoffice.config.FlywayOwnedTablesFilterProvider
+      hibernate.hbm2ddl.schema_filter_provider: com.cenoffice.common.config.FlywayOwnedTablesFilterProvider
     open-in-view: false
   jackson:
     default-property-inclusion: non_null
