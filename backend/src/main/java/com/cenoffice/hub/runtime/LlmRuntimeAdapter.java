@@ -1,6 +1,6 @@
 package com.cenoffice.hub.runtime;
 
-import com.cenoffice.pm.LlmProvider;
+import com.cenoffice.llm.LlmProvider;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

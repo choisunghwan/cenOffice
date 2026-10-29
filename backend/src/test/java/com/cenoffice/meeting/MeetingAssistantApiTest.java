@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.cenoffice.pm.LlmProvider;
+import com.cenoffice.llm.LlmProvider;
 import static org.mockito.Mockito.*;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.concurrent.CountDownLatch;

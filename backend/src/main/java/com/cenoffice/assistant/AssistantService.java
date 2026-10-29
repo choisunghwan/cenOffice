@@ -9,7 +9,7 @@ import com.cenoffice.calendar.CalendarService.Entry;
 import com.cenoffice.calendar.CalendarService.Person;
 import com.cenoffice.meeting.CollaborationService;
 import com.cenoffice.meeting.MinutesService;
-import com.cenoffice.pm.LlmProvider;
+import com.cenoffice.llm.LlmProvider;
 import com.cenoffice.repo.MeetingRoomRepository;
 import com.cenoffice.repo.ReservationRepository;
 import java.util.Comparator;

@@ -1,4 +1,4 @@
-package com.cenoffice.pm;
+package com.cenoffice.llm;
 
 import com.cenoffice.config.AppProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;

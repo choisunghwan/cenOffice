@@ -1,7 +1,5 @@
-package com.cenoffice.pm;
+package com.cenoffice.llm;
 
-import com.cenoffice.pm.PmTypes.PmRequest;
-import com.cenoffice.pm.PmTypes.PmResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
@@ -39,16 +37,6 @@ public class GeminiLlmProvider implements LlmProvider {
     @Override public boolean isReal() { return true; }
 
     @Override public String model() { return model; }
-
-    @Override
-    public PmResult planRequirements(PmRequest req) throws LlmException {
-        StringBuilder user = new StringBuilder();
-        user.append("프로젝트: ").append(req.projectName()).append("\n\n<requirement>\n").append(req.requirementText()).append("\n</requirement>\n");
-        if (req.answers() != null && !req.answers().isEmpty()) {
-            user.append("\n<answers_to_previous_questions>\n").append(String.join("\n", req.answers())).append("\n</answers_to_previous_questions>\n");
-        }
-        return AnthropicLlmProvider.parsePmResult(mapper, call(AnthropicLlmProvider.PM_SYSTEM, user.toString(), true));
-    }
 
     @Override
     public String chat(String systemPrompt, String userText) throws LlmException {

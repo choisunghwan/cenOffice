@@ -1,7 +1,7 @@
 package com.cenoffice.chat;
 
 import com.cenoffice.monitor.ServerMonitor;
-import com.cenoffice.pm.LlmProvider;
+import com.cenoffice.llm.LlmProvider;
 import com.cenoffice.workspace.AiAgent;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;

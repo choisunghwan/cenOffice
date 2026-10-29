@@ -6,7 +6,7 @@ import com.cenoffice.hub.runtime.AgentRuntimeAdapter;
 import com.cenoffice.hub.runtime.AgentRuntimeAdapter.RuntimeRequest;
 import com.cenoffice.hub.runtime.AgentRuntimeAdapter.RuntimeStatus;
 import com.cenoffice.hub.runtime.RuntimeRegistry;
-import com.cenoffice.pm.MockLlmProvider;
+import com.cenoffice.llm.MockLlmProvider;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

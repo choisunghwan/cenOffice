@@ -2,7 +2,7 @@ package com.cenoffice.hub.runtime;
 
 import com.cenoffice.hub.domain.HubSkill;
 
-import com.cenoffice.pm.LlmProvider;
+import com.cenoffice.llm.LlmProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
