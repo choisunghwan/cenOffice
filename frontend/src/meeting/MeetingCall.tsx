@@ -8,6 +8,7 @@ import { meetingsApi, type MediaGrant, type Meeting, type MeetingMessage } from 
 import { transcriptApi } from './transcriptApi'
 import { useSpeechRecognition } from './useSpeechRecognition'
 import { CaptionBar, SttConsentDialog, TranscriptList, useTranscript } from './Transcript'
+import { MeetingAssistant, useMeetingAssistant } from './MeetingAssistant'
 
 export function MeetingCall({ meeting, grant, mic, camera, onLeave }: { meeting: Meeting; grant: MediaGrant; mic: boolean; camera: boolean; onLeave: (message?: string) => void }) {
   const [error, setError] = useState('')
@@ -30,6 +31,7 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
   const connection = useConnectionState()
   const tracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }, { source: Track.Source.ScreenShare, withPlaceholder: false }])
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant()
+  const assistant = useMeetingAssistant(meeting)
   const [messages, setMessages] = useState<MeetingMessage[]>([])
   const [text, setText] = useState('')
   const [copied, setCopied] = useState(false)
@@ -37,21 +39,24 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
   const [sending, setSending] = useState(false)
   const [ending, setEnding] = useState(false)
   const [seconds, setSeconds] = useState(0)
-  const [tab, setTab] = useState<'chat' | 'voice'>('chat')
+  const [tab, setTab] = useState<'chat' | 'voice' | 'assistant'>('chat')
   const [askStt, setAskStt] = useState(false)
   const [sttBusy, setSttBusy] = useState(false)
   const { segments, status: stt, refresh: refreshStt } = useTranscript(meeting.id, true)
   const end = useRef<HTMLDivElement>(null)
-  const speech = useSpeechRecognition(stt.consented && isMicrophoneEnabled, useCallback((text: string) => {
-    transcriptApi.add(meeting.id, text).then(() => refreshStt()).catch(e => setError((e as Error).message))
-  }, [meeting.id, refreshStt, setError]))
+  const listeningRef = useRef(assistant.listening)
+  listeningRef.current = assistant.listening
+  const speech = useSpeechRecognition((stt.consented || assistant.listening) && isMicrophoneEnabled && !assistant.pauseTranscription, (text: string) => {
+    if (listeningRef.current) { assistant.append(text); return }
+    if (stt.consented) transcriptApi.add(meeting.id, text).then(() => refreshStt()).catch(e => setError((e as Error).message))
+  }, 'ko-KR', assistant.listening ? 'question' : 'transcript')
   const toggleStt = async (on: boolean) => {
     setSttBusy(true); setError('')
     try { if (on) await transcriptApi.consent(meeting.id); else await transcriptApi.withdraw(meeting.id); await refreshStt(); setAskStt(false); if (on) setTab('voice') }
     catch (e) { setError((e as Error).message) } finally { setSttBusy(false) }
   }
   const shares = tracks.filter(t => t.source === Track.Source.ScreenShare)
-  const cameras = tracks.filter(t => t.source === Track.Source.Camera)
+  const cameras = tracks.filter(t => t.source === Track.Source.Camera && !t.participant.identity.startsWith('cen-ai-'))
   const reload = useCallback(async () => {
     try {
       const [m, msgs] = await Promise.all([meetingsApi.detail(meeting.id), meetingsApi.messages(meeting.id)])
@@ -93,12 +98,16 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
       <RoomAudioRenderer /><StartAudio label="클릭해서 회의 소리 듣기" />
       {stt.recording.length > 0 && <CaptionBar segments={segments} interim={speech.interim} meName={user?.displayName ?? ''} />}
     </section><aside className="meeting-chat"><div className="meeting-chat-heading"><h3>함께하는 사람들 <span>{participants.length}</span></h3><div className="meeting-people">{participants.map(p => <span key={p.identity} title={p.name || p.identity}>{(p.name || p.identity).slice(0, 1)}</span>)}</div></div>
-      <div className="meeting-chat-tabs" role="tablist"><button role="tab" aria-selected={tab === 'chat'} onClick={() => setTab('chat')}>회의 대화</button><button role="tab" aria-selected={tab === 'voice'} onClick={() => setTab('voice')}>음성 기록{segments.length ? ` ${segments.length}` : ''}</button></div>
-      {stt.recording.length > 0 && <div className="stt-banner" role="note"><span className="stt-rec-dot" />음성 기록 중: {stt.recording.join(', ')}<br />오디오는 저장하지 않고 글자만 저장합니다.</div>}
+      <div className="meeting-chat-tabs" role="tablist" aria-label="회의 패널"><button role="tab" aria-selected={tab === 'chat'} onClick={() => setTab('chat')}>회의 대화</button><button role="tab" aria-selected={tab === 'voice'} onClick={() => setTab('voice')}>음성 기록{segments.length ? ` ${segments.length}` : ''}</button><button role="tab" aria-label="AI 센" aria-selected={tab === 'assistant'} onClick={() => setTab('assistant')}>AI 센{(assistant.blocked || assistant.listening) && <span className="meeting-ai-tab-dot" aria-hidden="true" />}</button></div>
+      {tab !== 'assistant' && (assistant.blocked || assistant.listening) && <div className="meeting-ai-callout" role="status"><span>{assistant.listening ? '센이 질문을 듣고 있어요' : assistant.pauseTranscription ? '센이 이야기하고 있어요' : '센이 답변을 준비하고 있어요'}</span>{assistant.listening ? <button onClick={() => setTab('assistant')}>질문 화면</button> : <button onClick={() => void assistant.stop()} disabled={assistant.pending}>말 멈추기</button>}</div>}
+      {tab !== 'assistant' && <>
+      {stt.recording.length > 0 && <div className="stt-banner" role="note"><span className="stt-rec-dot" />{assistant.pauseTranscription ? '센의 음성 재생 중 · 음성 기록 잠시 멈춤' : `음성 기록 중: ${stt.recording.join(', ')}`}<br />오디오는 저장하지 않고 글자만 저장합니다.</div>}
       {tab === 'voice' ? <div className="meeting-chat-messages"><TranscriptList segments={segments} meUsername={user?.username} empty={stt.recording.length ? '말씀하시면 여기에 기록됩니다.' : '아래 "음성 기록" 버튼으로 내 발언 기록을 켤 수 있습니다.'} /></div> : <div className="meeting-chat-messages">{messages.length === 0 && <p className="meeting-chat-empty">링크나 의견을 남겨 보세요.<br />대화는 이 회의의 참여자에게만 보입니다.</p>}{messages.map(m => <div className={`meeting-message ${m.username === user?.username ? 'mine' : ''}`} key={m.id}><div><b>{m.displayName}</b><time>{new Date(m.sentAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time></div><p>{m.content}</p></div>)}<div ref={end} /></div>}
       {tab === 'chat' && <form className="meeting-chat-compose" onSubmit={e => { e.preventDefault(); void send() }}><input aria-label="회의 메시지" placeholder="메시지 입력" maxLength={1000} value={text} onChange={e => setText(e.target.value)} /><button disabled={!text.trim() || sending} aria-label="메시지 전송">↑</button></form>}
+      </>}
+      {tab === 'assistant' && <div className="meeting-sidebar-panel" role="tabpanel" aria-label="AI 센 패널"><MeetingAssistant assistant={assistant} host={meeting.host === user?.username} mic={isMicrophoneEnabled} supported={speech.supported} interim={speech.interim} /></div>}
     </aside></div>
-    <footer className="meeting-controls"><span className="meeting-controls-note">{stt.recording.length ? '음성 인식 기록 중 · 오디오 저장 안 함' : '로컬 회의 · 녹음 안 함'}</span><div>
+    <footer className="meeting-controls"><span className="meeting-controls-note">{assistant.pauseTranscription && stt.recording.length ? '센 음성 재생 · 기록 잠시 멈춤' : stt.recording.length ? '음성 인식 기록 중 · 오디오 저장 안 함' : '로컬 회의 · 녹음 안 함'}</span><div>
       <button disabled={busy} aria-pressed={isMicrophoneEnabled} onClick={() => void device(() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled))}><span>{isMicrophoneEnabled ? '◉' : '⊘'}</span>{isMicrophoneEnabled ? '마이크 끄기' : '마이크 켜기'}</button>
       {speech.supported && <button className={stt.consented ? 'stt-on' : ''} disabled={busy || sttBusy} aria-pressed={stt.consented} onClick={() => (stt.consented ? void toggleStt(false) : setAskStt(true))}><span>{stt.consented ? '●' : '◌'}</span>{stt.consented ? '음성 기록 끄기' : '음성 기록'}</button>}
       <button disabled={busy} aria-pressed={isCameraEnabled} onClick={() => void device(() => localParticipant.setCameraEnabled(!isCameraEnabled))}><span>▣</span>{isCameraEnabled ? '카메라 끄기' : '카메라 켜기'}</button>

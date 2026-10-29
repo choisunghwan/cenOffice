@@ -27,3 +27,12 @@
 
 .meeting-device-options label{display:flex;align-items:center;gap:10px;cursor:pointer;line-height:1.4}
 .meeting-device-options input{flex:none;margin:0;width:16px;height:16px}
+
+/* The selected sidebar tab owns the available height; meeting controls never shrink or overlap it. */
+.meeting-call{height:100dvh;max-height:100dvh;overflow:hidden}
+.meeting-call-header,.meeting-controls,.meeting-chat-heading,.meeting-chat-tabs,.meeting-chat-compose,.stt-banner{flex-shrink:0}
+.meeting-chat{width:clamp(280px,28vw,360px);min-height:0;overflow:hidden}
+.meeting-chat-heading{padding:16px 18px}
+.meeting-people{margin-top:10px}
+.meeting-chat-tabs{padding:10px 14px 0}
+.meeting-chat-messages{overscroll-behavior:contain}

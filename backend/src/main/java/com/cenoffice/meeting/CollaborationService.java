@@ -83,6 +83,11 @@ public class CollaborationService {
         audit.log(actor,"MEETING_MEDIA_GRANT","meeting:"+id,"30초 입장 토큰 발급");
         return grant;
     }
+    /** Serialize AI token issuance with meeting end just like normal participant admission. */
+    public MeetingMedia.Grant assistantGrant(String id,String actor,String turnId) {
+        member(id,actor);openLocked(id);
+        return media.assistantGrant(id,turnId);
+    }
     public void end(String id,String actor) {
         Meeting m=detail(id,actor);
         if(!m.host().equals(actor)) throw new ApiException(HttpStatus.FORBIDDEN,"회의를 만든 사람만 종료할 수 있습니다");

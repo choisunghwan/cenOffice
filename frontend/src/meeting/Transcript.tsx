@@ -36,6 +36,7 @@ export function SttConsentDialog({ onCancel, onAgree, busy }: { onCancel: () => 
     <ul className="stt-notice">
       <li>내 마이크 음성을 <b>글자로 바꿔 이 회의의 기록에 저장</b>합니다. 오디오(녹음)는 저장하지 않습니다.</li>
       <li>기록은 <b>이 회의 참석자만</b> 볼 수 있고, 회의록 작성에 사용됩니다.</li>
+      <li>회의에서 <b>AI 센을 켠 경우</b>, 기록에 동의한 내 발언을 외부 AI가 질문 답변의 맥락으로 참고할 수 있습니다. 동의를 철회하면 이후 AI 질문의 맥락에서도 제외됩니다.</li>
       <li>이 방식은 브라우저 제공업체(Chrome은 Google, Edge는 Microsoft)의 음성 인식 서버로 음성이 전송되어 처리됩니다. 민감한 내용은 말하지 마세요.</li>
       <li>언제든 끌 수 있고, 마이크를 끄면 기록되지 않습니다. 인식 결과에는 오류가 있을 수 있습니다.</li>
     </ul>

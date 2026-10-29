@@ -21,7 +21,7 @@ export const speechSupported = () => ctor() !== null
 const FATAL = new Set(['not-allowed', 'service-not-allowed', 'language-not-supported'])
 
 /** active 인 동안 한국어 음성을 인식한다. 확정 문장은 onFinal, 말하는 중인 문장은 interim 으로 돌려준다. */
-export function useSpeechRecognition(active: boolean, onFinal: (text: string) => void, lang = 'ko-KR') {
+export function useSpeechRecognition(active: boolean, onFinal: (text: string) => void, lang = 'ko-KR', sessionKey = '') {
   const [interim, setInterim] = useState('')
   const [error, setError] = useState('')
   const finalRef = useRef(onFinal)
@@ -57,7 +57,7 @@ export function useSpeechRecognition(active: boolean, onFinal: (text: string) =>
     setError('')
     try { rec.start() } catch { setError('음성 인식을 시작하지 못했습니다.') }
     return () => { stopped = true; rec.onend = null; rec.onresult = null; rec.onerror = null; try { rec.stop() } catch { /* ignore */ } setInterim('') }
-  }, [active, lang])
+  }, [active, lang, sessionKey])
 
   return { interim, error, supported: speechSupported() }
 }

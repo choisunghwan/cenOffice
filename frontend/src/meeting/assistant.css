@@ -1,0 +1,15 @@
+.meeting-assistant{padding:16px;background:#142033;color:#e2e8f0;font-size:12px;min-height:100%;box-sizing:border-box}
+.meeting-sidebar-panel{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.meeting-ai-tab-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:5px;background:#83d8c0;vertical-align:middle}
+.meeting-ai-callout{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;margin:10px 18px 0;padding:8px 10px;border:1px solid #486080;border-radius:8px;background:#1b304a;font-size:11px;color:#cfe5fa}
+.meeting-ai-callout button{flex:none;border:1px solid #a75466;border-radius:6px;padding:5px 7px;background:#713444;color:#fff;font-size:11px}
+.meeting-assistant-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.meeting-assistant-heading strong{font-size:15px;color:#a5c8ff}.meeting-assistant-heading strong span{font-size:10px;font-weight:400;color:#a8b8cf;margin-left:5px}
+.meeting-assistant p{line-height:1.6;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.meeting-assistant button{padding:7px 10px;border:1px solid #486080;border-radius:7px;background:#234c7b;color:#fff;cursor:pointer;font-size:12px}
+.meeting-assistant button:disabled{opacity:.45;cursor:default}.meeting-assistant button:focus-visible,.meeting-assistant textarea:focus-visible{outline:2px solid #8dbaff;outline-offset:2px}
+.meeting-assistant textarea{display:block;width:100%;box-sizing:border-box;min-height:65px;max-height:130px;resize:vertical;border:1px solid #486080;border-radius:7px;background:#0f172a;color:#e2e8f0;padding:9px;font:inherit}
+.meeting-assistant-notice,.meeting-assistant small{font-size:11px;color:#aebfd5}.meeting-assistant-status{padding:7px 0;color:#b9d5ff}
+.meeting-assistant-actions{display:flex;gap:8px;margin:8px 0}.meeting-assistant .meeting-assistant-stop{background:#713444;border-color:#a75466;width:100%}
+.meeting-assistant-interim{color:#a5c8ff}.meeting-assistant-error{color:#ffb4b4}.meeting-assistant-answer{margin-top:10px;padding:10px;border-radius:8px;background:#0d1728}
+.meeting-assistant-answer b{display:block;margin-top:7px;color:#a5c8ff}.meeting-assistant-answer p{margin-bottom:0}

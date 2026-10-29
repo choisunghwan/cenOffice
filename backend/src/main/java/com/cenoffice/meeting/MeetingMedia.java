@@ -41,6 +41,21 @@ public class MeetingMedia {
         catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
         catch (Exception e) { return false; }
     }
+    public Grant assistantGrant(String id,String turnId) {
+        if(!available())throw unavailable();
+        return new Grant(url,token("cen-ai-"+turnId,"센 (AI)",Map.of("room",room(id),"roomJoin",true,
+            "canPublish",true,"canSubscribe",false,"canPublishData",false,"canPublishSources",List.of("microphone"))));
+    }
+    public void removeAssistant(String id,String turnId) {
+        if(!configured())return;
+        try {
+            var req=HttpRequest.newBuilder(URI.create(apiUrl+"/twirp/livekit.RoomService/RemoveParticipant"))
+                .timeout(Duration.ofSeconds(3)).header("Authorization","Bearer "+token("meeting-service","",Map.of("room",room(id),"roomAdmin",true)))
+                .header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(Map.of("room",room(id),"identity","cen-ai-"+turnId)))).build();
+            http.send(req,HttpResponse.BodyHandlers.discarding());
+        }catch(InterruptedException e){Thread.currentThread().interrupt();}
+        catch(Exception ignored){/* Sender also observes STOPPED and disconnects; meeting end deletes the room. */}
+    }
     public void end(String id) {
         if (!configured()) return; // A session may have been created before media setup.
         try {
