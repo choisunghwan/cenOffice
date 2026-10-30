@@ -62,3 +62,6 @@
 
 /* 라이트 테마: 연한 하늘색 안내 문구가 흰 배경에서 안 보이던 문제 */
 [data-workspace-theme="light"] .hub-shell .text-sky-200 { color: #1a62d6; }
+
+/* 어두운 바탕에서는 같은 굵기의 흰 글씨가 더 굵고 뭉쳐 보인다. 본문만 한 단계 가볍게 해서(굵기를 따로 정한 제목·강조는 그대로) 또렷하게 읽히게 한다. */
+[data-workspace-theme="dark"] .hub-shell { font-weight: 350; }
