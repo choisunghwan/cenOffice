@@ -45,7 +45,7 @@ export function ConnectPage() {
   }
   const tok = secret ?? '<1단계에서 만든 토큰>'
   const command = tool === 'claude'
-    ? `claude mcp add --transport http cen-ai-hub ${MCP_URL} --header "Authorization: Bearer ${tok}"`
+    ? `claude mcp add --scope user --transport http cen-ai-hub ${MCP_URL} --header "Authorization: Bearer ${tok}"`
     : `[mcp_servers.cen-ai-hub]\nurl = "${MCP_URL}"\nbearer_token_env_var = "CEN_AI_HUB_TOKEN"\n# 환경변수 CEN_AI_HUB_TOKEN 에 만든 토큰을 넣어 두세요`
   const active = tokens.data?.filter((t) => !t.revoked && !t.expired).length ?? 0
 
@@ -73,7 +73,7 @@ export function ConnectPage() {
           <Btn small tone={tool === 'codex' ? 'primary' : 'ghost'} onClick={() => setTool('codex')}>Codex</Btn>
         </div>
         <Cmd text={command} disabled={!secret} />
-        <p className="text-xs text-slate-400 mt-2">{tool === 'claude' ? '터미널(PowerShell)에 붙여 넣고 Enter. 끝나면 Claude Code 를 새로 시작하세요.' : '~/.codex/config.toml 파일에 붙여 넣고 Codex 를 새로 시작하세요.'} 토큰을 만들기 전에는 복사 버튼이 꺼져 있습니다.</p>
+        <p className="text-xs text-slate-400 mt-2">{tool === 'claude' ? '터미널(PowerShell)에 붙여 넣고 Enter. 끝나면 Claude Code(VS Code 는 창 새로 고침)를 새로 시작하세요. 어느 폴더에서 열어도 보이도록 내 계정 전체에 등록합니다.' : '~/.codex/config.toml 파일에 붙여 넣고 Codex 를 새로 시작하세요.'} 토큰을 만들기 전에는 복사 버튼이 꺼져 있습니다.</p>
       </Card></div>
 
       <Card title="3단계. AI 에게 말해 보기">

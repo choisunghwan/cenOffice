@@ -84,7 +84,7 @@ SKILL.md 파일을 올리거나 직접 작성해 등록하면 관리자 검토�
 - 업로드(SKILL.md/ZIP)는 경로 탐색·심볼릭 링크·압축 폭탄·스크립트/실행 파일·API 키를 거부하는 검증을 거치고, 관리자 승인 후 공개됩니다. 도구 수정은 만든 사람과 관리자만 할 수 있습니다.
 - 실행: 내장 도구 7종은 서버 안에서 규칙 기반으로 처리됩니다(외부 전송 없음). 직접 등록한 도구나 ‘AI 모델’ 선택은 `HUB_AI_ENGINE=true` 일 때 LLM으로 실행되며 **입력이 외부 서비스로 전송**됩니다(기본 꺼짐).
 - 결과 내보내기: Excel · Word · PPT · PDF · 한글(HWPX) (`POST /api/hub/documents/export`). PDF는 한글 폰트가 필요합니다(`office.docs.pdf-font`).
-- 외부 AI 도구 연동(API): 승인된 도구를 `GET /api/hub/skills/export.zip` 으로 내려받아 Claude Code/Codex 스킬 폴더에 설치하거나, 개인 액세스 토큰(`cen_pat_…`)으로 `POST /mcp`(MCP 서버)에 연결합니다. **지금은 이 기능의 화면이 없고 API로만 제공됩니다.**
+- 외부 AI 도구 연동(API): 승인된 도구를 `GET /api/hub/skills/export.zip` 으로 내려받아 Claude Code/Codex 스킬 폴더에 설치하거나, 개인 액세스 토큰(`cen_pat_…`)으로 `POST /mcp`(MCP 서버)에 연결합니다. 화면의 ‘AI에 연결’에서 토큰을 만들고 명령을 복사해 등록합니다(`--scope user`). 연결하면 도구마다 슬래시 명령(`/mcp__cen-ai-hub__<도구이름>`)이 생기며(MCP `prompts`), 원문은 슬래시만 입력한 뒤 다음 메시지로 붙여 넣습니다.
 - KPI는 실제 이벤트만 집계(시뮬레이션·샘플·제작자 본인 실행 제외)하며 점수·보상은 산정하지 않습니다.
 
 ## 바로 써 볼 수 있는 내장 도구 7종

@@ -82,6 +82,29 @@ class McpApiTest {
         mvc.perform(post("/mcp").header("Authorization", "Bearer " + secret).contentType(MediaType.APPLICATION_JSON).content("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"ping\"}")).andExpect(status().isUnauthorized());
     }
 
+    @Test void promptsMirrorToolsSoTheyShowUpAsSlashCommands() throws Exception {
+        String secret = createToken(account()).get("secret").asText();
+        assertTrue(rpc(secret, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}").at("/result/capabilities").has("prompts"));
+
+        JsonNode prompts = rpc(secret, "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"prompts/list\"}").at("/result/prompts");
+        JsonNode sql = null;
+        for (JsonNode p : prompts) if (p.get("name").asText().equals("cen-sql-reviewer")) sql = p;
+        assertNotNull(sql);
+        assertEquals("input", sql.at("/arguments/0/name").asText());
+        assertFalse(sql.at("/arguments/0/required").asBoolean());
+
+        JsonNode got = rpc(secret, "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"prompts/get\",\"params\":{\"name\":\"cen-sql-reviewer\",\"arguments\":{\"input\":\"DELETE FROM t\"}}}");
+        assertEquals("user", got.at("/result/messages/0/role").asText());
+        String text = got.at("/result/messages/0/content/text").asText();
+        assertTrue(text.contains("cen-sql-reviewer") && text.contains("DELETE FROM t"));
+
+        assertTrue(rpc(secret, "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"prompts/get\",\"params\":{\"name\":\"nope\",\"arguments\":{\"input\":\"x\"}}}").has("error"));
+        // 원문 없이도 받을 수 있다(슬래시만 입력) — 원문을 다음 메시지로 기다리게 하는 요청문
+        JsonNode bare = rpc(secret, "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"prompts/get\",\"params\":{\"name\":\"cen-sql-reviewer\",\"arguments\":{}}}");
+        assertFalse(bare.has("error"));
+        assertTrue(bare.at("/result/messages/0/content/text").asText().contains("다음 메시지"));
+    }
+
     @Test void rejectsMissingBadJwtAndBrowserOriginRequests() throws Exception {
         Acct a = account();
         String secret = createToken(a).get("secret").asText();
