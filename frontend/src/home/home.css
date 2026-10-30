@@ -73,7 +73,7 @@
 
 /* 일반 답변: 줄바꿈을 살리고 근거로 쓴 정보를 작게 보여 준다 */
 .ha-bot>p.ha-answer{white-space:pre-wrap;display:block;line-height:1.8;overflow-wrap:anywhere}
-.ha-bot>p.ha-refs{display:block;background:none;border:0;padding:0;margin:-2px 0 8px 4px;font-size:11px;color:var(--c-muted)}
+.ha-bot>p.ha-refs{display:block;background:none;border:0;padding:0;margin:-2px 0 8px 0;font-size:11px;color:var(--c-muted)}
 
 /* 대화 목차(눈금) */
 .chat-home .home-assistant{position:relative}

@@ -6,7 +6,8 @@
 [data-workspace-theme="light"] .hub-shell > nav { background: #fff; border-color: #dfe5ed; }
 [data-workspace-theme="light"] .hub-shell nav button { color: #5d6b7e; }
 [data-workspace-theme="light"] .hub-shell nav button:hover { background: #eff4fa; color: #203047; }
-[data-workspace-theme="light"] .hub-shell nav button[aria-current="page"] { background: #e7effa; color: #244f82; box-shadow: inset 3px 0 #5683ba; }
+[data-workspace-theme="light"] .hub-shell nav button[aria-current="page"] { background: #e7effa; color: #244f82; }
+[data-workspace-theme="light"] .hub-shell nav:not([aria-label]) button[aria-current="page"] { box-shadow: inset 3px 0 #5683ba; }
 [data-workspace-theme="light"] .hub-shell :is([class*="text-slate-"], .hub-page-heading > span, .hub-advanced, .tool-gallery-description, .tool-gallery-meta) { color: #5e6e82; }
 [data-workspace-theme="light"] .hub-shell :is([class*="text-slate-100"], [class*="text-slate-200"]) { color: #273b54; }
 [data-workspace-theme="light"] .hub-shell [class*="border-white/"] { border-color: #dfe5ed; }
