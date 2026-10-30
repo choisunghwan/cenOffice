@@ -22,4 +22,12 @@ export const TOURS: Record<string, CoachStep[]> = {
     { target: 'topbar-right', placement: 'bottom', title: '알림과 화면 모드',
       body: '회의록 확정·할 일 알림은 종 모양에서, 다크 모드는 달 모양 버튼에서 바꿉니다. 이 안내는 설정에서 언제든 다시 볼 수 있어요.' },
   ],
+  connect: [
+    { target: 'connect-token', placement: 'bottom', title: '1. 토큰 만들기',
+      body: '이름을 정하고 “토큰 만들기”를 누르세요. 내 계정으로 도구를 쓰는 열쇠가 만들어집니다.' },
+    { target: 'connect-cmd', placement: 'top', title: '2. 명령 복사',
+      body: '토큰이 들어간 명령이 여기에 나타납니다. 복사해서 Claude Code 터미널에 붙여 넣으세요. 토큰은 이 화면에서만 볼 수 있습니다.' },
+    { target: 'connect-list', placement: 'top', title: '토큰 관리',
+      body: '만든 토큰은 여기서 확인하고, 새어 나갔거나 더 안 쓰면 폐기하세요.' },
+  ],
 }

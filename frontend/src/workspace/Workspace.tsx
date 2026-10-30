@@ -39,6 +39,7 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
       case 'meetings': return <Suspense fallback={<p role="status">회의 화면을 준비하고 있습니다…</p>}><MeetingsPage /></Suspense>
       case 'hub-mine': return <HubPage key="mine" initialTab="mine" />
       case 'hub-register': return <HubPage key="register" initialTab="register" />
+      case 'hub-connect': return <HubPage key="connect" initialTab="connect" />
       case 'hub-review': return user?.role === 'ADMIN' ? <HubPage key="review" initialTab="review" /> : <HubPage />
       case 'aihub': return <HubPage />
       case 'monitoring': return <MonitoringPage />

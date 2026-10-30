@@ -3,6 +3,7 @@ import { useOffice } from '../store'
 import { hub } from '../hubApi'
 import { Btn, Card, Empty, ErrorNote, Input, Select, useLoad } from '../workspace/kit'
 import { AgentDetailView, AgentForm } from './AgentViews'
+import { ConnectPage } from './ConnectPage'
 import { CreatorDashboard } from './CreatorDashboard'
 import { Pager } from './Pager'
 import { ReviewQueue } from './ReviewQueue'
@@ -12,7 +13,7 @@ import { AgentCard, RuntimeBanner, SkillCard } from './shared'
 import { useToolFavorites } from './useToolFavorites'
 import { toolName } from './toolNames'
 
-type Tab = 'browse' | 'mine' | 'register' | 'review'
+type Tab = 'browse' | 'mine' | 'register' | 'connect' | 'review'
 type View = { kind: 'skill' | 'agent'; id: number; run?: boolean } | null
 
 /** WORKSPACE > AI HUB: 전사 AI Skill / Agent 둘러보기, 등록, 제작자 대시보드, 관리자 승인 */
@@ -39,6 +40,7 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
     { tab: 'browse', page: 'home', icon: '✧', title: '모든 도구', desc: '승인된 AI 도구를 찾고 바로 써 보세요' },
     { tab: 'mine', page: 'hub-mine', icon: '▤', title: '내 도구', desc: '내가 만든 도구와 동료의 피드백' },
     { tab: 'register', page: 'hub-register', icon: '＋', title: '도구 만들기', desc: '업무 노하우를 도구로 등록하고 나누기' },
+    { tab: 'connect', page: 'hub-connect', icon: '⇄', title: 'AI에 연결', desc: 'Claude Code에서 우리 도구 쓰기' },
     ...(admin ? [{ tab: 'review' as Tab, page: 'hub-review', icon: '✓', title: '공개 승인', desc: '등록된 도구를 검토하고 공개' }] : []),
   ]
 
@@ -53,7 +55,7 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
         <div className="hub-hero-photo" aria-hidden="true"><img src="/images/hub-hero.svg" alt="" /></div>
         <div className="hub-hero-note"><span>01 도구 선택</span><span>02 자료와 요청 입력</span><span>03 결과 확인</span></div>
       </header>}
-      {!view && tab !== 'browse' && <header className="hub-page-heading"><p>ITCEN AI HUB</p><h1>{tab === 'mine' ? '내 도구' : tab === 'register' ? '도구 만들기' : '공개 승인'}</h1><span>{tab === 'mine' ? '공유한 도구와 동료들의 피드백을 한곳에서 확인하세요.' : tab === 'register' ? '팀의 업무 노하우를 등록하고, 검토 후 동료들과 나누세요.' : '등록된 도구의 내용과 공개 범위를 확인하세요.'}</span></header>}
+      {!view && tab !== 'browse' && tab !== 'connect' && <header className="hub-page-heading"><p>ITCEN AI HUB</p><h1>{tab === 'mine' ? '내 도구' : tab === 'register' ? '도구 만들기' : '공개 승인'}</h1><span>{tab === 'mine' ? '공유한 도구와 동료들의 피드백을 한곳에서 확인하세요.' : tab === 'register' ? '팀의 업무 노하우를 등록하고, 검토 후 동료들과 나누세요.' : '등록된 도구의 내용과 공개 범위를 확인하세요.'}</span></header>}
 
       {view?.kind === 'skill' && <SkillDetailView key={`s${view.id}-${view.run}`} id={view.id} startWithRun={view.run} onBack={() => setView(null)} onChanged={bump} />}
       {view?.kind === 'agent' && <AgentDetailView key={`a${view.id}-${view.run}`} id={view.id} startWithRun={view.run} onBack={() => setView(null)} onChanged={bump} />}
@@ -68,6 +70,7 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
           <details className="hub-advanced"><summary>고급 설정 · 도구 구성 방식</summary><label className="block mt-4 text-sm">구성 방식<Select value={regKind} onChange={(e) => setRegKind(e.target.value as 'skill' | 'agent')}><option value="skill">업무 지침으로 만들기</option><option value="agent">기존 도구를 조합해서 만들기</option></Select></label></details>
         </div>
       )}
+      {!view && tab === 'connect' && <ConnectPage />}
       {!view && tab === 'review' && admin && <ReviewQueue key={tick} onOpenSkill={(id) => open({ kind: 'skill', id })} onOpenAgent={(id) => open({ kind: 'agent', id })} onChanged={bump} />}
       <details className="hub-advanced mt-8"><summary>서비스 연결 정보</summary><div className="mt-3"><RuntimeBanner runtime={runtime.data ?? undefined} /></div></details>
     </>

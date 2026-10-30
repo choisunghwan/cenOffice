@@ -15,11 +15,19 @@ const useCoach = create<{ tour: string | null; start: (id: string) => void; stop
 }))
 
 /** 안내를 처음부터 다시 보여 준다. 홈으로 이동한 뒤 시작한다(설정의 "사용법 다시 보기"). */
-export function startTour(id = 'welcome') {
+export function startTour(id = 'welcome', opt?: { stay?: boolean }) {
+  if (opt?.stay) { useCoach.getState().start(id); return }
   const o = useOffice.getState()
   o.setMode('workspace'); o.setWorkspacePage('dashboard')
   window.dispatchEvent(new Event('hub-navigation'))
   window.setTimeout(() => useCoach.getState().start(id), 350)
+}
+
+/** 지금 화면에서, 이 계정이 처음 보는 안내일 때만 시작한다(화면이 자리 잡은 뒤에). */
+export function startTourOnce(id: string) {
+  const user = useOffice.getState().user
+  if (!user || wasSeen(user.username, id)) return
+  window.setTimeout(() => { if (!useCoach.getState().tour) useCoach.getState().start(id) }, 600)
 }
 
 /** 같은 이름이 둘(데스크톱 사이드바·모바일 탭)일 수 있어, 실제로 보이는 첫 요소를 고른다 */
