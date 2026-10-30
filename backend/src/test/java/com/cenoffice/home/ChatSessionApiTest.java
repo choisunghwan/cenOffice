@@ -96,6 +96,17 @@ class ChatSessionApiTest {
         req(get("/api/assistant/sessions/" + id), admin, null).andExpect(status().isNotFound());
     }
 
+    @Test void deleteAllRemovesOnlyMySessions() throws Exception {
+        String mine1 = create(admin, "내 방 1"), mine2 = create(admin, "내 방 2"), others = create(user, "남의 방");
+        var res = read(req(delete("/api/assistant/sessions"), admin, null).andExpect(status().isOk()));
+        assertTrue(res.path("deleted").asInt() >= 2);
+        assertEquals(0, read(req(get("/api/assistant/sessions"), admin, null).andExpect(status().isOk())).size());
+        req(get("/api/assistant/sessions/" + mine1), admin, null).andExpect(status().isNotFound());
+        req(get("/api/assistant/sessions/" + mine2), admin, null).andExpect(status().isNotFound());
+        assertEquals("남의 방", read(req(get("/api/assistant/sessions/" + others), user, null).andExpect(status().isOk())).path("title").asText()); // 남의 것은 그대로
+        assertEquals(0, read(req(delete("/api/assistant/sessions"), admin, null).andExpect(status().isOk())).path("deleted").asInt()); // 비어 있어도 오류가 아니다
+    }
+
     @Test void invalidTitlesAndTurnsAreRejected() throws Exception {
         String id = create(admin, "검사");
         req(put("/api/assistant/sessions/" + id), admin, Map.of("title", "가".repeat(121))).andExpect(status().isBadRequest());
@@ -107,5 +118,6 @@ class ChatSessionApiTest {
 
     @Test void requiresLogin() throws Exception {
         mvc.perform(get("/api/assistant/sessions")).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/assistant/sessions")).andExpect(status().isUnauthorized());
     }
 }

@@ -2,6 +2,7 @@ package com.cenoffice.home;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,10 @@ public class ChatSessionController {
 
     @PutMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void save(@PathVariable String id, @RequestBody SaveRequest r, Authentication a) { sessions.save(a.getName(), id, r.title(), r.turns()); }
+
+    /** 내 대화 기록 전체 삭제. 남의 것은 지워지지 않는다. */
+    @DeleteMapping
+    public Map<String, Integer> deleteAll(Authentication a) { return Map.of("deleted", sessions.deleteAll(a.getName())); }
 
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id, Authentication a) { sessions.delete(a.getName(), id); }

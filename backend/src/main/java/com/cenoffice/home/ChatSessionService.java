@@ -73,6 +73,11 @@ public class ChatSessionService {
         if (db.update("DELETE FROM assistant_sessions WHERE id = ? AND owner = ?", id, owner) == 0) throw notFound();
     }
 
+    /** 내 대화 기록을 모두 지운다. 남의 것은 건드리지 않는다. 지운 개수를 돌려준다. */
+    public int deleteAll(String owner) {
+        return db.update("DELETE FROM assistant_sessions WHERE owner = ?", owner);
+    }
+
     private static String cleanTitle(String title) {
         String t = title == null ? "" : title.replaceAll("\\p{Cntrl}", " ").strip();
         if (t.isEmpty()) return DEFAULT_TITLE;

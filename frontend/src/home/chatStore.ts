@@ -21,6 +21,8 @@ interface ChatState {
   startNew: () => void
   open: (id: string) => Promise<void>
   remove: (id: string) => Promise<void>
+  /** 내 대화 기록을 모두 지운다. 성공하면 열려 있던 방도 비운다. */
+  removeAll: () => Promise<boolean>
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -100,6 +102,14 @@ export const useChat = create<ChatState>((set, get) => {
       try { await assistantApi.sessions.remove(id) } catch { return }
       set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) }))
       if (get().currentId === id) { pendingId = null; if (timer) { clearTimeout(timer); timer = undefined }; swap(null, [], 1) }
+    },
+    removeAll: async () => {
+      try { await assistantApi.sessions.removeAll() } catch { return false }
+      pendingId = null
+      if (timer) { clearTimeout(timer); timer = undefined }
+      set({ sessions: [] })
+      swap(null, [], 1)
+      return true
     },
   }
 })

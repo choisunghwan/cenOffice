@@ -53,6 +53,7 @@ export const assistantApi = {
     get: (id: string) => call<{ id: string; title: string; turns: unknown[] }>('GET', `/sessions/${id}`),
     save: (id: string, body: { title?: string; turns?: unknown[] }) => call<void>('PUT', `/sessions/${id}`, body),
     remove: (id: string) => call<void>('DELETE', `/sessions/${id}`),
+    removeAll: () => call<{ deleted: number }>('DELETE', '/sessions'),
   },
   status: () => call<{ ai: boolean }>('GET', '/status'),
   interpret: (text: string, previous?: string, history?: HistoryTurn[], signal?: AbortSignal) =>

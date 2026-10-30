@@ -17,7 +17,11 @@ export function ChatHistory({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="chat-history">
       <button type="button" className="chat-new" onClick={() => useChat.getState().startNew()}><span aria-hidden="true">＋</span> 새 채팅</button>
-      <p className="chat-history-title">대화 기록</p>
+      <div className="chat-history-head">
+        <p className="chat-history-title">대화 기록</p>
+        <button type="button" className="chat-clear" disabled={!sessions.length} title={sessions.length ? '대화 기록 전체 삭제' : '지울 대화가 없습니다'}
+          onClick={() => { void askConfirm({ title: '대화 기록을 모두 삭제할까요?', message: `대화 ${sessions.length}개가 모두 사라지며 되돌릴 수 없습니다.`, okText: '모두 삭제', danger: true }).then((ok) => { if (ok) void useChat.getState().removeAll() }) }}>전체 삭제</button>
+      </div>
       <ul>
         {sessions.map((s) => (
           <li key={s.id} className={s.id === currentId && page === 'dashboard' ? 'on' : ''}>

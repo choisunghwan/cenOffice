@@ -201,6 +201,10 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .chat-new:hover { background: rgba(59,139,255,.22); }
 .chat-new.icon { justify-content: center; padding: 9px 0; font-size: 16px; }
 .chat-history-title { margin: 14px 12px 6px; font-size: 10px; letter-spacing: .14em; opacity: .55; }
+.chat-history-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-right: 8px; }
+.chat-clear { margin-top: 8px; padding: 3px 9px; border-radius: 6px; font-size: 11px; color: inherit; opacity: .6; border: 1px solid transparent; }
+.chat-clear:hover:not(:disabled), .chat-clear:focus-visible { opacity: 1; background: rgba(239,68,68,.2); }
+.chat-clear:disabled { opacity: .3; cursor: not-allowed; }
 .chat-history ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; }
 .chat-history li { display: flex; align-items: center; border-radius: 8px; }
 .chat-history li:hover, .chat-history li.on { background: rgba(127,127,127,.14); }
