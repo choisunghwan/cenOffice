@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/hub/tokens")
 @PreAuthorize("hasAnyRole('ADMIN','USER')")
 public class HubTokenController {
-    public record CreateRequest(String name, Integer days) {}
+    public record CreateRequest(String name, Integer days, String scope) {}
     private final PersonalTokenService service;
     public HubTokenController(PersonalTokenService service) { this.service = service; }
 
     @GetMapping public List<TokenView> list(Authentication a) { return service.list(a.getName()); }
 
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
-    public Created create(@RequestBody CreateRequest r, Authentication a) { return service.create(a.getName(), r.name(), r.days()); }
+    public Created create(@RequestBody CreateRequest r, Authentication a) { return service.create(a.getName(), r.name(), r.days(), r.scope()); }
 
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revoke(@PathVariable Long id, Authentication a) { service.revoke(a.getName(), id); }

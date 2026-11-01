@@ -55,6 +55,8 @@ app:
     sync-passwords: ${OFFICE_SYNC_PASSWORDS:false}   # 개발용: true 면 기존 계정 비밀번호를 위 값으로 갱신
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5180,http://localhost:5173}
+  ext:
+    allowed-origins: ${EXT_ALLOWED_ORIGINS:}   # CenNavi 확장 출처(chrome-extension://<확장 ID>, 쉼표로 여러 개). 비우면 chrome-extension:// 출처만 허용(웹 페이지 출처는 항상 거부)
   devices:
     command-timeout-seconds: ${DEVICE_COMMAND_TIMEOUT_SECONDS:10}
     mock:

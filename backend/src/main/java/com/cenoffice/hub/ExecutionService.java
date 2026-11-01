@@ -68,15 +68,24 @@ public class ExecutionService {
         this.audit = audit;
     }
 
+    /** 실행을 시작한 곳. host 는 CenNavi 에서 선택한 글이 있던 사이트의 도메인(없으면 null). */
+    public record Origin(String source, String host) {
+        public static final Origin WEB = new Origin("WEB", null);
+    }
+
     public ExecutionView request(String user, boolean admin, ExecuteRequest r) {
-        return request(user, admin, r, false);
+        return request(user, admin, r, false, Origin.WEB);
+    }
+
+    public ExecutionView request(String user, boolean admin, ExecuteRequest r, Origin origin) {
+        return request(user, admin, r, false, origin);
     }
 
     ExecutionView requestDocuments(String user, boolean admin, ExecuteRequest r) {
-        return request(user, admin, r, true);
+        return request(user, admin, r, true, Origin.WEB);
     }
 
-    private ExecutionView request(String user, boolean admin, ExecuteRequest r, boolean documents) {
+    private ExecutionView request(String user, boolean admin, ExecuteRequest r, boolean documents, Origin origin) {
         if (r == null) throw new ApiException(HttpStatus.BAD_REQUEST, "실행 요청이 필요합니다");
         HubSkill requested = r.skillId() == null ? null : skillService.visible(r.skillId(), user, admin);
         if (documents && (requested == null || !BuiltinSkillSeeder.trusted(requested)))
@@ -134,9 +143,10 @@ public class ExecutionService {
         e.targetType = targetType; e.skillId = r.skillId(); e.skillVersionId = r.skillId() != null ? targetVersions.get(0).id : null; e.agentId = r.agentId();
         e.requester = user; e.inputHash = hash; e.input = input; e.status = "REQUESTED"; e.runtimeKind = rt.kind();
         e.simulated = rt.simulated(); e.counted = counted; e.requestedAt = now;
+        e.source = origin.source(); e.sourceHost = origin.host();
         executions.save(e);
         for (int i = 0; i < targetSkills.size(); i++) event(targetSkills.get(i), targetVersions.get(i).id, e, "EXECUTION_REQUESTED");
-        audit.log(user, "HUB_EXECUTION_REQUESTED", "hub-exec:" + e.id, targetType + " " + targetName + " [" + rt.kind() + (rt.simulated() ? ", 시뮬레이션" : "") + "]");
+        audit.log(user, "HUB_EXECUTION_REQUESTED", "hub-exec:" + e.id, targetType + " " + targetName + " [" + rt.kind() + (rt.simulated() ? ", 시뮬레이션" : "") + ", " + origin.source() + (origin.host() == null ? "" : " " + origin.host()) + "]");
 
         List<String> instructions = new ArrayList<>();
         for (int i = 0; i < targetVersions.size(); i++) instructions.add(BuiltinSkillSeeder.trusted(targetSkills.get(i)) ? BuiltinSkillSeeder.bundledMd(targetSkills.get(i).name, targetVersions.get(i).skillMd) : targetVersions.get(i).skillMd);
@@ -239,7 +249,7 @@ public class ExecutionService {
     private ExecutionView view(HubExecution e) {
         String name = e.skillId != null ? skills.findById(e.skillId).map(s -> s.name).orElse("?") : agentService.agent(e.agentId).name;
         return new ExecutionView(e.id, e.targetType, e.skillId, e.agentId, name, e.requester, e.input, e.status, e.runtimeKind, e.simulated, e.counted,
-                e.result, e.error, e.requestedAt, e.completedAt);
+                e.result, e.error, e.requestedAt, e.completedAt, e.source, e.sourceHost);
     }
 
     private static String sha(String s) {

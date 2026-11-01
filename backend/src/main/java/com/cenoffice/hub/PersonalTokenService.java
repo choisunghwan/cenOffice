@@ -22,7 +22,8 @@ import org.springframework.stereotype.Service;
 public class PersonalTokenService {
     public static final String PREFIX = "cen_pat_";
     public record Principal(String username, boolean admin) {}
-    public record TokenView(Long id, String name, String prefix, Instant createdAt, Instant expiresAt, Instant lastUsedAt, boolean revoked, boolean expired) {}
+    public static final String SCOPE_MCP = "MCP", SCOPE_NAVI = "NAVI";
+    public record TokenView(Long id, String name, String prefix, Instant createdAt, Instant expiresAt, Instant lastUsedAt, boolean revoked, boolean expired, String scope) {}
     public record Created(TokenView token, String secret) {}
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -37,7 +38,11 @@ public class PersonalTokenService {
         catch (Exception e) { throw new IllegalStateException(e); }
     }
 
-    public Created create(String owner, String name, Integer days) {
+    public Created create(String owner, String name, Integer days) { return create(owner, name, days, null); }
+
+    public Created create(String owner, String name, Integer days, String scope) {
+        String sc = scope == null || scope.isBlank() ? SCOPE_MCP : scope.strip().toUpperCase();
+        if (!sc.equals(SCOPE_MCP) && !sc.equals(SCOPE_NAVI)) throw new ApiException(HttpStatus.BAD_REQUEST, "알 수 없는 토큰 종류입니다");
         String n = name == null ? "" : name.strip();
         if (n.isEmpty() || n.length() > 64) throw new ApiException(HttpStatus.BAD_REQUEST, "토큰 이름은 1~64자여야 합니다");
         if (tokens.countByOwnerAndRevokedFalse(owner) >= 10) throw new ApiException(HttpStatus.BAD_REQUEST, "토큰은 최대 10개까지 만들 수 있습니다. 사용하지 않는 토큰을 폐기하세요");
@@ -46,10 +51,10 @@ public class PersonalTokenService {
         RANDOM.nextBytes(b);
         String secret = PREFIX + HexFormat.of().formatHex(b);
         var t = new HubToken();
-        t.owner = owner; t.name = n; t.tokenHash = hash(secret); t.tokenPrefix = secret.substring(0, PREFIX.length() + 4);
+        t.owner = owner; t.name = n; t.scope = sc; t.tokenHash = hash(secret); t.tokenPrefix = secret.substring(0, PREFIX.length() + 4);
         t.createdAt = Instant.now(); t.expiresAt = t.createdAt.plus(Duration.ofDays(d));
         t = tokens.save(t);
-        audit.log(owner, "HUB_TOKEN_CREATED", "hub-token:" + t.id, n);
+        audit.log(owner, "HUB_TOKEN_CREATED", "hub-token:" + t.id, n + " [" + sc + "]");
         return new Created(view(t), secret);
     }
 
@@ -62,11 +67,11 @@ public class PersonalTokenService {
         audit.log(owner, "HUB_TOKEN_REVOKED", "hub-token:" + id, t.name);
     }
 
-    /** 유효한 토큰이면 소유자 정보를 돌려준다(폐기·만료·알 수 없는 토큰·삭제된 계정은 empty). */
-    public Optional<Principal> authenticate(String raw) {
+    /** 유효한 토큰이면 소유자 정보를 돌려준다(폐기·만료·알 수 없는 토큰·삭제된 계정·다른 범위의 토큰은 empty). */
+    public Optional<Principal> authenticate(String raw, String scope) {
         if (raw == null || !raw.startsWith(PREFIX) || raw.length() > 128) return Optional.empty();
         var t = tokens.findByTokenHash(hash(raw)).orElse(null);
-        if (t == null || t.revoked || t.expiresAt.isBefore(Instant.now())) return Optional.empty();
+        if (t == null || t.revoked || t.expiresAt.isBefore(Instant.now()) || !scope.equals(t.scope)) return Optional.empty();
         var u = users.findByUsername(t.owner).orElse(null);
         if (u == null) return Optional.empty();
         if (t.lastUsedAt == null || t.lastUsedAt.isBefore(Instant.now().minusSeconds(60))) { t.lastUsedAt = Instant.now(); tokens.save(t); }
@@ -74,6 +79,6 @@ public class PersonalTokenService {
     }
 
     private TokenView view(HubToken t) {
-        return new TokenView(t.id, t.name, t.tokenPrefix + "…", t.createdAt, t.expiresAt, t.lastUsedAt, t.revoked, t.expiresAt.isBefore(Instant.now()));
+        return new TokenView(t.id, t.name, t.tokenPrefix + "…", t.createdAt, t.expiresAt, t.lastUsedAt, t.revoked, t.expiresAt.isBefore(Instant.now()), t.scope);
     }
 }

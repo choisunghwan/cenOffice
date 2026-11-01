@@ -26,7 +26,7 @@ export function ConnectPage() {
   const tokens = useLoad(() => hub.tokens(), [])
   const [name, setName] = useState('내 PC')
   const [secret, setSecret] = useState<string | null>(null)
-  const [tool, setTool] = useState<'claude' | 'codex'>('claude')
+  const [tool, setTool] = useState<'claude' | 'codex' | 'navi'>('claude')
   const [tokErr, setTokErr] = useState<string | null>(null)
 
   useEffect(() => { startTourOnce('connect') }, [])
@@ -37,14 +37,18 @@ export function ConnectPage() {
   }
   const create = async () => {
     setTokErr(null)
-    try { const r = await hub.createToken(name.trim(), 90); setSecret(r.secret); tokens.reload() } catch (e) { setTokErr(errMsg(e)) }
+    try { const r = await hub.createToken(name.trim(), 90, tool === 'navi' ? 'NAVI' : 'MCP'); setSecret(r.secret); tokens.reload() } catch (e) { setTokErr(errMsg(e)) }
   }
   const revoke = async (id: number) => {
     setTokErr(null)
     try { await hub.revokeToken(id); tokens.reload() } catch (e) { setTokErr(errMsg(e)) }
   }
   const tok = secret ?? '<1단계에서 만든 토큰>'
-  const command = tool === 'claude'
+  const pick = (t: 'claude' | 'codex' | 'navi') => { if ((t === 'navi') !== (tool === 'navi')) setSecret(null); setTool(t) } // CenNavi 토큰과 AI 도구 토큰은 종류가 달라 섞어 쓰지 않는다
+  const command = tool === 'navi'
+    ? `서버 주소: ${API_URL}
+토큰: ${tok}`
+    : tool === 'claude'
     ? `claude mcp add --scope user --transport http cen-ai-hub ${MCP_URL} --header "Authorization: Bearer ${tok}"`
     : `[mcp_servers.cen-ai-hub]\nurl = "${MCP_URL}"\nbearer_token_env_var = "CEN_AI_HUB_TOKEN"\n# 환경변수 CEN_AI_HUB_TOKEN 에 만든 토큰을 넣어 두세요`
   const active = tokens.data?.filter((t) => !t.revoked && !t.expired).length ?? 0
@@ -69,11 +73,12 @@ export function ConnectPage() {
 
       <div data-coach="connect-cmd"><Card title="2단계. 명령 복사해서 붙여 넣기">
         <div className="flex gap-2 mb-3" role="group" aria-label="사용할 도구">
-          <Btn small tone={tool === 'claude' ? 'primary' : 'ghost'} onClick={() => setTool('claude')}>Claude Code</Btn>
-          <Btn small tone={tool === 'codex' ? 'primary' : 'ghost'} onClick={() => setTool('codex')}>Codex</Btn>
+          <Btn small tone={tool === 'claude' ? 'primary' : 'ghost'} onClick={() => pick('claude')}>Claude Code</Btn>
+          <Btn small tone={tool === 'codex' ? 'primary' : 'ghost'} onClick={() => pick('codex')}>Codex</Btn>
+          <Btn small tone={tool === 'navi' ? 'primary' : 'ghost'} onClick={() => pick('navi')}>CenNavi</Btn>
         </div>
         <Cmd text={command} disabled={!secret} />
-        <p className="text-xs text-slate-400 mt-2">{tool === 'claude' ? '터미널(PowerShell)에 붙여 넣고 Enter. 끝나면 Claude Code(VS Code 는 창 새로 고침)를 새로 시작하세요. 어느 폴더에서 열어도 보이도록 내 계정 전체에 등록합니다.' : '~/.codex/config.toml 파일에 붙여 넣고 Codex 를 새로 시작하세요.'} 토큰을 만들기 전에는 복사 버튼이 꺼져 있습니다.</p>
+        <p className="text-xs text-slate-400 mt-2">{tool === 'navi' ? 'CenNavi 확장 설정의 ‘OFFICE 연결’에 서버 주소와 토큰을 붙여 넣으세요. 이 토큰은 CenNavi에서 도구를 실행하는 데만 쓰이며 Claude Code 연결에는 쓸 수 없습니다.' : tool === 'claude' ? '터미널(PowerShell)에 붙여 넣고 Enter. 끝나면 Claude Code(VS Code 는 창 새로 고침)를 새로 시작하세요. 어느 폴더에서 열어도 보이도록 내 계정 전체에 등록합니다.' : '~/.codex/config.toml 파일에 붙여 넣고 Codex 를 새로 시작하세요.'} 토큰을 만들기 전에는 복사 버튼이 꺼져 있습니다.</p>
       </Card></div>
 
       <Card title="3단계. AI 에게 말해 보기">

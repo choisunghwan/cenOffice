@@ -227,7 +227,7 @@ export function RunTab({ target, runtimeReady, approved, runtime }: { target: { 
         )}
       </Card>
       {hist.data && hist.data.items.length > 0 && (
-        <Card title="내 실행 이력"><ul className="text-xs space-y-1">{hist.data.items.map((e) => <li key={e.id}><span className="text-slate-500">{fmtTime(e.requestedAt)}</span> · {e.status}{e.simulated ? ' (시뮬레이션)' : ''} — {e.input?.slice(0, 50)}</li>)}</ul></Card>
+        <Card title="내 실행 이력"><ul className="text-xs space-y-1">{hist.data.items.map((e) => <li key={e.id}><span className="text-slate-500">{fmtTime(e.requestedAt)}</span> · {e.status}{e.simulated ? ' (시뮬레이션)' : ''}{e.source === 'CENNAVI' ? ` · CenNavi에서 시작${e.sourceHost ? ` (${e.sourceHost})` : ''}` : e.source === 'MCP' ? ' · AI 도구에서 시작' : ''} — {e.input?.slice(0, 50)}</li>)}</ul></Card>
       )}
     </div>
   )

@@ -17,6 +17,8 @@ public class HubToken {
     public Instant expiresAt;
     public Instant lastUsedAt;
     public boolean revoked;
+    /** MCP = Claude Code 등(/mcp), NAVI = CenNavi 확장(/api/ext). 다른 범위의 입구에서는 쓸 수 없다. */
+    public String scope = "MCP";
 
     public HubToken() {}
 }

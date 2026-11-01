@@ -28,9 +28,10 @@ public class McpController {
     private final SkillService skills;
     private final ExecutionService executions;
     private final ObjectMapper json;
+    private final ExposedTools catalog;
 
-    public McpController(PersonalTokenService tokens, SkillService skills, ExecutionService executions, ObjectMapper json) {
-        this.tokens = tokens; this.skills = skills; this.executions = executions; this.json = json;
+    public McpController(PersonalTokenService tokens, SkillService skills, ExecutionService executions, ObjectMapper json, ExposedTools catalog) {
+        this.tokens = tokens; this.skills = skills; this.executions = executions; this.json = json; this.catalog = catalog;
     }
 
     @RequestMapping(value = "/mcp", method = {RequestMethod.GET, RequestMethod.DELETE})
@@ -41,7 +42,7 @@ public class McpController {
                                  @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origin) {
         if (origin != null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 브라우저 출처 요청 차단(DNS rebinding 방지)
         String raw = auth != null && auth.regionMatches(true, 0, "Bearer ", 0, 7) ? auth.substring(7).trim() : null;
-        var who = tokens.authenticate(raw).orElse(null);
+        var who = tokens.authenticate(raw, PersonalTokenService.SCOPE_MCP).orElse(null);
         if (who == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header(HttpHeaders.WWW_AUTHENTICATE, "Bearer").build();
         if (!req.isObject()) return ResponseEntity.ok(error(null, -32600, "Invalid Request"));
         String method = req.path("method").asText("");
@@ -84,19 +85,7 @@ public class McpController {
     }
 
     /** 이 사용자가 MCP 로 쓸 수 있는 승인된 도구(tools/list 와 prompts/list 가 같은 목록을 쓴다). */
-    private List<SkillSummary> exposed(PersonalTokenService.Principal who) {
-        List<SkillSummary> out = new ArrayList<>();
-        int page = 0;
-        while (page < 10) {
-            var res = skills.search(new SkillService.SearchQuery(null, null, null, null, "APPROVED", false, null, page++, 100), who.username(), who.admin());
-            for (SkillSummary s : res.items()) {
-                if (s.sample() || !s.name().matches("[A-Za-z0-9_-]{1,64}")) continue;
-                out.add(s);
-            }
-            if (res.items().size() < 100) break;
-        }
-        return out;
-    }
+    private List<SkillSummary> exposed(PersonalTokenService.Principal who) { return catalog.exposed(who); }
 
     private ArrayNode tools(PersonalTokenService.Principal who) {
         ArrayNode arr = json.createArrayNode();
@@ -153,7 +142,7 @@ public class McpController {
         ObjectNode result = json.createObjectNode();
         ArrayNode content = result.putArray("content");
         try {
-            var started = executions.request(who.username(), who.admin(), new ExecuteRequest(s.id, null, input, engine.isBlank() ? null : engine));
+            var started = executions.request(who.username(), who.admin(), new ExecuteRequest(s.id, null, input, engine.isBlank() ? null : engine), new ExecutionService.Origin("MCP", null));
             Instant deadline = Instant.now().plus(WAIT);
             ExecutionView v = started;
             while (!List.of("SUCCEEDED", "FAILED", "CANCELLED").contains(v.status()) && Instant.now().isBefore(deadline)) {

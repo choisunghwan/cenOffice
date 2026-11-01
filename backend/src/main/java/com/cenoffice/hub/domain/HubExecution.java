@@ -29,6 +29,9 @@ public class HubExecution {
     public Instant requestedAt;
     public Instant startedAt;
     public Instant completedAt;
+    /** 실행을 시작한 곳: WEB / MCP / CENNAVI. sourceHost 는 CenNavi 에서 선택한 글이 있던 사이트의 도메인(전체 주소는 저장하지 않는다). */
+    public String source = "WEB";
+    public String sourceHost;
 
     public HubExecution() {}
 }

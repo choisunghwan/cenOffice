@@ -62,7 +62,7 @@ public final class HubDtos {
 
     public record ExecutionView(String id, String targetType, Long skillId, Long agentId, String targetName, String requester, String input,
                                 String status, String runtimeKind, boolean simulated, boolean counted, String result, String error,
-                                Instant requestedAt, Instant completedAt) {}
+                                Instant requestedAt, Instant completedAt, String source, String sourceHost) {}
 
     // ── KPI ──
     public record Overview(long skills, long approvedSkills, long agents, long executionsThisMonth, long activeUsers,

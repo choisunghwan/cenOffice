@@ -3,7 +3,7 @@ import { ApiError, API_URL, tokenStore } from './api'
 /** AI HUB API 클라이언트 (기존 api.ts 의 토큰/오류 규칙을 재사용) */
 
 export interface HubPage<T> { items: T[]; total: number; page: number; size: number }
-export interface HubToken { id: number; name: string; prefix: string; createdAt: string; expiresAt: string; lastUsedAt?: string; revoked: boolean; expired: boolean }
+export interface HubToken { id: number; name: string; prefix: string; createdAt: string; expiresAt: string; lastUsedAt?: string; revoked: boolean; expired: boolean; scope?: 'MCP' | 'NAVI' }
 export interface HubCategory { code: string; name: string }
 export interface HubSkillSummary {
   id: number; name: string; description: string; category: string; categoryName: string; icon?: string; visibility: 'PUBLIC' | 'TEAM'; team?: string
@@ -32,7 +32,7 @@ export interface HubAgentDetail {
 }
 export interface HubExecution {
   id: string; targetType: 'SKILL' | 'AGENT'; skillId?: number; agentId?: number; targetName: string; requester: string; input?: string
-  status: string; runtimeKind: string; simulated: boolean; counted: boolean; result?: string; error?: string; requestedAt: string; completedAt?: string
+  status: string; runtimeKind: string; simulated: boolean; counted: boolean; result?: string; error?: string; requestedAt: string; completedAt?: string; source?: 'WEB' | 'MCP' | 'CENNAVI'; sourceHost?: string
 }
 export interface HubExclusions { simulated: number; creatorSelf: number; sample: number }
 export interface HubCounts { requests: number; succeeded: number; failed: number; uniqueUsers: number; repeatUsers: number; last7d: number; last30d: number }
@@ -178,7 +178,7 @@ export const hub = {
   approveAgent: (id: number, comment?: string) => req<HubAgentDetail>(`/api/hub/agents/${id}/approve`, { method: 'POST', body: JSON.stringify({ comment }) }),
   rejectAgent: (id: number, comment: string) => req<HubAgentDetail>(`/api/hub/agents/${id}/reject`, { method: 'POST', body: JSON.stringify({ comment }) }),
   tokens: () => req<HubToken[]>('/api/hub/tokens'),
-  createToken: (name: string, days: number) => req<{ token: HubToken; secret: string }>('/api/hub/tokens', { method: 'POST', body: JSON.stringify({ name, days }) }),
+  createToken: (name: string, days: number, scope: 'MCP' | 'NAVI' = 'MCP') => req<{ token: HubToken; secret: string }>('/api/hub/tokens', { method: 'POST', body: JSON.stringify({ name, days, scope }) }),
   revokeToken: (id: number) => req<void>(`/api/hub/tokens/${id}`, { method: 'DELETE' }),
   aiEngine: () => req<{ available: boolean; provider: string; external: boolean; notice: string }>('/api/hub/ai-engine'),
   execute: (b: { skillId?: number; agentId?: number; input: string; engine?: 'rule' | 'ai' }) => req<HubExecution>('/api/hub/executions', { method: 'POST', body: JSON.stringify(b) }),

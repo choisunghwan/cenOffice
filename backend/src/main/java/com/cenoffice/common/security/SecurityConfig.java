@@ -75,11 +75,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/signup", "/ws/**").permitAll() // /ws 는 핸드셰이크 인터셉터가 토큰을 검증
-                        .requestMatchers("/mcp").permitAll() // /mcp 는 컨트롤러가 개인 액세스 토큰(cen_pat_)을 직접 검증
+                        .requestMatchers("/mcp", "/api/ext/**").permitAll() // 컨트롤러가 개인 액세스 토큰(cen_pat_)을 직접 검증
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(converter))
                         .bearerTokenResolver(request -> {
-                            if ("/mcp".equals(request.getRequestURI())) return null; // 개인 액세스 토큰은 JWT 가 아니므로 JWT 필터가 파싱하지 않게 한다
+                            if ("/mcp".equals(request.getRequestURI()) || request.getRequestURI().startsWith("/api/ext/")) return null; // 개인 액세스 토큰은 JWT 가 아니므로 JWT 필터가 파싱하지 않게 한다
                             return new org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver().resolve(request);
                         }));
         return http.build();
@@ -93,6 +93,13 @@ public class SecurityConfig {
         c.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
         c.setExposedHeaders(java.util.List.of("Content-Disposition")); // 다운로드 파일명을 브라우저(다른 출처)가 읽을 수 있게
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
+        // CenNavi 확장 전용 입구: 확장 출처만 CORS 를 통과시키고(웹 출처는 거부), 세부 허용 목록은 ExtController 가 다시 검사한다.
+        // 먼저 등록한 설정이 우선하므로 더 좁은 /api/ext/** 를 /api/** 보다 앞에 둔다.
+        CorsConfiguration ext = new CorsConfiguration();
+        ext.setAllowedOriginPatterns(java.util.List.of("chrome-extension://*"));
+        ext.setAllowedMethods(java.util.List.of("GET", "POST", "OPTIONS"));
+        ext.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
+        s.registerCorsConfiguration("/api/ext/**", ext);
         s.registerCorsConfiguration("/api/**", c);
         return s;
     }
