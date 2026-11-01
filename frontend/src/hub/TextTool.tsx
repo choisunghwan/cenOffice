@@ -1,8 +1,8 @@
 import { DocumentContent } from './DocumentContent'
 import { useEffect, useRef, useState } from 'react'
-import { hub, type HubExecution } from '../hubApi'
+import { hub, sourceLabel, type HubExecution } from '../hubApi'
 import { ExportButtons } from './ExportButtons'
-import { Btn, Card, ErrorNote, Textarea, errMsg, useLoad } from '../workspace/kit'
+import { Btn, Card, ErrorNote, Textarea, errMsg, fmtTime, useLoad } from '../workspace/kit'
 
 export const TEXT_TOOLS: Record<string, { title: string; label: string; placeholder: string; sample: string }> = {
   'cen-log-analyzer': {
@@ -71,6 +71,7 @@ export function TextTool({ skillId, name }: { skillId: number; name: string }) {
   const ai = useLoad(() => hub.aiEngine().catch(() => null), [])
   const [engine, setEngine] = useState<'rule' | 'ai'>('rule')
   const aiInfo = ai.data && ai.data.available ? ai.data : null
+  const hist = useLoad(() => hub.executions(skillId).catch(() => null), [skillId, execution?.status])
   const running = !!execution && !['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(execution.status)
 
   useEffect(() => {
@@ -122,6 +123,13 @@ export function TextTool({ skillId, name }: { skillId: number; name: string }) {
           <p role="status" className="text-sm text-sky-200 mb-4">{running ? '처리 중' : execution.status === 'SUCCEEDED' ? (execution.runtimeKind === 'llm' ? '초안 생성 완료 · AI 가 만든 결과이므로 사실과 수치를 검토하세요.' : '초안 생성 완료 · 규칙 기반 결과이므로 검토가 필요합니다.') : '처리하지 못했습니다.'}</p>
           {execution.result && <div className="builtin-result"><DocumentContent text={execution.result} /></div>}
           {execution.error && <p role="alert" className="text-red-300">{execution.error}</p>}
+        </Card>
+      )}
+      {hist.data && hist.data.items.length > 0 && (
+        <Card title="내 실행 이력">
+          <ul className="text-xs space-y-1">{hist.data.items.slice(0, 5).map((e) => (
+            <li key={e.id}><span className="text-slate-500">{fmtTime(e.requestedAt)}</span> · {e.status}{sourceLabel(e) ? ` · ${sourceLabel(e)}` : ''} — {e.input?.slice(0, 40)}</li>
+          ))}</ul>
         </Card>
       )}
     </div>

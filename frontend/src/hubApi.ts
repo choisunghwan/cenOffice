@@ -30,6 +30,10 @@ export interface HubAgentDetail {
   summary: HubAgentSummary; config?: string; skills: { skillId: number; name: string; icon?: string; status: string }[]
   versions: { id: number; version: number; createdBy: string; createdAt: string }[]; canEdit: boolean; canApprove: boolean; runtime: HubRuntime
 }
+/** 실행을 시작한 곳을 사람이 읽는 문구로 (WEB 은 표시하지 않는다) */
+export const sourceLabel = (e: { source?: string; sourceHost?: string }) =>
+  e.source === 'CENNAVI' ? `CenNavi에서 시작${e.sourceHost ? ` (${e.sourceHost})` : ''}` : e.source === 'MCP' ? 'AI 도구에서 시작' : ''
+
 export interface HubExecution {
   id: string; targetType: 'SKILL' | 'AGENT'; skillId?: number; agentId?: number; targetName: string; requester: string; input?: string
   status: string; runtimeKind: string; simulated: boolean; counted: boolean; result?: string; error?: string; requestedAt: string; completedAt?: string; source?: 'WEB' | 'MCP' | 'CENNAVI'; sourceHost?: string
