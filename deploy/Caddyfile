@@ -13,6 +13,10 @@
 	handle /ws* {
 		reverse_proxy backend:8080
 	}
+	# AI 에 연결(MCP) 주소
+	handle /mcp {
+		reverse_proxy backend:8080
+	}
 
 	handle {
 		root * /srv

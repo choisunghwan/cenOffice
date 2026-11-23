@@ -1,0 +1,18 @@
+# 저장소 최상위를 빌드 위치로 쓰는 이미지(deploy/render/Dockerfile)에서 제외할 것
+.git/
+.tools/
+graft/
+docs/
+발표/
+assets/
+logo/
+**/node_modules/
+**/dist/
+**/target/
+**/data/
+**/*.log
+**/*.err
+.env
+.env.*
+backend/.local-*
+backend/.meeting-local.properties

@@ -1,0 +1,53 @@
+# Render Blueprint: Render 대시보드 > New > Blueprint 에서 이 저장소를 고르면 아래가 한 번에 만들어집니다.
+# 안내: deploy/render/README.md
+# 화상 회의 서버(LiveKit)는 Render 에서 돌릴 수 없어(UDP 필요) LiveKit Cloud 를 씁니다.
+
+databases:
+  - name: cenhub-db
+    databaseName: cenhub
+    user: cenhub
+    plan: free          # 무료 DB 는 생성 30일 뒤 만료됩니다. 실제 사용 전 basic 이상으로 올리세요
+    region: singapore
+
+services:
+  - type: web
+    name: cenhub        # 주소: https://cenhub.onrender.com (이미 쓰인 이름이면 뒤에 임의 문자가 붙습니다)
+    runtime: docker
+    dockerfilePath: ./deploy/render/Dockerfile
+    dockerContext: .
+    plan: free          # 무료는 15분간 접속이 없으면 잠듭니다. 회의 중 끊기지 않으려면 starter 이상
+    region: singapore
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: DB_HOST
+        fromDatabase: { name: cenhub-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: cenhub-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: cenhub-db, property: database }
+      - key: DB_USER
+        fromDatabase: { name: cenhub-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: cenhub-db, property: password }
+      - key: JWT_SECRET
+        generateValue: true
+      # 처음 생성되는 계정 비밀번호: Render 가 임의로 만들고, 대시보드 Environment 에서 볼 수 있습니다
+      - key: OFFICE_ADMIN_PASSWORD
+        generateValue: true
+      - key: OFFICE_USER_PASSWORD
+        generateValue: true
+      # 화상 회의: LiveKit Cloud 프로젝트 값 (만들 때 입력, 비워 두면 회의 화상 기능만 꺼짐)
+      - key: LIVEKIT_URL          # 예: wss://cenhub-xxxx.livekit.cloud
+        sync: false
+      - key: LIVEKIT_API_URL      # 예: https://cenhub-xxxx.livekit.cloud
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      # 선택: AI · 메일
+      - key: LLM_PROVIDER
+        value: mock
+      - key: EXT_ALLOWED_ORIGINS
+        sync: false

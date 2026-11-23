@@ -1,4 +1,5 @@
-export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+// 백엔드 주소. 빌드 때 VITE_API_URL 을 주지 않은 운영 빌드는 화면과 같은 주소(백엔드가 화면도 함께 제공하는 Render 배포)를 쓴다.
+export const API_URL: string = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? window.location.origin : 'http://localhost:8080')
 const WS_URL = API_URL.replace(/^http/, 'ws') + '/ws'
 const TOKEN_KEY = 'cen.token'
 
