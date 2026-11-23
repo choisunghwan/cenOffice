@@ -1,0 +1,108 @@
+# CEN HUB 운영 배포 (서버 1대)
+# 사용법: deploy 폴더에서 .env 를 만든 뒤  docker compose up -d --build
+# 구성: caddy(HTTPS + 화면) → backend(Spring Boot) → postgres,  caddy → livekit(화상 회의)
+
+name: cenhub
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cenhub
+      POSTGRES_USER: cenhub
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 를 .env 에 넣어 주세요}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cenhub -d cenhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_FORWARD_HEADERS_STRATEGY: native   # 접속자 IP 를 Caddy 가 넘겨 준 값으로 기록
+      APP_ENV: PROD
+      DB_URL: jdbc:postgresql://postgres:5432/cenhub
+      DB_USER: cenhub
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 을 .env 에 넣어 주세요}
+      OFFICE_ADMIN_PASSWORD: ${OFFICE_ADMIN_PASSWORD:?OFFICE_ADMIN_PASSWORD 를 .env 에 넣어 주세요}
+      OFFICE_USER_PASSWORD: ${OFFICE_USER_PASSWORD:?OFFICE_USER_PASSWORD 를 .env 에 넣어 주세요}
+      CORS_ORIGINS: https://${APP_DOMAIN}
+      APP_BASE_URL: https://${APP_DOMAIN}
+      EXT_ALLOWED_ORIGINS: ${EXT_ALLOWED_ORIGINS:-}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_URL: wss://${MEET_DOMAIN}          # 브라우저가 접속할 회의 주소
+      LIVEKIT_API_URL: http://livekit:7880       # 백엔드가 내부에서 부르는 주소
+      # 선택: 메일 알림
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # 선택: AI
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+
+  livekit:
+    image: livekit/livekit-server:v1.13.10   # 로컬(.tools)과 같은 버전
+    restart: unless-stopped
+    environment:
+      # livekit-server 는 LIVEKIT_CONFIG 환경변수를 설정 파일 내용으로 읽는다
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+          use_external_ip: true
+        turn:
+          enabled: true
+          domain: ${MEET_DOMAIN}
+          udp_port: 3478
+        keys:
+          ${LIVEKIT_API_KEY:?LIVEKIT_API_KEY 를 .env 에 넣어 주세요}: ${LIVEKIT_API_SECRET:?LIVEKIT_API_SECRET 을 .env 에 넣어 주세요}
+        logging:
+          level: info
+    ports:
+      - "7881:7881/tcp"   # 영상·음성 (UDP 가 막힌 경우)
+      - "7882:7882/udp"   # 영상·음성
+      - "3478:3478/udp"   # TURN (방화벽 뒤 참석자용)
+
+  web:
+    build:
+      context: ../frontend
+      args:
+        VITE_API_URL: https://${APP_DOMAIN:?APP_DOMAIN 을 .env 에 넣어 주세요}
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - livekit
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      MEET_DOMAIN: ${MEET_DOMAIN:?MEET_DOMAIN 을 .env 에 넣어 주세요}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL 을 .env 에 넣어 주세요}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

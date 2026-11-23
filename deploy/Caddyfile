@@ -1,0 +1,38 @@
+# Caddy: 도메인 HTTPS 인증서(Let's Encrypt)를 자동으로 받고 갱신한다.
+{
+	email {$ACME_EMAIL}
+}
+
+# 업무 화면 + API
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+	handle /ws* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		root * /srv
+		# 새 배포 후 화면이 바로 바뀌도록 index.html 은 캐시하지 않고, 해시가 붙은 파일만 길게 캐시
+		@assets path /assets/*
+		@pages not path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
+
+# 화상 회의(LiveKit) 신호 연결
+{$MEET_DOMAIN} {
+	reverse_proxy livekit:7880
+}

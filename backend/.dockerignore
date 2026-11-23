@@ -1,0 +1,6 @@
+target/
+data/
+*.log
+*.err
+.local-*
+.meeting-local.properties
