@@ -187,6 +187,8 @@ export function connectRealtime(
     }
     ws.onclose = (ev) => {
       if (current === ws) current = null
+      // 화면이 정리(cleanup)되며 닫은 이전 연결의 종료 신호는 무시한다. 개발 모드(StrictMode)의 이중 연결에서 새 연결이 이전 연결을 4001로 닫을 때 '교체됨' 안내가 잘못 뜨던 문제
+      if (closed) return
       // 같은 계정으로 다른 곳에서 접속하면 서버가 4001 로 이 연결을 종료한다 → 자동 재접속하지 않는다(서로 쫓아내기 방지)
       if (ev.code === 4001) { closed = true; onState('replaced'); return }
       onState('offline')

@@ -11,12 +11,16 @@ const CalendarPage = lazy(() => import('../calendar/CalendarPage').then(m => ({ 
 
 const HomePage = lazy(() => import('../home/HomePage').then(m => ({ default: m.HomePage })))
 
-const MENU = [
+// 시연·화면 캡처용: 사이드바에서 숨길 메뉴 key 목록. 비우면(= []) 모두 보인다. 화면의 버튼만 가리며 기능·주소는 그대로다.
+const HIDDEN_MENU: string[] = []
+
+const ALL_MENU = [
   { key: 'dashboard', label: '홈', icon: '⌂' },
   { key: 'calendar', label: '일정', icon: '▦' },
   { key: 'meetings', label: '회의', icon: '◉' },
   { key: 'home', label: '도구', icon: '✧' },
 ]
+const MENU = ALL_MENU.filter((m) => !HIDDEN_MENU.includes(m.key))
 const MORE = [
   { key: 'settings', label: '설정' },
 ]

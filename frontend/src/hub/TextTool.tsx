@@ -112,7 +112,7 @@ export function TextTool({ skillId, name }: { skillId: number; name: string }) {
           </fieldset>
         )}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
-          <Btn disabled={busy || running || !input.trim()} onClick={() => void run()}>{busy || running ? '처리 중…' : '정리하기'}</Btn>
+          <Btn disabled={busy || running || !input.trim()} onClick={() => void run()}>{busy || running ? '처리 중…' : '실행하기'}</Btn>
           <Btn tone="ghost" disabled={busy || running} onClick={() => { setInput(cfg.sample); setExecution(null) }}>예시 입력 넣기</Btn>
           <span className="text-xs text-slate-400">{input.length.toLocaleString()} / 15,000자 {engine === 'ai' && aiInfo ? '· AI 모델로 처리합니다.' : '· 서버 안에서만 처리되며 외부로 전송되지 않습니다.'}</span>
         </div>
