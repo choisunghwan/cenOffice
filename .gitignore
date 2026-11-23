@@ -35,6 +35,7 @@ backend/data/
 
 # 내부 문서 (저장소에 올리지 않음)
 docs/
+발표/
 backend/.local-db.txt
 backend/.local-mail.txt
 
