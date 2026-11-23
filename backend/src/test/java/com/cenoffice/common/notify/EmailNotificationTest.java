@@ -97,7 +97,7 @@ class EmailNotificationTest {
         var sent = captor.getValue();
         assertEquals("guest@example.com", sent.getTo()[0]);
         assertEquals("cen@test.local", sent.getFrom());
-        assertTrue(sent.getSubject().startsWith("[CEN OFFICE]"));
+        assertTrue(sent.getSubject().startsWith("[CEN HUB]"));
         assertTrue(sent.getText().contains("https://cen.test.local"));
         assertEquals("SENT", db.queryForObject("select status from email_outbox where username='user'", String.class));
         // 담당자로 지정된 사람은 "확정" 메일이 아니라 "할 일 지정" 메일 한 통만 받는다

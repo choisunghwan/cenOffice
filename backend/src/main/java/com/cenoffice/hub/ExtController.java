@@ -73,7 +73,7 @@ public class ExtController {
             throw new ApiException(HttpStatus.FORBIDDEN, "허용되지 않은 출처입니다");
         String raw = auth != null && auth.regionMatches(true, 0, "Bearer ", 0, 7) ? auth.substring(7).trim() : null;
         return tokens.authenticate(raw, PersonalTokenService.SCOPE_NAVI)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "CenNavi용 토큰이 필요합니다. OFFICE 'AI에 연결' 화면에서 CenNavi용 토큰을 만드세요"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "CenNavi용 토큰이 필요합니다. CEN HUB 'AI에 연결' 화면에서 CenNavi용 토큰을 만드세요"));
     }
 
     /** 사이트 도메인만 남긴다(경로·쿼리·사용자 정보는 버림). 형식이 맞지 않으면 기록하지 않는다. */

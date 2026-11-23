@@ -32,7 +32,7 @@ const args = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-str
     const [host,guest]=pages;
     await host.screenshot({path:path.join(out,'01-meetings.png')});
     const created=host.waitForResponse(r=>r.url().endsWith('/api/meetings') && r.request().method()==='POST');
-    await host.getByLabel('회의 이름',{exact:true}).fill('CEN OFFICE · 로컬 협업 시연');
+    await host.getByLabel('회의 이름',{exact:true}).fill('CEN HUB · 로컬 협업 시연');
     await host.getByRole('button',{name:'회의 만들기'}).click();
     const response=await created; assert.equal(response.status(),201);
     const meeting=await response.json();

@@ -51,7 +51,7 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
       <form onSubmit={submit} className="glass slide-in w-[min(380px,calc(100vw-2rem))] rounded-2xl p-6 space-y-4">
         <div className="text-center space-y-1">
           <img src="/itcen-logo.png" alt="ITCEN" className="h-6 mx-auto" draggable={false} />
-          <h1 className="font-bold tracking-[0.2em] text-sm pt-1">CEN OFFICE</h1>
+          <h1 className="font-bold tracking-[0.2em] text-sm pt-1">CEN HUB</h1>
           <p className="text-xs text-slate-400">
             {isSignup ? '사번으로 가입하면 바로 사용할 수 있습니다.' : '로그인하면 장비 제어·회의실 예약·서버 모니터링을 사용할 수 있습니다.'}
           </p>

@@ -95,7 +95,7 @@ export function MeetingsPage() {
   if (selected && grant) return <MeetingCall key={selected.id} meeting={selected} grant={grant} mic={mic} camera={camera} onLeave={leave} />
 
   return <section className="meetings-page">
-    <header className="meeting-page-heading"><div><p className="meeting-eyebrow">CEN OFFICE · MEETINGS</p><h1>함께 모이면, 일이 시작됩니다.</h1><p>동료를 초대하고, 얼굴을 보며 이야기하세요.</p></div><span className={`meeting-server ${available ? 'ready' : ''}`}><i />{available === null ? '연결 확인 중' : available ? '화상회의 준비 완료' : '화상회의 서버 연결 필요'}</span></header>
+    <header className="meeting-page-heading"><div><p className="meeting-eyebrow">CEN MEETING</p><h1>함께 모이면, 일이 시작됩니다.</h1><p>동료를 초대하고, 얼굴을 보며 이야기하세요.</p></div><span className={`meeting-server ${available ? 'ready' : ''}`}><i />{available === null ? '연결 확인 중' : available ? '화상회의 준비 완료' : '화상회의 서버 연결 필요'}</span></header>
     {error && <div className="meeting-alert" role="alert">{error}</div>}
     {notice && <div className="meeting-notice" role="status">{notice}</div>}
     {selected ? <div className="meeting-lobby">

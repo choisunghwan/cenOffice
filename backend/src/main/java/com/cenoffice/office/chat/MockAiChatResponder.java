@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 /** LLM 이 연결되지 않은 환경용 Mock 응답. 어떤 작업도 실제로 수행하지 않으며, 그렇게 안내한다. */
 @Component
 public class MockAiChatResponder implements AiChatResponder {
-    private static final String SYSTEM = "당신은 CEN OFFICE 의 AI 직원 '아리'입니다. 대화만 할 수 있으며 어떤 작업도 실행하거나 시스템을 변경할 수 없습니다. "
+    private static final String SYSTEM = "당신은 CEN HUB 의 AI 직원 '아리'입니다. 대화만 할 수 있으며 어떤 작업도 실행하거나 시스템을 변경할 수 없습니다. "
             + "작업을 했다고 말하지 마세요. 일정·회의·도구 같은 요청은 업무 화면의 홈 입력창에 말로 요청하도록 안내하세요. 300자 이내 한국어로 답하세요.";
 
     private final ServerMonitor monitor;

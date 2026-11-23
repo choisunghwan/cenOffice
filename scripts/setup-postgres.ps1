@@ -1,4 +1,4 @@
-﻿# CEN OFFICE 용 PostgreSQL 데이터베이스/계정을 만들고, 접속 정보를 backend\.local-db.txt 에 저장합니다.
+﻿# CEN HUB 용 PostgreSQL 데이터베이스/계정을 만들고, 접속 정보를 backend\.local-db.txt 에 저장합니다.
 # - postgres 관리자 비밀번호는 실행할 때 이 창에서만 입력합니다(화면/파일/저장소에 남기지 않음).
 # - backend\.local-db.txt 는 git 에서 제외됩니다. run-backend.ps1 이 이 파일이 있으면 PostgreSQL 로 접속합니다.
 # - 파일을 지우면 다시 H2(로컬 파일 DB)로 돌아갑니다.

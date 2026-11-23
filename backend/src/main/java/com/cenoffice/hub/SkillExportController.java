@@ -99,7 +99,7 @@ public class SkillExportController {
 
     private static String readme(List<String> names) {
         return """
-            # CEN OFFICE AI HUB — Skill 묶음
+            # CEN HUB — Skill 묶음
 
             포함된 Skill: %s
 

@@ -92,11 +92,11 @@ public class MailService {
         var u = users.findByUsername(username).orElse(null);
         if (u == null || u.getEmail() == null || !validEmail(u.getEmail()) || !u.isEmailNotify()) return;
         String text = oneLine(title) + "\n\n" + (body == null || body.isBlank() ? "" : oneLine(body) + "\n\n")
-            + "CEN OFFICE 에서 확인하세요: " + baseUrl + "\n\n"
-            + "이 메일은 CEN OFFICE 알림 설정에 따라 발송되었습니다. 받고 싶지 않으면 CEN OFFICE 의 알림(종 모양) > 이메일 설정에서 끌 수 있습니다.";
+            + "CEN HUB 에서 확인하세요: " + baseUrl + "\n\n"
+            + "이 메일은 CEN HUB 알림 설정에 따라 발송되었습니다. 받고 싶지 않으면 CEN HUB 의 알림(종 모양) > 이메일 설정에서 끌 수 있습니다.";
         Instant now = Instant.now();
         db.update("insert into email_outbox(username,to_email,kind,subject,body,status,attempts,next_attempt_at,created_at) values(?,?,?,?,?,'PENDING',0,?,?)",
-            username, u.getEmail(), cut(kind, 32), cut("[CEN OFFICE] " + oneLine(title), 300), text, Timestamp.from(now), Timestamp.from(now));
+            username, u.getEmail(), cut(kind, 32), cut("[CEN HUB] " + oneLine(title), 300), text, Timestamp.from(now), Timestamp.from(now));
     }
 
     /** 대기 중인 메일을 보낸다. 실패하면 점점 늦춰 최대 3번까지 다시 시도하고, 그래도 안 되면 FAILED 로 남긴다. */
@@ -138,7 +138,7 @@ public class MailService {
         if (prev != null && now.isBefore(prev.plusSeconds(30))) throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도하세요");
         lastTest.put(username, now);
         try {
-            send(u.getEmail(), "[CEN OFFICE] 시험 메일", "CEN OFFICE 이메일 알림이 정상적으로 설정되었습니다.\n\n회의록이 확정되거나 할 일이 지정되면 이 주소로 알려 드립니다.\n" + baseUrl);
+            send(u.getEmail(), "[CEN HUB] 시험 메일", "CEN HUB 이메일 알림이 정상적으로 설정되었습니다.\n\n회의록이 확정되거나 할 일이 지정되면 이 주소로 알려 드립니다.\n" + baseUrl);
         } catch (RuntimeException e) {
             log.warn("시험 메일 발송 실패({}): {}", username, describe(e));
             throw new ApiException(HttpStatus.BAD_GATEWAY, "메일을 보내지 못했습니다. SMTP 서버 주소·계정·앱 비밀번호 설정을 확인하세요");

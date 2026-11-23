@@ -90,7 +90,7 @@ class ExtApiTest {
         assertEquals("SUCCEEDED", done.get("status").asText());
         assertTrue(done.get("result").asText().contains("IllegalStateException"));
 
-        // OFFICE 웹의 실행 이력에도 같은 작업이 출처와 함께 보인다
+        // CEN HUB 웹의 실행 이력에도 같은 작업이 출처와 함께 보인다
         JsonNode hist = json.readTree(mvc.perform(get("/api/hub/executions").header("Authorization", "Bearer " + a.jwt())).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
         boolean listed = false;
         for (JsonNode e : hist.get("items")) if (e.get("id").asText().equals(id) && e.get("source").asText().equals("CENNAVI")) listed = true;

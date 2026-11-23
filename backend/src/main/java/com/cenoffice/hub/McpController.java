@@ -57,7 +57,7 @@ public class McpController {
                     caps.putObject("tools").put("listChanged", false);
                     caps.putObject("prompts").put("listChanged", false);
                     res.putObject("serverInfo").put("name", "cen-ai-hub").put("version", "1.0.0");
-                    res.put("instructions", "CEN OFFICE AI HUB 의 승인된 업무 도구입니다. 결과는 검토용 초안이며 개인정보·비밀번호는 입력하지 마세요.");
+                    res.put("instructions", "CEN HUB 의 승인된 업무 도구입니다. 결과는 검토용 초안이며 개인정보·비밀번호는 입력하지 마세요.");
                 }
                 case "ping" -> { }
                 case "tools/list" -> res.set("tools", tools(who));

@@ -64,7 +64,7 @@ export default function App() {
         className="glass absolute left-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-2 z-10 cursor-pointer hover:bg-white/10 transition">
         <img src="/itcen-logo.png" alt="" className="h-5 w-auto" draggable={false} />
         <span className="w-px h-4 bg-white/20" />
-        <span className="font-bold tracking-[0.2em] text-sm hidden sm:inline">CEN OFFICE</span>
+        <span className="font-bold tracking-[0.2em] text-sm hidden sm:inline">CEN HUB</span>
       </button>
 
       <div className="glass absolute left-1/2 -translate-x-1/2 top-4 h-[42px] rounded-xl p-1 flex items-center gap-1 z-20 text-xs font-semibold" role="tablist" aria-label="화면 모드">
