@@ -1,4 +1,4 @@
-﻿# CEN OFFICE 백엔드 실행 (Windows PowerShell)
+﻿# CEN HUB 백엔드 실행 (Windows PowerShell)
 # - 프로젝트 내 .tools 의 JDK 21 / Maven 이 있으면 사용, 없으면 시스템 java/mvn 사용
 # - OFFICE_ADMIN_PASSWORD / OFFICE_USER_PASSWORD 가 없으면 최초 1회 임의 생성해 backend\.local-credentials.txt 에 저장(git 제외)
 $root = Split-Path $PSScriptRoot -Parent
@@ -32,5 +32,14 @@ if (Test-Path $mailFile) {
 $env:OFFICE_SYNC_PASSWORDS = "true"
 # 개발용: AI 모델 실행 허용 (입력이 app.llm 의 LLM 서비스로 전송됨. 운영 적용 전 보안 승인 필요)
 if (-not $env:HUB_AI_ENGINE) { $env:HUB_AI_ENGINE = "true" }
+# 회의(화상) 미디어 서버(LiveKit) 접속 정보: scripts\start-local.ps1 이 만든 backend\.meeting-local.properties 를 읽는다. 없으면 회의 화상 기능만 동작하지 않는다.
+$lkFile = "$root\backend\.meeting-local.properties"
+if (Test-Path $lkFile) {
+  $lkMap = @{ 'livekit.api-key' = 'LIVEKIT_API_KEY'; 'livekit.api-secret' = 'LIVEKIT_API_SECRET'; 'livekit.url' = 'LIVEKIT_URL'; 'livekit.api-url' = 'LIVEKIT_API_URL' }
+  Get-Content $lkFile | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k -and $lkMap.ContainsKey($k) -and -not (Test-Path "env:$($lkMap[$k])")) { Set-Item "env:$($lkMap[$k])" $v } }
+  Write-Host '회의 미디어 서버(LiveKit) 설정: 적용됨'
+}
+# 개발용: GEMINI_API_KEY 가 있으면 회의 AI 센(질문 답변·요약)도 켠다. 질문과 동의한 참석자의 회의 기록이 Gemini 로 전송된다. 끄려면 MEETING_AI_ENABLED=false 로 실행.
+if (-not $env:MEETING_AI_ENABLED -and $env:GEMINI_API_KEY) { $env:MEETING_AI_ENABLED = "true"; Write-Host '회의 AI 센: 켜짐 (Gemini 사용)' }
 Set-Location "$root\backend"
 & $mvnCmd spring-boot:run
