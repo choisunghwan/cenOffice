@@ -26,7 +26,12 @@ public class MeetingMedia {
                         @Value("${livekit.url:${LIVEKIT_URL:ws://localhost:7880}}") String url,
                         @Value("${livekit.api-url:${LIVEKIT_API_URL:http://127.0.0.1:7880}}") String apiUrl,
                         ObjectMapper json) {
-        this.key=key; this.secret=secret; this.url=url; this.apiUrl=apiUrl; this.json=json;
+        // 대시보드에 붙여 넣을 때 들어간 공백을 지우고, API 주소를 wss:// 로 넣었어도 https:// 로 바꿔 쓴다
+        this.key=key.strip(); this.secret=secret.strip(); this.url=url.strip(); this.apiUrl=httpUrl(apiUrl.strip()); this.json=json;
+    }
+    static String httpUrl(String u) {
+        String r = u.replaceFirst("^(?i)wss://", "https://").replaceFirst("^(?i)ws://", "http://");
+        return r.endsWith("/") ? r.substring(0, r.length() - 1) : r;
     }
     public boolean configured() { return !key.isBlank() && secret.length() >= 32; }
     public record Grant(String url, String token) {}

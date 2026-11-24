@@ -23,4 +23,10 @@ class MeetingMediaTokenTest {
             assertEquals("cen-meeting",video.get("room"));
         }finally{server.stop(0);}
     }
+
+    @org.junit.jupiter.api.Test void apiUrlGivenAsWebSocketIsUsedAsHttps() {
+        org.junit.jupiter.api.Assertions.assertEquals("https://cenhub-x.livekit.cloud", MeetingMedia.httpUrl("wss://cenhub-x.livekit.cloud/"));
+        org.junit.jupiter.api.Assertions.assertEquals("http://127.0.0.1:7880", MeetingMedia.httpUrl("ws://127.0.0.1:7880"));
+        org.junit.jupiter.api.Assertions.assertEquals("https://a.livekit.cloud", MeetingMedia.httpUrl("https://a.livekit.cloud"));
+    }
 }
