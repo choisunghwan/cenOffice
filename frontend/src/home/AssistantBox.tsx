@@ -56,6 +56,7 @@ export function AssistantBox() {
   const [slashIdx, setSlashIdx] = useState(0)
   const [skill, setSkill] = useState<ToolPick | null>(null)
   const [creator, setCreator] = useState<{ msgs: { role: 'user' | 'assistant'; text: string }[] } | null>(null)
+  const creatorFirst = useRef<string | null>(null) // '/skill-creator 주간 보고서' 처럼 첫 말까지 함께 보낸 경우
   // 답변이 올 때마다 AI 가 대화를 보고 다음에 입력할 말을 만든다(AI 가 없거나 실패하면 규칙 기반 제안만 쓴다)
   const [aiNext, setAiNext] = useState<{ after: number; list: string[] }>({ after: -1, list: [] })
   const coarse = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches, [])
@@ -91,16 +92,14 @@ export function AssistantBox() {
   const send = async (raw?: string) => {
     const value = (raw ?? text).trim()
     if (!value || busy) return
+    if (value.startsWith('/') && raw === undefined) { setText(''); return void runSlash(value) }
     if (creator && raw === undefined) { setText(''); return void sendCreator(value) }
     if (skill && raw === undefined) {
-      // '/'로 고른 스킬: 고른 것 자체가 실행하겠다는 뜻이라 바로 실행한다
+      // '/스킬' 만 보내 대기 중인 스킬: 이번 말을 그 스킬로 처리한다
       setText('')
       const chosen = skill
       setSkill(null)
-      const mine: Turn = { id: nextId.current++, role: 'user', text: `/${chosen.title} ${value}` }
-      const bot: Turn = { id: nextId.current++, role: 'assistant', reply: bare('USE_TOOL', `‘${chosen.title}’ 스킬로 처리합니다.`), input: value, draft: null, ambiguous: [], tool: chosen, room: null, rooms: [], target: null, candidates: [], state: 'open' }
-      setTurns((cur) => [...cur, mine, bot].slice(-30))
-      void runTool(bot, chosen)
+      runSkill(chosen, value, value)
       return
     }
     setText('')
@@ -143,11 +142,11 @@ export function AssistantBox() {
   }
 
   /** 스킬 만들기 도우미와의 대화. 초안이 나오면 고치고 등록할 수 있는 카드로 보여 준다 */
-  const sendCreator = async (value: string) => {
+  const sendCreator = async (value: string, echoed = false) => {
     if (!creator) return
     const lastDraft = [...turns].reverse().find((t) => t.role === 'assistant' && t.skillMd)
     const msgs = [...creator.msgs, { role: 'user' as const, text: value }]
-    setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn].slice(-30))
+    if (!echoed) setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn].slice(-30))
     setBusy(true)
     try {
       const r = await hub.assist({ messages: msgs.slice(1), draft: lastDraft && lastDraft.role === 'assistant' ? lastDraft.skillMd : undefined })
@@ -171,18 +170,49 @@ export function AssistantBox() {
     } catch (e) { patch(t.id, { state: 'open', error: (e as Error).message }) }
   }
 
-  /** '/' 메뉴에서 스킬을 골랐다 */
-  const chooseSkill = (p: ToolPick) => {
-    setText('')
+  const say = (message: string, input = '') => setTurns((cur) => [...cur, { id: nextId.current++, role: 'assistant', reply: bare('ANSWER', message), input, draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open' } as Turn].slice(-30))
+  /** 스킬을 입력과 함께 바로 실행한다. shown: 대화에 남길 사용자의 말 */
+  const runSkill = (p: ToolPick, input: string, shown: string) => {
+    const mine: Turn = { id: nextId.current++, role: 'user', text: shown }
+    const bot: Turn = { id: nextId.current++, role: 'assistant', reply: bare('USE_TOOL', `‘${p.title}’ 스킬로 처리합니다.`), input, draft: null, ambiguous: [], tool: p, room: null, rooms: [], target: null, candidates: [], state: 'open' }
+    setTurns((cur) => [...cur, mine, bot].slice(-30))
+    void runTool(bot, p)
+  }
+  /** 스킬 만들기 도우미 대화를 연다. 첫 말이 함께 오면 바로 이어서 보낸다 */
+  const startCreator = (first: string) => {
+    setSkill(null)
+    setCreator({ msgs: [{ role: 'assistant', text: CREATOR_HELLO }] })
+    if (first) creatorFirst.current = first
+    else say(CREATOR_HELLO)
+  }
+  /**
+   * Claude Code 처럼 '/스킬이름 내용' 을 보낸다: 내용이 있으면 그 스킬로 바로 처리하고, 없으면 무엇을 처리할지 묻고 다음 말을 기다린다.
+   * 스킬 만들기 도우미는 대화 모드로 연다.
+   */
+  const runSlash = async (value: string) => {
+    const m = /^\/(\S+)\s*([\s\S]*)$/.exec(value)
+    if (!m) return
+    const [, name, args] = m
+    let list = slashSkills
+    if (!list) { try { list = await assistantApi.skills(); setSlashSkills(list) } catch { list = [] } }
+    const p = list.find((x) => x.name === name) ?? list.find((x) => x.title === name)
+    if (!p) {
+      setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn])
+      say(`‘/${name}’ 스킬을 찾지 못했습니다. / 를 치면 쓸 수 있는 스킬 목록이 나옵니다.`, value)
+      return
+    }
     if (p.name === CREATOR) {
-      setSkill(null)
-      setCreator({ msgs: [{ role: 'assistant', text: CREATOR_HELLO }] })
-      setTurns((cur) => [...cur, { id: nextId.current++, role: 'assistant', reply: bare('ANSWER', CREATOR_HELLO), input: '', draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open' } as Turn].slice(-30))
-    } else { setCreator(null); setSkill(p) }
-    requestAnimationFrame(() => inputRef.current?.focus())
+      setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn])
+      startCreator(args.trim())
+      return
+    }
+    if (args.trim()) { setSkill(null); runSkill(p, args.trim(), value); return }
+    setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn])
+    say(`**${p.title}** 스킬을 쓸게요. ${p.description ? p.description + ' ' : ''}처리할 내용을 보내 주세요.`, value)
+    setSkill(p)
   }
 
-  /** 답을 기다리는 중에 멈춘다. 서버가 이미 하던 일은 되돌리지 않지만, 확인 카드가 나오기 전이라 저장되거나 실행되는 것은 없다. */
+  /** 답을 기다리는 중에 멈춘다.  /** 답을 기다리는 중에 멈춘다. 서버가 이미 하던 일은 되돌리지 않지만, 확인 카드가 나오기 전이라 저장되거나 실행되는 것은 없다. */
   const stop = () => { abortRef.current?.abort() }
 
   const confirm = async (t: Extract<Turn, { role: 'assistant' }>) => {
@@ -283,13 +313,25 @@ export function AssistantBox() {
     return [{ id: t.id, question: t.text, answer: next && next.role === 'assistant' ? next.reply.message : '' }]
   })
 
-  const slashOpen = !busy && text.startsWith('/') && !text.includes('\n')
+  useEffect(() => {
+    if (creator && creatorFirst.current) { const f = creatorFirst.current; creatorFirst.current = null; void sendCreator(f, true) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creator])
+  // Claude Code 처럼 스킬 이름을 치는 동안(/ 뒤에 아직 띄어쓰기가 없을 때)만 목록을 띄운다
+  const slashOpen = !busy && /^\/\S*$/.test(text)
   useEffect(() => {
     if (slashOpen && slashSkills === null) assistantApi.skills().then(setSlashSkills).catch(() => setSlashSkills([]))
   }, [slashOpen, slashSkills])
   const slashQuery = text.slice(1).trim().toLowerCase()
-  const slashList = !slashOpen ? [] : (slashSkills ?? []).filter((p) => !slashQuery
-    || [p.title, p.name ?? '', p.description, p.category ?? ''].some((x) => x.toLowerCase().includes(slashQuery)))
+  const slashScore = (p: ToolPick) => {
+    const n = (p.name ?? '').toLowerCase()
+    if (!slashQuery) return 1
+    if (n.startsWith(slashQuery)) return 3
+    if (n.includes(slashQuery) || p.title.toLowerCase().includes(slashQuery)) return 2
+    return [p.description, p.category ?? ''].some((x) => x.toLowerCase().includes(slashQuery)) ? 1 : 0
+  }
+  const slashList = !slashOpen ? [] : (slashSkills ?? []).map((p, i) => ({ p, i, sc: slashScore(p) })).filter((x) => x.sc > 0)
+    .sort((a, b) => b.sc - a.sc || a.i - b.i).map((x) => x.p)
   const slashPick = slashList[Math.min(slashIdx, Math.max(0, slashList.length - 1))]
   useEffect(() => { setSlashIdx(0) }, [slashQuery])
   const lastTurn = turns[turns.length - 1]
@@ -511,19 +553,20 @@ export function AssistantBox() {
           {slashSkills !== null && slashList.length === 0 && <p className="ha-slash-empty">‘{text.slice(1)}’에 맞는 스킬이 없습니다.</p>}
           {slashList.map((p, i) => (
             <button key={p.skillId} type="button" role="option" aria-selected={p === slashPick} className={p === slashPick ? 'on' : ''}
-              onMouseEnter={() => setSlashIdx(i)} onClick={() => chooseSkill(p)}>
+              onMouseEnter={() => setSlashIdx(i)} onClick={() => { setText(''); void runSlash(`/${p.name ?? p.title}`) }}>
               <span className="ic" aria-hidden="true">{p.icon ?? '🧩'}</span>
-              <span className="tx"><b>{p.title}</b><small>{p.name === CREATOR ? '대화로 새 스킬 만들기' : p.description}</small></span>
-              {p.name && <code>/{p.name}</code>}
+              <code className="nm">/{p.name ?? p.title}</code>
+              <span className="tx"><b>{p.title}</b><small className="nm-m">/{p.name ?? p.title}</small><small>{p.description}</small></span>
             </button>
           ))}
+          {slashList.length > 0 && !coarse && <p className="ha-slash-hint">↑↓ 이동 · Tab 이름 채우기 · Enter 실행 · Esc 닫기</p>}
         </div>
       )}
       {(skill || creator) && (
         <div className="ha-skill-chip">
           <span aria-hidden="true">{creator ? '🛠️' : skill?.icon ?? '🧩'}</span>
           <b>{creator ? '스킬 만들기 도우미' : skill?.title}</b>
-          <small>{creator ? '대화로 스킬을 만드는 중' : '입력한 내용을 이 스킬로 바로 처리합니다'}</small>
+          <small>{creator ? '대화로 스킬을 만드는 중' : '다음에 보내는 말을 이 스킬로 처리합니다'}</small>
           <button type="button" aria-label={creator ? '스킬 만들기 끝내기' : '스킬 선택 취소'} onClick={() => { setSkill(null); setCreator(null) }}>✕</button>
         </div>
       )}
@@ -538,7 +581,9 @@ export function AssistantBox() {
             if (slashOpen && !e.nativeEvent.isComposing) {
               if (e.key === 'ArrowDown' && slashList.length) { e.preventDefault(); setSlashIdx((i) => (i + 1) % slashList.length); return }
               if (e.key === 'ArrowUp' && slashList.length) { e.preventDefault(); setSlashIdx((i) => (i - 1 + slashList.length) % slashList.length); return }
-              if ((e.key === 'Enter' || e.key === 'Tab') && slashPick) { e.preventDefault(); chooseSkill(slashPick); return }
+              // Tab: 이름을 채우고 이어서 내용을 쓰게 한다. Enter: 바로 보낸다(내용이 없으면 무엇을 처리할지 묻는다)
+              if (e.key === 'Tab' && slashPick) { e.preventDefault(); setText(`/${slashPick.name ?? slashPick.title} `); return }
+              if (e.key === 'Enter' && !e.shiftKey && slashPick) { e.preventDefault(); setText(''); void runSlash(`/${slashPick.name ?? slashPick.title}`); return }
               if (e.key === 'Escape') { e.preventDefault(); setText(''); return }
             }
             if (e.key === 'Backspace' && !text && (skill || creator)) { e.preventDefault(); setSkill(null); setCreator(null); return }
