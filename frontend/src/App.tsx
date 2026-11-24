@@ -10,6 +10,8 @@ import { AcPanel, MeetingPanel, ServerPanel } from './office/DevicePanels'
 import { LoginModal } from './common/LoginModal'
 import { ChatDock } from './office/ChatDock'
 import { TouchControls } from './office/TouchControls'
+import { ChatToast } from './office/ChatToast'
+import { useMultiplayer } from './multiplayer'
 import { Workspace } from './workspace/Workspace'
 import { useAppearance } from './workspace/useAppearance'
 import { NotificationBell } from './meeting/NotificationBell'
@@ -36,6 +38,7 @@ export default function App() {
   const logout = useOffice((s) => s.logout)
   const light = useOffice((s) => s.devices['light-main'])
   const [loginOpen, setLoginOpen] = useState(false)
+  const chatUnread = useMultiplayer((s) => Object.values(s.unread).reduce((a, b) => a + b, 0))
   const [asked, setAsked] = useState(false)
 
   useEffect(() => { void useOffice.getState().bootstrap() }, [])
@@ -74,7 +77,9 @@ export default function App() {
       <div className="glass pointer-events-auto shrink-0 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:top-0 h-[42px] rounded-xl p-1 flex items-center gap-1 text-xs font-semibold" role="tablist" aria-label="화면 모드">
         {([['workspace', '업무'], ['office', '3D 오피스']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
-            className={`px-2.5 sm:px-4 py-2 rounded-lg tracking-wide whitespace-nowrap transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'}`}>{l}</button>
+            className={`px-2.5 sm:px-4 py-2 rounded-lg tracking-wide whitespace-nowrap transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'} relative`}>{l}
+            {/* 채팅은 3D 오피스 안에 있으므로, 업무 화면에 있을 때 안 읽은 채팅 수를 3D 오피스 탭에 표시한다 */}
+            {k === 'office' && mode !== 'office' && chatUnread > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center" aria-label={`안 읽은 채팅 ${chatUnread}건`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}</button>
         ))}
       </div>
 
@@ -120,6 +125,7 @@ export default function App() {
 
       {mode === 'workspace' && <Workspace onLogin={() => setLoginOpen(true)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      {user && <ChatToast />}
       <ConfirmHost />
       <CoachHost />
 

@@ -11,6 +11,9 @@ const BUBBLE_MS = 6000
 const BUBBLE_MAX = 80
 let bubbleSeq = 1
 let me = ''
+/** 3D 오피스의 채팅창이 지금 화면에 실제로 보이는지. 업무 화면이거나 다른 패널이 덮고 있으면 열려 있어도 못 보는 것으로 친다. */
+let dockVisible = false
+export const setChatDockVisible = (v: boolean) => { dockVisible = v }
 
 interface MultiplayerState {
   avatars: Record<string, Remote>
@@ -23,6 +26,8 @@ interface MultiplayerState {
   open: boolean
   tab: 'office' | 'direct' | 'ai'
   error: string | null
+  /** 화면에 알림(토스트)으로 띄울 마지막 새 메시지. 내가 지금 보고 있는 대화면 비워 둔다. */
+  incoming: ChatMessage | null
 
   setMe: (username: string) => void
   reset: () => void
@@ -35,6 +40,7 @@ interface MultiplayerState {
   startAi: (code: string) => Promise<void>
   send: (text: string) => Promise<boolean>
   showBubble: (key: string, text: string) => void
+  dismissIncoming: () => void
 }
 
 const clip = (s: string) => {
@@ -53,9 +59,11 @@ export const useMultiplayer = create<MultiplayerState>((set, get) => ({
   open: false,
   tab: 'office',
   error: null,
+  incoming: null,
 
   setMe: (u) => { me = u },
-  reset: () => set({ avatars: {}, bubbles: {}, rooms: [], people: [], messages: {}, unread: {}, activeRoomId: null, open: false, error: null }),
+  reset: () => set({ avatars: {}, bubbles: {}, rooms: [], people: [], messages: {}, unread: {}, activeRoomId: null, open: false, error: null, incoming: null }),
+  dismissIncoming: () => set({ incoming: null }),
 
   showBubble: (key, text) => {
     const id = bubbleSeq++
@@ -105,8 +113,8 @@ export const useMultiplayer = create<MultiplayerState>((set, get) => ({
         const s = get()
         const list = s.messages[m.roomId]
         if (list && !list.some((x) => x.id === m.id)) set({ messages: { ...s.messages, [m.roomId]: [...list, m] } })
-        const viewing = s.open && s.activeRoomId === m.roomId
-        if (!viewing && m.sender !== me) set((st) => ({ unread: { ...st.unread, [m.roomId]: (st.unread[m.roomId] ?? 0) + 1 } }))
+        const viewing = dockVisible && s.open && s.activeRoomId === m.roomId
+        if (!viewing && m.sender !== me) set((st) => ({ unread: { ...st.unread, [m.roomId]: (st.unread[m.roomId] ?? 0) + 1 }, incoming: m }))
         // 방에 없던 새 대화(상대가 먼저 건 1:1)면 목록을 갱신
         if (!s.rooms.some((r) => r.id === m.roomId)) void api.chatRooms().then((rooms) => set({ rooms })).catch(() => undefined)
         get().showBubble(m.senderType === 'AI' ? `ai:${m.sender}` : m.sender, m.content)
@@ -116,7 +124,7 @@ export const useMultiplayer = create<MultiplayerState>((set, get) => ({
   },
 
   setOpen: (open) => {
-    set({ open })
+    set(open ? { open, incoming: null } : { open })
     const id = get().activeRoomId
     if (open && id != null) set((s) => ({ unread: { ...s.unread, [id]: 0 } }))
   },
