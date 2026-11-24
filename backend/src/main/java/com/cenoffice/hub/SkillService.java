@@ -367,6 +367,45 @@ public class SkillService {
         return new Download(s.name + "-" + v.version + (zip ? ".zip" : ".md"), zip ? "application/zip" : "text/markdown; charset=utf-8", data);
     }
 
+    /**
+     * 스킬 패키지 안의 파일 하나(파일 트리에서 고른 것). 텍스트(md·txt·json·yaml·csv)와 이미지만 있다(등록 때 검사).
+     * 권한은 다운로드와 같다: 볼 수 있는 스킬이고, 승인 전 버전은 제작자·관리자만.
+     */
+    @Transactional(readOnly = true)
+    public Download file(Long skillId, Long versionId, String path, String me, boolean admin) {
+        HubSkill s = visible(skillId, me, admin);
+        boolean owner = ownership.owns(s.owner, me) || admin;
+        HubSkillVersion v = version(skillId, versionId);
+        if (!owner && !v.status.equals("APPROVED")) throw new ApiException(HttpStatus.NOT_FOUND, "버전을 찾을 수 없습니다");
+        if (path == null || path.isBlank() || path.length() > 300 || path.contains("..") || path.startsWith("/") || path.contains("\\"))
+            throw new ApiException(HttpStatus.BAD_REQUEST, "파일 경로가 올바르지 않습니다");
+        String ext = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT) : "";
+        String type = switch (ext) {
+            case "png" -> "image/png"; case "jpg", "jpeg" -> "image/jpeg"; case "gif" -> "image/gif"; case "webp" -> "image/webp";
+            default -> "text/plain; charset=utf-8";
+        };
+        if (!v.packageKind.equals("ZIP")) {
+            if (!path.equals("SKILL.md")) throw new ApiException(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다");
+            return new Download("SKILL.md", type, v.skillMd.getBytes(StandardCharsets.UTF_8));
+        }
+        // ZIP 은 SKILL.md 가 있는 폴더(루트 또는 단일 최상위 폴더)를 기준으로 한 경로로 목록에 저장되어 있다
+        try (var zin = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(v.packageData))) {
+            java.util.Map<String, byte[]> found = new java.util.HashMap<>();
+            String root = null;
+            for (var e = zin.getNextEntry(); e != null; e = zin.getNextEntry()) {
+                if (e.isDirectory()) continue;
+                String n = e.getName();
+                if (n.equals("SKILL.md") || n.matches("[^/]+/SKILL\\.md")) root = n.substring(0, n.length() - "SKILL.md".length());
+                if (n.endsWith(path)) found.put(n, zin.readNBytes(5 * 1024 * 1024));
+            }
+            byte[] data = root == null ? null : found.get(root + path);
+            if (data == null) throw new ApiException(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다");
+            return new Download(path.substring(path.lastIndexOf('/') + 1), type, data);
+        } catch (java.io.IOException e) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "파일을 읽을 수 없습니다");
+        }
+    }
+
     // ───────────────────────── 평가 ─────────────────────────
 
     @Transactional(readOnly = true)

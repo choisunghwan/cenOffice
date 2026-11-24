@@ -136,6 +136,14 @@ export const hub = {
   queue: () => req<HubQueueItem[]>('/api/hub/review-queue'),
   agentQueue: () => req<HubAgentSummary[]>('/api/hub/agents/review-queue'),
   /** 인증 헤더가 필요하므로 blob 으로 받아 저장한다 */
+  /** 스킬 패키지 안의 파일 하나(파일 트리). 텍스트는 글자로, 이미지는 화면에 띄울 주소로 준다 */
+  file: async (id: number, versionId: number, path: string): Promise<{ text: string } | { image: string }> => {
+    const token = tokenStore.get()
+    const res = await fetch(`${API_URL}/api/hub/skills/${id}/versions/${versionId}/file` + qs({ path }), { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => ({}))).error ?? '파일을 열지 못했습니다')
+    const type = res.headers.get('Content-Type') ?? ''
+    return type.startsWith('image/') ? { image: URL.createObjectURL(await res.blob()) } : { text: await res.text() }
+  },
   download: async (id: number, versionId?: number) => {
     const token = tokenStore.get()
     const res = await fetch(`${API_URL}/api/hub/skills/${id}/download` + qs({ versionId }), { headers: token ? { Authorization: `Bearer ${token}` } : {} })

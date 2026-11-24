@@ -214,6 +214,15 @@ class HubApiTest {
                 .header("Authorization", "Bearer " + a.token())).andExpect(status().isCreated()));
         assertEquals("ZIP", dz.at("/current/meta/packageKind").asText());
         assertEquals("ref/guide.md", dz.at("/current/files/1/path").asText());
+        // 파일 트리: 패키지 안의 파일을 하나씩 열어 볼 수 있다(제작자). 다른 사람은 승인 전 버전을 못 본다. 경로 조작은 거부
+        String fileUrl = "/api/hub/skills/" + dz.at("/summary/id").asLong() + "/versions/" + dz.at("/current/meta/id").asLong() + "/file";
+        assertEquals("# 참고", mvc.perform(get(fileUrl).param("path", "ref/guide.md").header("Authorization", "Bearer " + a.token()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertTrue(mvc.perform(get(fileUrl).param("path", "SKILL.md").header("Authorization", "Bearer " + a.token()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8).contains("name: " + n3));
+        mvc.perform(get(fileUrl).param("path", "ref/없음.md").header("Authorization", "Bearer " + a.token())).andExpect(status().isNotFound());
+        mvc.perform(get(fileUrl).param("path", "../SKILL.md").header("Authorization", "Bearer " + a.token())).andExpect(status().isBadRequest());
+        mvc.perform(get(fileUrl).param("path", "ref/guide.md").header("Authorization", "Bearer " + account("다른팀").token())).andExpect(status().isNotFound());
 
         call(post("/api/hub/skills"), a, json.writeValueAsString(java.util.Map.of("skillMd", skillMd(n1, null, null, null)))).andExpect(status().isConflict());
     }

@@ -1,7 +1,8 @@
-import { askConfirm, askText } from '../common/confirm'
+﻿import { askConfirm, askText } from '../common/confirm'
 import { BusinessTools } from './BusinessTools'
 import { TemplateUploader } from './TemplateUploader'
 import { TextTool, TEXT_TOOLS } from './TextTool'
+import { SkillFileTree } from './SkillFileTree'
 import { toolName } from './toolNames'
 import { ToolIntroduction } from './ToolIntroduction'
 import { useEffect, useState } from 'react'
@@ -49,7 +50,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       <ErrorNote message={err ?? d.error} />
 
       <div className="flex gap-1 my-4 border-b border-white/10 flex-wrap">
-        {([['overview', '소개'], ['md', 'SKILL.md'], ['versions', '버전 · 승인'], ['stats', '사용 통계'], ['reviews', `평가 (${s.ratingCount})`], ['run', '사용하기']] as [Tab, string][]).filter(([k]) => canEdit || canApprove || !['versions', 'stats'].includes(k)).map(([k, l]) => (
+        {([['overview', '소개'], ['md', `파일 (${current?.files.length || 1})`], ['versions', '버전 · 승인'], ['stats', '사용 통계'], ['reviews', `평가 (${s.ratingCount})`], ['run', '사용하기']] as [Tab, string][]).filter(([k]) => canEdit || canApprove || !['versions', 'stats'].includes(k)).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-sm -mb-px border-b-2 ${tab === k ? 'border-sky-400 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>{l}</button>
         ))}
       </div>
@@ -59,14 +60,9 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       {tab === 'overview' && canEdit && s.status !== 'ARCHIVED' && <div className="mt-4"><TemplateUploader skillId={id} /></div>}
 
       {tab === 'md' && current && (
-        <div className="space-y-4">
-          <Card title={`SKILL.md 미리보기 (v${current.meta.version})`} action={<span className="text-[10px] text-slate-500">텍스트로만 표시 · sha256 {current.meta.sha256.slice(0, 12)}…</span>}>
-            {/* HTML 해석 없이 텍스트로만 출력 */}
-            <pre className="text-xs whitespace-pre-wrap break-words font-mono text-slate-200 max-h-[28rem] overflow-y-auto">{current.skillMd}</pre>
-          </Card>
-          <Card title={`포함 파일 (${current.files.length}) · ${current.meta.packageKind === 'ZIP' ? 'ZIP 패키지' : 'SKILL.md 단일 파일'}`}>
-            <ul className="text-xs text-slate-300 space-y-0.5">{current.files.map((f) => <li key={f.path}>{f.path} <span className="text-slate-500">{f.size}B</span></li>)}</ul>
-          </Card>
+        <div className="space-y-2">
+          <SkillFileTree skillId={id} skillName={s.name} versionId={current.meta.id} files={current.files} skillMd={current.skillMd} />
+          <p className="text-[11px] text-slate-500">v{current.meta.version} · {current.meta.packageKind === 'ZIP' ? 'ZIP 패키지' : 'SKILL.md 단일 파일'} · 텍스트로만 표시 · sha256 {current.meta.sha256.slice(0, 12)}…</p>
         </div>
       )}
 

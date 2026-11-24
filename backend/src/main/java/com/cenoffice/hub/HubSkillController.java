@@ -126,6 +126,18 @@ public class HubSkillController {
     @GetMapping("/review-queue") @PreAuthorize(ADMIN)
     public List<Map<String, Object>> reviewQueue() { return skills.reviewQueue(); }
 
+    /** 파일 트리에서 고른 파일 하나를 화면에 보여 준다(텍스트·이미지). 내려받기 기록은 남기지 않는다 */
+    @GetMapping("/skills/{id}/versions/{vid}/file")
+    public ResponseEntity<byte[]> file(@PathVariable Long id, @PathVariable Long vid, @RequestParam String path, Authentication a) {
+        var d = skills.file(id, vid, path, a.getName(), admin(a));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(d.filename(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox")
+                .contentType(MediaType.parseMediaType(d.contentType()))
+                .body(d.data());
+    }
+
     @GetMapping("/skills/{id}/download")
     public ResponseEntity<byte[]> download(@PathVariable Long id, @RequestParam(required = false) Long versionId, Authentication a) {
         var d = skills.download(id, versionId, a.getName(), admin(a));
