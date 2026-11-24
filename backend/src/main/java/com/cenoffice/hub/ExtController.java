@@ -45,7 +45,7 @@ public class ExtController {
         var who = who(auth, origin);
         String name = r.tool() == null ? "" : r.tool();
         var skill = catalog.exposed(who).stream().filter(s -> s.name().equals(name)).findFirst()
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 도구입니다: " + name));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 스킬입니다: " + name));
         return executions.request(who.username(), false, new ExecuteRequest(skill.id(), null, r.input(), null), new ExecutionService.Origin("CENNAVI", host(r.host())));
     }
 

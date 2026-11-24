@@ -30,7 +30,7 @@ class HelpCatalogTest {
         assertEquals("screen-control", topId("다크 모드로 바꾸는 방법 알려줘"));
         assertEquals("chat-history", topId("지난 대화는 어디서 봐?"));
         assertEquals("account", topId("아이디 저장은 어디서 해?"));
-        assertEquals("tools", topId("도구를 직접 만들려면?"));
+        assertEquals("tools", topId("스킬을 직접 만들려면?"));
     }
 
     @Test void particlesAttachedToWordsStillMatch() {

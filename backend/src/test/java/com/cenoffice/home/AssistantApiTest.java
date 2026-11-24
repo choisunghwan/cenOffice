@@ -249,13 +249,13 @@ class AssistantApiTest {
         req(delete("/api/calendar/events/" + id), admin, null).andExpect(status().isNoContent());
     }
 
-    /** 주제 없이 도구를 물으면 한 개만 내밀지 않고 순위로 알려 주고, 나머지를 카드에서 고르게 한다 */
+    /** 주제 없이 스킬을 물으면 한 개만 내밀지 않고 순위로 알려 주고, 나머지를 카드에서 고르게 한다 */
     @Test void openToolQuestionShowsARankingNotJustOneTool() throws Exception {
-        var r = ask(admin, "쓸만한 도구 뭐 있어?");
+        var r = ask(admin, "쓸만한 스킬 뭐 있어?");
         assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
         String msg = r.path("message").asText();
         assertTrue(msg.contains("1. ") && msg.contains("2. ") && msg.contains("3. "), msg);
-        assertTrue(r.path("alternatives").size() >= 3, r.toString()); // 1위 외의 도구들도 카드로 고를 수 있다
+        assertTrue(r.path("alternatives").size() >= 3, r.toString()); // 1위 외의 스킬들도 카드로 고를 수 있다
     }
 
     /** AI 가 없어도 사용법 질문은 도움말 문서로 답하고, 모르는 말에는 해 볼 말을 보여 준다(막다른 길을 만들지 않는다) */
@@ -308,7 +308,7 @@ class AssistantApiTest {
     JsonNode builtinTool(String name) throws Exception {
         var page = read(req(get("/api/hub/skills?status=APPROVED&size=100"), admin, null).andExpect(status().isOk()));
         for (var s : page.path("items")) if (s.path("owner").asText().equals("hub-builtin") && s.path("name").asText().equals(name)) return s;
-        fail("기본 제공 도구가 없습니다: " + name);
+        fail("기본 제공 스킬이 없습니다: " + name);
         return null;
     }
 
@@ -319,7 +319,7 @@ class AssistantApiTest {
         assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
         assertEquals("SQL 점검", r.path("tool").path("title").asText()); // 영문 식별자가 아니라 한글 제목
         assertEquals(tool.path("id").asLong(), r.path("tool").path("skillId").asLong());
-        assertEquals("rule", r.path("tool").path("engine").asText()); // 기본 제공 도구는 서버 안에서 처리 → 외부 전송 없음
+        assertEquals("rule", r.path("tool").path("engine").asText()); // 기본 제공 스킬은 서버 안에서 처리 → 외부 전송 없음
         assertFalse(r.path("tool").path("external").asBoolean());
         assertFalse(r.path("ai").asBoolean());
         // 추천만으로는 아무 것도 실행되지 않는다. 카드의 [실행]은 기존 허브 실행 API 를 같은 사용자 권한으로 호출한다.
@@ -331,10 +331,10 @@ class AssistantApiTest {
     }
 
     @Test void askingWhichToolsExistShowsToolCandidates() throws Exception {
-        var r = ask(admin, "쓸 만한 도구 뭐 있어?");
+        var r = ask(admin, "쓸 만한 스킬 뭐 있어?");
         assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
         assertTrue(r.path("tool").path("skillId").asLong() > 0);
-        var sql = ask(admin, "SQL 관련 도구 알려줘");
+        var sql = ask(admin, "SQL 관련 스킬 알려줘");
         assertEquals("USE_TOOL", sql.path("intent").asText(), sql.toString());
         assertEquals("SQL 점검", sql.path("tool").path("title").asText());
     }

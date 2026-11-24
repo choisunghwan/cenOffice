@@ -67,7 +67,7 @@ function ToolCard({ id, kind, name, title: titleProp, description, category, sta
   return <article className="tool-gallery-card">
     <div className="relative"><button className="tool-preview-button" onClick={onClick} aria-label={`${title} 미리보기 및 상세 설명`}><ToolPreview id={id} kind={kind} name={title} /></button><button className="tool-favorite" aria-label={`${title} 즐겨찾기`} aria-pressed={saved} onClick={() => toggle(favoriteKey)}>{saved ? '★' : '☆'}</button></div>
     <div className="tool-gallery-body">
-      <div className="tool-gallery-meta"><span>{category}</span>{sample ? <span>샘플 도구</span> : !ready && <span>{EXEC_STATE[state]?.label || '실행 준비 중'}</span>}</div>
+      <div className="tool-gallery-meta"><span>{category}</span>{sample ? <span>샘플 스킬</span> : !ready && <span>{EXEC_STATE[state]?.label || '실행 준비 중'}</span>}</div>
       <h3>{title}</h3>
       <p className="tool-gallery-description">{description}</p>
       <div className="tool-gallery-actions"><button className="tool-use-button" onClick={ready ? onUse ?? onClick : onClick}>{ready ? '사용하기' : '미리보기'} <span aria-hidden="true">→</span></button><button className="tool-detail-button" onClick={onClick}>자세히 보기</button></div>

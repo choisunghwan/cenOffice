@@ -59,16 +59,16 @@ public class TemplateService {
 
     // ───────────────────────── 개인 양식 ─────────────────────────
 
-    /** 내 양식(예: 내 회의록 양식)의 키. 도구 번호와 겹치지 않게 사용자 번호의 음수를 쓴다. */
+    /** 내 양식(예: 내 회의록 양식)의 키. 스킬 번호와 겹치지 않게 사용자 번호의 음수를 쓴다. */
     public Long myKey(String user) { return -skills.userId(user); }
 
-    /** 도구 양식이면 그 도구를 볼 수 있어야 하고, 개인 양식이면 본인 것이어야 한다 */
+    /** 스킬 양식이면 그 스킬을 볼 수 있어야 하고, 개인 양식이면 본인 것이어야 한다 */
     private void canRead(Long id, String user, boolean admin) {
         if (id < 0) { if (!id.equals(myKey(user))) throw noTemplate(); }
         else skills.visible(id, user, admin);
     }
 
-    /** 도구 양식이면 제작자·관리자만, 개인 양식이면 본인만 고칠 수 있다 */
+    /** 스킬 양식이면 제작자·관리자만, 개인 양식이면 본인만 고칠 수 있다 */
     private void canWrite(Long id, String user, boolean admin) {
         if (id < 0) { if (!id.equals(myKey(user))) throw noTemplate(); }
         else skills.editable(id, user, admin);
@@ -80,7 +80,7 @@ public class TemplateService {
     public record FormatDef(String format, String label, boolean supported) {}
     public static final List<FormatDef> FORMATS = FormEngine.Registry.ALL.stream().map(e -> new FormatDef(e.format(), e.label(), true)).toList();
 
-    /** 화면의 형식 아이콘 한 칸: 지원 여부와 이 도구에 올려 둔 양식 */
+    /** 화면의 형식 아이콘 한 칸: 지원 여부와 이 스킬에 올려 둔 양식 */
     public record Slot(String format, String label, boolean supported, Info template) {}
 
     /** 형식별 칸. 올려 둔 양식이 있으면 template 에 담긴다. */
@@ -281,7 +281,7 @@ public class TemplateService {
         return all;
     }
 
-    /** 같은 뜻으로 흔히 쓰는 이름. 양식의 항목 이름이 도구 결과와 조금 달라도 찾는다. */
+    /** 같은 뜻으로 흔히 쓰는 이름. 양식의 항목 이름이 스킬 결과와 조금 달라도 찾는다. */
     private static final Map<String, List<String>> ALIASES = Map.of(
             "회의명", List.of("회의 제목", "제목"), "회의 제목", List.of("회의명", "제목"),
             "일시", List.of("회의 일시", "일자", "날짜"), "참석자", List.of("참여자", "참석 인원"),
@@ -415,5 +415,5 @@ public class TemplateService {
         return out;
     }
 
-    private static ApiException noTemplate() { return new ApiException(HttpStatus.NOT_FOUND, "이 도구에는 등록된 양식이 없습니다."); }
+    private static ApiException noTemplate() { return new ApiException(HttpStatus.NOT_FOUND, "이 스킬에는 등록된 양식이 없습니다."); }
 }

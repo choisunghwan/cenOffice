@@ -117,5 +117,5 @@ public class HelpCatalog {
     }
 
     /** 아무 문서도 맞지 않을 때 보여 줄 기본 예시 */
-    public static final List<String> DEFAULT_SUGGESTIONS = List.of("쓸만한 도구 뭐 있어?", "내일 오후 3시에 팀 회의 잡아줘", "회의록 다운로드해줘", "양식은 어떻게 올리고 어떻게 만들어야 채워져요?");
+    public static final List<String> DEFAULT_SUGGESTIONS = List.of("쓸만한 스킬 뭐 있어?", "내일 오후 3시에 팀 회의 잡아줘", "회의록 다운로드해줘", "양식은 어떻게 올리고 어떻게 만들어야 채워져요?");
 }

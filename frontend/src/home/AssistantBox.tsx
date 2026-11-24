@@ -21,7 +21,7 @@ export type Turn =
   | { id: number; role: 'user'; text: string }
   | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string; meetingId?: string }
 
-const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘', '쓸 만한 도구 뭐 있어?']
+const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘', '쓸 만한 스킬 뭐 있어?']
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 const asEntry = (d: Draft): Entry => ({ kind: 'EVENT', id: 'draft', eventId: null, scope: d.scope, title: d.title, description: d.description, location: d.location,
@@ -167,7 +167,7 @@ export function AssistantBox() {
     } catch (e) { patch(t.id, { state: 'open', error: (e as Error).message }) }
   }
 
-  /** 추천한 허브 도구를 실행한다. 권한·승인 상태·호출 제한은 기존 허브 실행 API 가 다시 확인한다. */
+  /** 추천한 허브 스킬을 실행한다. 권한·승인 상태·호출 제한은 기존 허브 실행 API 가 다시 확인한다. */
   const runTool = async (t: Extract<Turn, { role: 'assistant' }>, chosen: ToolPick) => {
     if (t.state === 'saving') return
     patch(t.id, { state: 'saving', tool: chosen, error: undefined, output: undefined })
@@ -175,13 +175,13 @@ export function AssistantBox() {
       let ex = await hub.execute({ skillId: chosen.skillId, input: t.input, engine: chosen.engine })
       const deadline = Date.now() + 120_000
       while (alive.current && !['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(ex.status)) {
-        if (Date.now() > deadline) throw new Error('처리가 오래 걸리고 있습니다. 도구 화면의 실행 기록에서 결과를 확인해 주세요.')
+        if (Date.now() > deadline) throw new Error('처리가 오래 걸리고 있습니다. 스킬 화면의 실행 기록에서 결과를 확인해 주세요.')
         await sleep(1000)
         ex = await hub.execution(ex.id)
       }
       if (!alive.current) return
-      if (ex.status === 'SUCCEEDED') patch(t.id, { state: 'done', output: ex.result ?? '', result: `‘${chosen.title}’ 도구로 처리했습니다.` })
-      else patch(t.id, { state: 'open', error: ex.error ?? (ex.status === 'CANCELLED' ? '취소되었습니다.' : '도구를 실행하지 못했습니다.') })
+      if (ex.status === 'SUCCEEDED') patch(t.id, { state: 'done', output: ex.result ?? '', result: `‘${chosen.title}’ 스킬로 처리했습니다.` })
+      else patch(t.id, { state: 'open', error: ex.error ?? (ex.status === 'CANCELLED' ? '취소되었습니다.' : '스킬을 실행하지 못했습니다.') })
     } catch (e) { if (alive.current) patch(t.id, { state: 'open', error: (e as Error).message }) }
   }
 
@@ -355,7 +355,7 @@ export function AssistantBox() {
                   <div className={`ha-card ${t.state}`}>
                     <p className="ha-toolname"><span aria-hidden="true">{t.tool.icon ?? '🧰'}</span> <b>{t.tool.title}</b>{t.tool.category && <small>{t.tool.category}</small>}{t.tool.templateFormat && <small className="ha-tpl-badge">양식 포함 · 한글(HWPX)</small>}</p>
                     {t.tool.description && <p className="cal-muted">{t.tool.description}</p>}
-                    <p className="cal-muted">{t.tool.external ? '이 도구는 AI 서비스로 처리하며, 입력한 내용이 AI 서비스로 전송됩니다.' : '서버 안에서 처리하며 입력한 내용이 밖으로 나가지 않습니다.'}</p>
+                    <p className="cal-muted">{t.tool.external ? '이 스킬은 AI 서비스로 처리하며, 입력한 내용이 AI 서비스로 전송됩니다.' : '서버 안에서 처리하며 입력한 내용이 밖으로 나가지 않습니다.'}</p>
                     {t.error && <p className="ha-error" role="alert">{t.error}</p>}
                     {t.state === 'saving' && <p className="cal-muted" role="status">처리하는 중… (최대 2분)</p>}
                     {t.state === 'done' && <>
@@ -405,7 +405,7 @@ export function AssistantBox() {
           ? <button type="button" className="cal-primary ha-stop" onClick={stop} aria-label="중단" title="답 기다리기를 멈추고, 보낸 말을 입력창으로 되돌립니다 (Esc)"><span aria-hidden="true">■</span> 중단</button>
           : <button className="cal-primary" disabled={!text.trim()} aria-label="보내기">보내기</button>}
       </form>
-      <p className="ha-note">{ai === null ? ' ' : ai ?'AI 연결됨 · 입력한 내용과 동료 이름이 AI 서비스로 전송됩니다. 일정·예약·삭제와 도구 실행은 확인하신 뒤에만 됩니다.' : 'AI 미연결 · 날짜·시각·제목이 분명한 짧은 문장과 도구 이름·태그를 이해합니다. 일정·예약·삭제와 도구 실행은 확인하신 뒤에만 됩니다.'}</p>
+      <p className="ha-note">{ai === null ? ' ' : ai ?'AI 연결됨 · 입력한 내용과 동료 이름이 AI 서비스로 전송됩니다. 일정·예약·삭제와 스킬 실행은 확인하신 뒤에만 됩니다.' : 'AI 미연결 · 날짜·시각·제목이 분명한 짧은 문장과 스킬 이름·태그를 이해합니다. 일정·예약·삭제와 스킬 실행은 확인하신 뒤에만 됩니다.'}</p>
       </div>
 
       {editor && <EventEditor init={editor.init} canManageShared={editor.init.draft?.scope === 'SHARED'} onClose={() => setEditor(null)}

@@ -167,7 +167,7 @@ body { font-family: "Pretendard", "Segoe UI", "Malgun Gothic", system-ui, sans-s
 .hub-hero-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
 .hub-primary, .hub-secondary { padding: 12px 18px; border-radius: 10px; font-size: 12px; font-weight: 600; display: flex; gap: 20px; align-items: center; transition: background .18s; }
 .hub-primary { background: #cae4ff; color: #15283e; }.hub-primary:hover { background: #e2f0ff; }
-/* 도구 화면 위쪽의 큼직한 화면 선택 버튼: 둘러보기 / 내 도구 / 도구 만들기 */
+/* 스킬 화면 위쪽의 큼직한 화면 선택 버튼: 둘러보기 / 내 스킬 / 스킬 만들기 */
 .hub-switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 22px; }
 .hub-switch button { display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px 18px; border-radius: 14px; border: 1px solid rgba(127,127,127,.28); background: rgba(127,127,127,.07); color: inherit; transition: border-color .15s, background .15s, transform .15s; }
 .hub-switch button:hover { border-color: #3b8bff; background: rgba(59,139,255,.1); transform: translateY(-1px); }

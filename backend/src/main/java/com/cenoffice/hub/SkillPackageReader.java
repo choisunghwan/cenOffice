@@ -360,7 +360,7 @@ public class SkillPackageReader {
             if (p.matcher(t).find()) throw new InvalidSkillException("인증정보(API 키·개인키 등)로 보이는 문자열이 포함되어 있습니다. 제거한 뒤 다시 등록하세요");
         for (Map.Entry<String, Pattern> r : RISKS.entrySet())
             for (String t : texts) if (r.getValue().matcher(t).find()) { flags.add(r.getKey()); break; }
-        if (meta.raw().containsKey("allowed-tools")) flags.add("도구 사용 선언(allowed-tools) 포함 — AI HUB 는 도구를 실행하지 않음");
+        if (meta.raw().containsKey("allowed-tools")) flags.add("스킬 사용 선언(allowed-tools) 포함 — AI HUB 는 스킬을 실행하지 않음");
         return flags;
     }
 }

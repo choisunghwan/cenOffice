@@ -13,7 +13,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 구조 규칙: Controller → Service → Repository/JdbcTemplate. 컨트롤러가 DB 접근 도구를 직접 갖지 않는다. */
+/** 구조 규칙: Controller → Service → Repository/JdbcTemplate. 컨트롤러가 DB 접근 스킬을 직접 갖지 않는다. */
 class LayeringTest {
     @Test
     void controllersDoNotTouchTheDatabaseDirectly() throws Exception {

@@ -4,12 +4,12 @@ import type { MyItem, PendingMinutes } from '../meeting/minutesApi'
 
 export interface Draft { scope: 'PERSONAL' | 'SHARED'; title: string; description: string | null; location: string | null; startAt: string; endAt: string; allDay: boolean; attendees: Person[] }
 export interface Ambiguity { name: string; candidates: Person[] }
-/** 추천한 AI 허브 도구. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
-export interface ToolPick { skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean; /** 결과물 양식이 등록된 도구면 'hwpx' */ templateFormat?: string | null }
+/** 추천한 AI 허브 스킬. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
+export interface ToolPick { skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean; /** 결과물 양식이 등록된 스킬이면 'hwpx' */ templateFormat?: string | null }
 export interface ChatSummary { id: string; title: string; updatedAt: string }
 export interface Room { id: number; name: string; capacity: number }
 /**
- * CREATE_EVENT: 등록 확인 카드 · LIST_EVENTS: 조회 결과 · USE_TOOL: 도구 추천 카드 · BOOK_ROOM: 회의실 예약 카드 ·
+ * CREATE_EVENT: 등록 확인 카드 · LIST_EVENTS: 조회 결과 · USE_TOOL: 스킬 추천 카드 · BOOK_ROOM: 회의실 예약 카드 ·
  * DELETE_ITEM: 삭제·취소 카드 · MOVE_EVENT: 일정 변경 카드 · CLARIFY: 되묻기 · UNSUPPORTED: 아직 못 하는 요청
  */
 export interface Reply {

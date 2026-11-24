@@ -27,8 +27,8 @@ export function stepsFor(t: Bot): Step[] {
     case 'MOVE_EVENT': return confirmStep('변경안')
     case 'USE_TOOL': {
       const hasOutput = t.output !== undefined
-      const run: Step = { label: '도구 실행', state: t.error ? 'fail' : hasOutput ? 'done' : t.state === 'saving' ? 'active' : 'ready', note: t.error ? '실패' : t.state === 'saving' ? '실행 중' : hasOutput ? undefined : '실행 대기' }
-      const steps: Step[] = [understood, { label: '도구 선택', state: 'done', note: t.tool?.title }, run]
+      const run: Step = { label: '스킬 실행', state: t.error ? 'fail' : hasOutput ? 'done' : t.state === 'saving' ? 'active' : 'ready', note: t.error ? '실패' : t.state === 'saving' ? '실행 중' : hasOutput ? undefined : '실행 대기' }
+      const steps: Step[] = [understood, { label: '스킬 선택', state: 'done', note: t.tool?.title }, run]
       if (t.tool?.templateFormat) steps.push({ label: '양식 채우기', state: hasOutput ? 'ready' : 'wait', note: hasOutput ? '미리보기 확인' : undefined }, { label: '파일 받기', state: 'wait' })
       else steps.push({ label: '결과 확인', state: hasOutput ? 'ready' : 'wait' })
       return steps

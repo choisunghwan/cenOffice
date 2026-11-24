@@ -116,7 +116,7 @@ class TemplateApiTest {
         upload(admin, "a.txt", new byte[]{1}).andExpect(status().isBadRequest()); // 모르는 확장자
     }
 
-    /** 내 양식: 도구 제작자·관리자가 아니어도 자기 양식을 올리고 쓸 수 있고, 다른 사람에게는 보이지 않는다 */
+    /** 내 양식: 스킬 제작자·관리자가 아니어도 자기 양식을 올리고 쓸 수 있고, 다른 사람에게는 보이지 않는다 */
     @Test void myFormIsPrivateToItsOwner() throws Exception {
         String me = "/api/hub/templates/me";
         req(delete(me), user, null).andExpect(status().isNoContent());
@@ -124,7 +124,7 @@ class TemplateApiTest {
         req(multipart(HttpMethod.PUT, me).file(new MockMultipartFile("file", "내양식.hwpx", "application/octet-stream", form("성명"))), user, null).andExpect(status().isOk());
         assertEquals("내양식.hwpx", read(req(get(me), user, null).andExpect(status().isOk())).path("fileName").asText());
         req(get(me), admin, null).andExpect(status().isNoContent()); // 다른 사람의 '내 양식'에는 보이지 않는다
-        req(get(url()), admin, null).andExpect(status().isNoContent()); // 도구 양식에도 섞이지 않는다
+        req(get(url()), admin, null).andExpect(status().isNoContent()); // 스킬 양식에도 섞이지 않는다
         var plan = read(req(post(me + "/plan"), user, Map.of("format", "hwpx", "result", "성명: 홍길동")).andExpect(status().isOk()));
         assertEquals("홍길동", item(plan, "성명").path("value").asText());
         req(post(me + "/render"), user, Map.of("format", "hwpx", "values", Map.of("성명", "홍길동"), "title", "회의록")).andExpect(status().isOk());
@@ -186,7 +186,7 @@ class TemplateApiTest {
         assertTrue(item(plan, "소속").path("value").isMissingNode() || item(plan, "소속").path("value").isNull()); // 서버는 null 필드를 빼고 보낸다
     }
 
-    /** 내장 회의록 도구가 내는 모양(표 + 제목 아래 본문 + 액션 표)을 그대로 읽는다 */
+    /** 내장 회의록 스킬이 내는 모양(표 + 제목 아래 본문 + 액션 표)을 그대로 읽는다 */
     @Test void planReadsTablesAndAliasesFromMeetingMinutesTool() throws Exception {
         upload(admin, "m.hwpx", form("회의명", "일시", "참석자", "결정 사항", "액션 아이템", "논의 내용")).andExpect(status().isOk());
         String result =

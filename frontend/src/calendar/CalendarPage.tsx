@@ -97,7 +97,7 @@ export function CalendarPage() {
             <button type="button" onClick={() => move(0)}>오늘</button>
             <button type="button" aria-label="다음" onClick={() => move(1)}>›</button>
           </div>
-          {/* 권한이 없어도 버튼은 같은 자리에 두고 비활성화한다(토글 전환 때 도구 줄이 밀리지 않게) */}
+          {/* 권한이 없어도 버튼은 같은 자리에 두고 비활성화한다(토글 전환 때 스킬 줄이 밀리지 않게) */}
           <button type="button" className="cal-primary" disabled={!canCreate} title={canCreate ? undefined : '전체 일정은 관리자와 일정 관리자만 만들 수 있습니다'} onClick={() => openNew(selected)}>＋ 일정 만들기</button>
         </div>
       </header>

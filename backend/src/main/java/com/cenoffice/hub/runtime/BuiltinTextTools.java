@@ -5,7 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 내장 텍스트 도구(오류 로그 분석 / SQL 점검 / 회의록 정리 / 주간 보고 정리 / 테스트 케이스 초안).
+ * 내장 텍스트 스킬(오류 로그 분석 / SQL 점검 / 회의록 정리 / 주간 보고 정리 / 테스트 케이스 초안).
  * 모두 규칙 기반 로컬 처리다: LLM 이나 외부 호출이 없고, 결과는 "검토용 초안"이며 확정 판단이 아니다.
  * 입력은 신뢰하지 않는 텍스트로 취급하며 어떤 것도 실행하지 않고 출력 표의 구분자만 안전하게 치환한다.
  */
@@ -156,7 +156,7 @@ final class BuiltinTextTools {
             boolean where = u.contains(" WHERE ");
             if (u.startsWith("UPDATE") && !where) f.add(new Finding("높음", "WHERE 없는 UPDATE", "모든 행이 변경됩니다.", "조건을 추가하거나 의도한 전체 변경인지 확인하고, 실행 전 백업/트랜잭션을 준비하세요."));
             if (u.startsWith("DELETE") && !where) f.add(new Finding("높음", "WHERE 없는 DELETE", "모든 행이 삭제됩니다.", "조건을 추가하거나 TRUNCATE/백업 여부를 확인하세요. 운영 DB 는 승인 후 실행하세요."));
-            if (u.matches("^(DROP|TRUNCATE|ALTER)\\b.*")) f.add(new Finding("높음", "구조 변경/삭제 구문(" + u.split(" ")[0] + ")", "되돌리기 어려운 변경입니다.", "마이그레이션 도구로 관리하고, 운영 적용 전 백업과 승인을 받으세요."));
+            if (u.matches("^(DROP|TRUNCATE|ALTER)\\b.*")) f.add(new Finding("높음", "구조 변경/삭제 구문(" + u.split(" ")[0] + ")", "되돌리기 어려운 변경입니다.", "마이그레이션 스킬로 관리하고, 운영 적용 전 백업과 승인을 받으세요."));
             if (u.matches(".*\\bSELECT\\s+(DISTINCT\\s+)?\\*.*")) f.add(new Finding("중간", "SELECT *", "불필요한 컬럼까지 조회해 네트워크·메모리 비용이 늘고 컬럼 변경에 취약합니다.", "필요한 컬럼만 명시하세요."));
             if (s.matches("(?is).*\\bLIKE\\s+'%.*")) f.add(new Finding("중간", "앞부분 와일드카드 LIKE", "LIKE '%값' 은 일반 인덱스를 사용하지 못해 전체 스캔이 될 수 있습니다.", "접두 검색(LIKE '값%')으로 바꾸거나 전문 검색/별도 인덱스를 검토하세요."));
             if (u.matches(".*\\bWHERE\\b.*\\b(UPPER|LOWER|TRUNC|TO_CHAR|SUBSTR|SUBSTRING|NVL|COALESCE|DATE|CAST)\\s*\\(\\s*[A-Z_][A-Z0-9_.]*\\s*[,)].*"))

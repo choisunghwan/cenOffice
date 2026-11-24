@@ -60,7 +60,7 @@ DELETE FROM audit_log;`,
   },
 }
 
-/** 입력 → 결과 한 화면으로 쓰는 내장 텍스트 도구 (로컬 규칙 기반, 외부 전송 없음) */
+/** 입력 → 결과 한 화면으로 쓰는 내장 텍스트 스킬 (로컬 규칙 기반, 외부 전송 없음) */
 export function TextTool({ skillId, name }: { skillId: number; name: string }) {
   const cfg = TEXT_TOOLS[name]
   const [input, setInput] = useState('')

@@ -13,26 +13,26 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * 입력창이 쓸 수 있는 AI 허브 도구 목록. "승인된 도구 중 이 사용자가 볼 수 있고 실제로 실행할 수 있는 것"만 담는다.
- * 어떤 도구를 쓸지는 AI(또는 키워드 점수)가 고르지만, 실행은 기존 허브 실행 API 가 권한·승인 상태를 다시 확인한 뒤에만 한다.
+ * 입력창이 쓸 수 있는 AI 허브 스킬 목록. "승인된 스킬 중 이 사용자가 볼 수 있고 실제로 실행할 수 있는 것"만 담는다.
+ * 어떤 스킬을 쓸지는 AI(또는 키워드 점수)가 고르지만, 실행은 기존 허브 실행 API 가 권한·승인 상태를 다시 확인한 뒤에만 한다.
  */
 @Component
 public class ToolCatalog {
-    /** 도구 하나. engine: rule(기본 제공 도구, 서버 안에서 처리) | ai(AI 모델로 처리, 입력이 AI 서비스로 전송됨) */
+    /** 스킬 하나. engine: rule(기본 제공 스킬, 서버 안에서 처리) | ai(AI 모델로 처리, 입력이 AI 서비스로 전송됨) */
     public record Tool(Long id, String title, String name, String description, String icon, String category, List<String> tags, boolean builtin) {
         public String engine() { return builtin ? "rule" : "ai"; }
     }
     public record Ranked(Tool tool, int score) {}
 
     static final int MAX_CATALOG = 100, MAX_IN_PROMPT = 40, PICK_THRESHOLD = 4, ALT_THRESHOLD = 3;
-    private static final Set<String> STOP = Set.of("도구", "작성", "처리", "생성", "정리", "분석", "해줘", "해주세요", "있는", "하는", "위한", "대한", "에서", "으로", "합니다");
+    private static final Set<String> STOP = Set.of("스킬", "작성", "처리", "생성", "정리", "분석", "해줘", "해주세요", "있는", "하는", "위한", "대한", "에서", "으로", "합니다");
 
     private final SkillService skills;
     private final RuntimeRegistry runtime;
 
     public ToolCatalog(SkillService skills, RuntimeRegistry runtime) { this.skills = skills; this.runtime = runtime; }
 
-    /** 승인되어 있고 이 사용자가 볼 수 있으며 실행 가능한 도구. 기본 제공 도구는 항상, 그 밖의 도구는 AI 실행이 켜져 있을 때만 실행할 수 있다. */
+    /** 승인되어 있고 이 사용자가 볼 수 있으며 실행 가능한 스킬. 기본 제공 스킬은 항상, 그 밖의 스킬은 AI 실행이 켜져 있을 때만 실행할 수 있다. */
     public List<Tool> runnable(String me, boolean admin) {
         var page = skills.search(new SkillService.SearchQuery(null, null, null, null, "APPROVED", false, "popular", 0, MAX_CATALOG), me, admin);
         List<Tool> out = new ArrayList<>();
@@ -46,7 +46,7 @@ public class ToolCatalog {
         return out;
     }
 
-    /** 화면에 보일 이름. 표시 이름이 없는 기본 제공 도구는 SKILL.md 첫 제목(# …)을 쓰고, 그것도 없으면 식별 이름을 쓴다. */
+    /** 화면에 보일 이름. 표시 이름이 없는 기본 제공 스킬은 SKILL.md 첫 제목(# …)을 쓰고, 그것도 없으면 식별 이름을 쓴다. */
     static String displayTitle(SkillSummary s, boolean builtin) {
         if (s.title() != null && !s.title().isBlank()) return s.title();
         if (builtin) {
@@ -57,7 +57,7 @@ public class ToolCatalog {
         return s.name();
     }
 
-    /** 사용자의 말과 겹치는 정도로 순위를 매긴다(이름·태그 3점, 설명 1점). 점수가 0 인 도구는 뺀다. */
+    /** 사용자의 말과 겹치는 정도로 순위를 매긴다(이름·태그 3점, 설명 1점). 점수가 0 인 스킬은 뺀다. */
     static List<Ranked> rank(String text, List<Tool> tools) {
         String t = text == null ? "" : text.toLowerCase(Locale.ROOT);
         return tools.stream().map(x -> new Ranked(x, score(t, x))).filter(r -> r.score() > 0)

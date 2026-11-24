@@ -11,7 +11,7 @@ export interface TemplatePlan { items: PlanItem[]; aiUsed: boolean }
 export interface PreviewCell { text: string; fieldKey?: string | null }
 export interface PreviewBlock { type: 'p' | 'table'; text?: string | null; rows?: PreviewCell[][] | null; fieldKey?: string | null }
 
-/** 도구 번호, 또는 'me'(내 양식: 예) 내 회의록 양식) */
+/** 스킬 번호, 또는 'me'(내 양식: 예) 내 회의록 양식) */
 export type FormTarget = number | 'me'
 
 async function send(method: string, skillId: FormTarget, path: string, body?: BodyInit | object): Promise<Response> {

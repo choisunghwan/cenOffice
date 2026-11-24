@@ -29,9 +29,9 @@ class UiCommandTest {
         assertEquals("NAV_CALENDAR", id("일정 화면 열어줘"));
         assertEquals("NAV_CALENDAR", id("캘린더로 이동해줘"));
         assertEquals("NAV_MEETINGS", id("회의 화면으로 이동"));
-        assertEquals("NAV_TOOLS", id("도구 화면 열어줘"));
-        assertEquals("NAV_MY_TOOLS", id("내 도구 화면 보여줘"));
-        assertEquals("NAV_CREATE_TOOL", id("도구 만들기 화면 열어줘"));
+        assertEquals("NAV_TOOLS", id("스킬 화면 열어줘"));
+        assertEquals("NAV_MY_TOOLS", id("내 스킬 화면 보여줘"));
+        assertEquals("NAV_CREATE_TOOL", id("스킬 만들기 화면 열어줘"));
         assertEquals("NAV_SETTINGS", id("설정 열어줘"));
         assertEquals("NAV_HOME", id("홈으로 이동해줘"));
         assertEquals("NAV_REVIEW", id("공개 승인 화면 열어줘"));
@@ -44,7 +44,7 @@ class UiCommandTest {
         assertNull(id("내일 오후 3시에 팀 회의 잡아줘"));
         assertNull(id("내 할 일 보여줘"));
         assertNull(id("오늘 브리핑 해줘"));
-        assertNull(id("쓸 만한 도구 뭐 있어?"));
+        assertNull(id("쓸 만한 스킬 뭐 있어?"));
         assertNull(id("회의 시작해줘"));
     }
 

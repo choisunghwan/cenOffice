@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * MCP(Model Context Protocol) 서버 — Streamable HTTP 의 단일 JSON 응답 방식.
- * Claude Code / Codex 등이 개인 액세스 토큰(Bearer cen_pat_…)으로 연결해 AI HUB 의 승인된 Skill 을 도구로 호출한다.
+ * Claude Code / Codex 등이 개인 액세스 토큰(Bearer cen_pat_…)으로 연결해 AI HUB 의 승인된 Skill 을 스킬로 호출한다.
  * 호출은 기존 실행 서비스를 그대로 거치므로 권한·승인 상태·속도 제한·감사·KPI 규칙이 웹과 동일하다.
  */
 @RestController
@@ -57,7 +57,7 @@ public class McpController {
                     caps.putObject("tools").put("listChanged", false);
                     caps.putObject("prompts").put("listChanged", false);
                     res.putObject("serverInfo").put("name", "cen-ai-hub").put("version", "1.0.0");
-                    res.put("instructions", "CEN HUB 의 승인된 업무 도구입니다. 결과는 검토용 초안이며 개인정보·비밀번호는 입력하지 마세요.");
+                    res.put("instructions", "CEN HUB 의 승인된 업무 스킬입니다. 결과는 검토용 초안이며 개인정보·비밀번호는 입력하지 마세요.");
                 }
                 case "ping" -> { }
                 case "tools/list" -> res.set("tools", tools(who));
@@ -84,7 +84,7 @@ public class McpController {
         return o;
     }
 
-    /** 이 사용자가 MCP 로 쓸 수 있는 승인된 도구(tools/list 와 prompts/list 가 같은 목록을 쓴다). */
+    /** 이 사용자가 MCP 로 쓸 수 있는 승인된 스킬(tools/list 와 prompts/list 가 같은 목록을 쓴다). */
     private List<SkillSummary> exposed(PersonalTokenService.Principal who) { return catalog.exposed(who); }
 
     private ArrayNode tools(PersonalTokenService.Principal who) {
@@ -103,7 +103,7 @@ public class McpController {
         return arr;
     }
 
-    /** 슬래시 명령(/mcp__cen-ai-hub__이름)으로 보이게 하는 프롬프트 목록. 도구마다 하나씩, 인자는 원문(input) 하나. */
+    /** 슬래시 명령(/mcp__cen-ai-hub__이름)으로 보이게 하는 프롬프트 목록. 스킬마다 하나씩, 인자는 원문(input) 하나. */
     private ArrayNode prompts(PersonalTokenService.Principal who) {
         ArrayNode arr = json.createArrayNode();
         for (SkillSummary s : exposed(who)) {
@@ -115,15 +115,15 @@ public class McpController {
         return arr;
     }
 
-    /** 프롬프트는 실행하지 않고 "이 도구로 처리해 줘"라는 요청문만 만든다. 실행은 기존 tools/call 경로(권한·승인·감사)를 그대로 탄다. */
+    /** 프롬프트는 실행하지 않고 "이 스킬로 처리해 줘"라는 요청문만 만든다. 실행은 기존 tools/call 경로(권한·승인·감사)를 그대로 탄다. */
     private ObjectNode prompt(JsonNode params, PersonalTokenService.Principal who) {
         String name = params.path("name").asText("");
-        if (exposed(who).stream().noneMatch(s -> s.name().equals(name))) throw new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 도구입니다: " + name);
+        if (exposed(who).stream().noneMatch(s -> s.name().equals(name))) throw new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 스킬입니다: " + name);
         String input = params.path("arguments").path("input").asText("").trim();
         // 슬래시 뒤 글은 공백으로 잘려 첫 단어만 오므로 원문은 선택이다. 없으면 이어서 붙여 넣을 원문을 기다리게 한다.
         String text = input.isEmpty()
-                ? "cen-ai-hub 의 " + name + " 도구를 쓸 거야. 처리할 원문은 이 다음 메시지로 붙여 넣을 테니, 받으면 그 전체를 이 도구로 처리하고 결과를 알려줘. 지금은 원문을 기다린다고만 짧게 답해."
-                : "cen-ai-hub 의 " + name + " 도구로 아래 내용을 처리하고 결과를 알려줘.\n\n" + input;
+                ? "cen-ai-hub 의 " + name + " 스킬을 쓸 거야. 처리할 원문은 이 다음 메시지로 붙여 넣을 테니, 받으면 그 전체를 이 스킬로 처리하고 결과를 알려줘. 지금은 원문을 기다린다고만 짧게 답해."
+                : "cen-ai-hub 의 " + name + " 스킬로 아래 내용을 처리하고 결과를 알려줘.\n\n" + input;
         ObjectNode res = json.createObjectNode();
         res.put("description", name);
         ObjectNode msg = res.putArray("messages").addObject();
@@ -138,7 +138,7 @@ public class McpController {
         String input = args.path("input").asText("");
         String engine = args.path("engine").asText("");
         HubSkill s = skills.findByName(name).orElse(null);
-        if (s == null || !skills.canView(s, who.username(), who.admin()) || !"APPROVED".equals(s.status)) throw new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 도구입니다: " + name);
+        if (s == null || !skills.canView(s, who.username(), who.admin()) || !"APPROVED".equals(s.status)) throw new ApiException(HttpStatus.NOT_FOUND, "알 수 없는 스킬입니다: " + name);
         ObjectNode result = json.createObjectNode();
         ArrayNode content = result.putArray("content");
         try {

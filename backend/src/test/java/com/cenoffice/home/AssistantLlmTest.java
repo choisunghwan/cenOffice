@@ -91,7 +91,7 @@ class AssistantLlmTest {
     JsonNode builtinTool() throws Exception {
         var page = read(req(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/hub/skills?status=APPROVED&size=100"), admin, null).andExpect(status().isOk()));
         for (var s : page.path("items")) if (s.path("owner").asText().equals("hub-builtin")) return s;
-        fail("기본 제공 도구가 없습니다");
+        fail("기본 제공 스킬이 없습니다");
         return null;
     }
 
@@ -104,7 +104,7 @@ class AssistantLlmTest {
         assertEquals(tool.path("id").asLong(), r.path("tool").path("skillId").asLong());
         var userText = ArgumentCaptor.forClass(String.class);
         verify(llm, atLeastOnce()).generateJson(anyString(), userText.capture());
-        assertTrue(userText.getValue().contains("도구 목록"));
+        assertTrue(userText.getValue().contains("스킬 목록"));
         assertTrue(userText.getValue().contains(tool.path("id").asText() + " | "));
 
         // AI 가 목록에 없는 번호를 지어내면 받아들이지 않는다
@@ -178,23 +178,23 @@ class AssistantLlmTest {
     }
 
     @Test void toolQuestionsAreAnsweredFromTheToolList() throws Exception {
-        answerFlow("{\"answer\":\"도구는 7개 있습니다.\"}");
-        var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "도구 몇개야?")).andExpect(status().isOk()));
+        answerFlow("{\"answer\":\"스킬은 7개 있습니다.\"}");
+        var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "스킬 몇개야?")).andExpect(status().isOk()));
         assertEquals("ANSWER", r.path("intent").asText(), r.toString());
         boolean ref = false;
-        for (var x : r.path("references")) if (x.asText().equals("도구 목록")) ref = true;
+        for (var x : r.path("references")) if (x.asText().equals("스킬 목록")) ref = true;
         assertTrue(ref, r.path("references").toString());
         var prompts = ArgumentCaptor.forClass(String.class);
         verify(llm, times(2)).generateJson(anyString(), prompts.capture());
         String answer = prompts.getAllValues().get(1);
-        assertTrue(answer.contains("## 사용할 수 있는 도구") && answer.contains("SQL 점검"), answer);
-        assertTrue(answer.matches("(?s).*총 \\d+개.*"), "도구 개수가 근거에 들어 있어야 한다");
+        assertTrue(answer.contains("## 사용할 수 있는 스킬") && answer.contains("SQL 점검"), answer);
+        assertTrue(answer.matches("(?s).*총 \\d+개.*"), "스킬 개수가 근거에 들어 있어야 한다");
     }
 
-    /** "도구"라는 말이 없어도 도구 이름이 들어 있으면 그 도구의 설명이 근거로 들어간다("오류로그 분석은 언제 사용해야되는데") */
+    /** "스킬"이라는 말이 없어도 스킬 이름이 들어 있으면 그 스킬의 설명이 근거로 들어간다("오류로그 분석은 언제 사용해야되는데") */
     /** AI 에게 "할 수 있는 일"과 질문에 맞는 사용법 도움말이 근거로 가고, 답에는 이어서 물어볼 말이 붙는다 */
     @Test void howToQuestionsCarryTheHelpGuidesAndFollowUpSuggestions() throws Exception {
-        answerFlow("{\"answer\":\"도구 상세의 결과물 양식에서 올립니다.\"}");
+        answerFlow("{\"answer\":\"스킬 상세의 결과물 양식에서 올립니다.\"}");
         var r = read(req(post("/api/assistant/interpret"), user, Map.of("text", "양식은 어떻게 올려요?")).andExpect(status().isOk()));
         assertEquals("ANSWER", r.path("intent").asText(), r.toString());
         var prompts = ArgumentCaptor.forClass(String.class);
@@ -217,7 +217,7 @@ class AssistantLlmTest {
         String answer = prompts.getAllValues().get(1);
         assertTrue(answer.contains("사용 안내"), answer);
         boolean ref = false;
-        for (var x : r.path("references")) if (x.asText().equals("도구 사용 안내")) ref = true;
+        for (var x : r.path("references")) if (x.asText().equals("스킬 사용 안내")) ref = true;
         assertTrue(ref, r.path("references").toString());
     }
 

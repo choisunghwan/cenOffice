@@ -11,7 +11,7 @@ export const DL_FORMATS: { key: DlFormat; label: string }[] = [
 ]
 export const dlLabel = (f: DlFormat) => DL_FORMATS.find((x) => x.key === f)?.label ?? f
 
-/** 회의록 도구(cen-meeting-minutes)에 관리자가 올려 둔 공용 양식의 대상. 없으면 null */
+/** 회의록 스킬(cen-meeting-minutes)에 관리자가 올려 둔 공용 양식의 대상. 없으면 null */
 async function companyTarget(): Promise<FormTarget | null> {
   try {
     const page = await hub.skills({ q: 'cen-meeting-minutes', size: 5 })

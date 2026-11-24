@@ -27,7 +27,7 @@ public class BuiltinToolController {
     public ExecutionView run(@PathVariable Long id, @RequestParam("files") List<MultipartFile> files,
                              @RequestParam(defaultValue = "") String instructions, Authentication a) throws java.io.IOException {
         var s = registry.visible(id, a.getName(), HubSkillController.admin(a));
-        if (!BuiltinSkillSeeder.trusted(s) || !BuiltinSkillSeeder.DOCUMENT_TOOLS.contains(s.name)) throw new ApiException(HttpStatus.BAD_REQUEST, "내장 도구만 지원합니다");
+        if (!BuiltinSkillSeeder.trusted(s) || !BuiltinSkillSeeder.DOCUMENT_TOOLS.contains(s.name)) throw new ApiException(HttpStatus.BAD_REQUEST, "내장 스킬만 지원합니다");
         if (files.isEmpty() || files.size() > 3 || instructions.length() > 2000)
             throw new ApiException(HttpStatus.BAD_REQUEST, "자료 1~3개와 2,000자 이하 요청을 입력하세요");
         StringBuilder input = new StringBuilder();

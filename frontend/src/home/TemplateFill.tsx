@@ -4,12 +4,12 @@ import { FormatIcon } from '../hub/FormatIcon'
 import { templateApi, type FormatSlot, type FormTarget, type PlanItem, type PreviewBlock } from '../hub/templateApi'
 
 /**
- * 양식이 등록된 도구의 결과를 양식에 채워 미리보고 그 형식(한글·워드·엑셀·파워포인트)의 파일로 받는다. 양식이 여러 형식으로 등록돼 있으면 고른다.
+ * 양식이 등록된 스킬의 결과를 양식에 채워 미리보고 그 형식(한글·워드·엑셀·파워포인트)의 파일로 받는다. 양식이 여러 형식으로 등록돼 있으면 고른다.
  * 근거를 못 찾은 항목은 임의로 채우지 않고 목록으로 보여 주며, 항목마다 직접 입력 / AI 초안 / 빈칸(기본)을 고른다.
  * AI 가 쓴 칸은 미리보기에서 색으로 구분되고, 받는 파일에는 표시를 넣지 않는다.
  */
 export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; title: string; result: string }) {
-  const [formats, setFormats] = useState<FormatSlot[] | null>(null) // 이 도구에 양식이 등록된 형식들
+  const [formats, setFormats] = useState<FormatSlot[] | null>(null) // 이 스킬에 양식이 등록된 형식들
   const [format, setFormat] = useState<string | null>(null)
   const [items, setItems] = useState<PlanItem[] | null>(null)
   const [values, setValues] = useState<Record<string, string>>({})
@@ -27,7 +27,7 @@ export function TemplateFill({ skillId, title, result }: { skillId: FormTarget; 
       if (!alive) return
       const have = r.filter((x) => x.template)
       setFormats(have); setFormat((cur) => (cur && have.some((x) => x.format === cur) ? cur : have[0]?.format ?? null))
-      if (have.length === 0) setErr('이 도구에는 등록된 양식이 없습니다.')
+      if (have.length === 0) setErr('이 스킬에는 등록된 양식이 없습니다.')
     }).catch((e) => alive && setErr((e as Error).message))
     return () => { alive = false }
   }, [skillId])

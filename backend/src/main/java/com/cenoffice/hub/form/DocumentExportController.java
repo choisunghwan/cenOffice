@@ -13,7 +13,7 @@ public class DocumentExportController {
     private final DocumentExporter exporter;
     public DocumentExportController(DocumentExporter exporter) { this.exporter = exporter; }
 
-    /** 도구 결과(Markdown)를 xlsx/docx/pptx/pdf 로 변환해 내려준다. 결과는 저장하지 않는다. */
+    /** 스킬 결과(Markdown)를 xlsx/docx/pptx/pdf 로 변환해 내려준다. 결과는 저장하지 않는다. */
     @PostMapping("/export")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<byte[]> export(@RequestBody ExportRequest r) {

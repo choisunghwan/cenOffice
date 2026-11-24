@@ -18,7 +18,7 @@ const ALL_MENU = [
   { key: 'dashboard', label: '홈', icon: '⌂' },
   { key: 'calendar', label: '일정', icon: '▦' },
   { key: 'meetings', label: '회의', icon: '◉' },
-  { key: 'home', label: '도구', icon: '✧' },
+  { key: 'home', label: '스킬', icon: '✧' },
 ]
 const MENU = ALL_MENU.filter((m) => !HIDDEN_MENU.includes(m.key))
 const MORE = [
@@ -32,7 +32,7 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
   const collapsed = useUi((s) => s.navCollapsed)
   const toggleNav = () => useUi.getState().setNavCollapsed(!collapsed)
 
-  // 도구 관련 화면(내 도구·도구 만들기·공개 승인)은 사이드바의 '도구' 아래에 있는 것으로 본다
+  // 스킬 관련 화면(내 스킬·스킬 만들기·공개 승인)은 사이드바의 '스킬' 아래에 있는 것으로 본다
   const isOn = (key: string) => (key === 'home' ? page === 'home' || page.startsWith('hub-') : page === key)
 
   const body = () => {
@@ -93,7 +93,7 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
           <div className="h-full grid place-items-center">
             <div className="text-center space-y-3">
               <h2 className="text-3xl font-semibold">우리 팀의 AI를 만나보세요</h2>
-              <p className="text-sm text-slate-400">로그인하고 사내 AI 도구를 둘러보세요.<br />직접 만든 업무 도구를 동료와 공유할 수도 있습니다.</p>
+              <p className="text-sm text-slate-400">로그인하고 사내 AI 스킬을 둘러보세요.<br />직접 만든 업무 스킬을 동료와 공유할 수도 있습니다.</p>
               <div className="flex gap-2 justify-center"><Btn onClick={onLogin}>로그인</Btn><Btn tone="ghost" onClick={() => useOffice.getState().setMode('office')}>3D OFFICE 로컬 모드</Btn></div>
             </div>
           </div>

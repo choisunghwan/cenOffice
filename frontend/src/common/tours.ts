@@ -10,13 +10,13 @@ export interface CoachStep {
 export const TOURS: Record<string, CoachStep[]> = {
   welcome: [
     { target: 'home-input', placement: 'top', title: '무엇이든 말로 시키세요',
-      body: '일정 잡기, 회의 열기, 도구 쓰기, 다크 모드 바꾸기까지 여기에 말하면 됩니다. 예) “내일 오후 3시에 팀 회의 잡아줘”, “주간 팀 회의 회의록 다운로드해줘”' },
+      body: '일정 잡기, 회의 열기, 스킬 쓰기, 다크 모드 바꾸기까지 여기에 말하면 됩니다. 예) “내일 오후 3시에 팀 회의 잡아줘”, “주간 팀 회의 회의록 다운로드해줘”' },
     { target: 'menu', placement: 'right', title: '업무 메뉴',
-      body: '홈, 일정, 회의, 도구로 이동합니다. 입력창에서 “일정 화면 열어줘”라고 말해도 됩니다.' },
+      body: '홈, 일정, 회의, 스킬로 이동합니다. 입력창에서 “일정 화면 열어줘”라고 말해도 됩니다.' },
     { target: 'chat-history', placement: 'right', title: '대화는 저장돼요',
       body: '새 채팅으로 새 대화를 시작하고, 지난 대화는 여기서 다시 열 수 있습니다. 서버에 저장되어 다른 PC에서도 이어집니다.' },
-    { target: 'menu-home', placement: 'right', title: '도구',
-      body: '업무를 대신해 주는 도구를 찾아 쓰고, 직접 만들어 동료와 나눌 수 있습니다. 도구마다 결과물 양식(한글·워드·엑셀·파워포인트)을 올려 둘 수 있어요.' },
+    { target: 'menu-home', placement: 'right', title: '스킬',
+      body: '업무를 대신해 주는 스킬을 찾아 쓰고, 직접 만들어 동료와 나눌 수 있습니다. 스킬마다 결과물 양식(한글·워드·엑셀·파워포인트)을 올려 둘 수 있어요.' },
     { target: 'menu-meetings', placement: 'right', title: '회의와 회의록',
       body: '화상 회의를 열고, 끝나면 회의록을 만들어 확정하세요. 내 양식을 올려 두면 회의록이 그 양식에 맞춰 나옵니다.' },
     { target: 'topbar-right', placement: 'bottom', title: '알림과 화면 모드',
@@ -24,7 +24,7 @@ export const TOURS: Record<string, CoachStep[]> = {
   ],
   connect: [
     { target: 'connect-token', placement: 'bottom', title: '1. 토큰 만들기',
-      body: '이름을 정하고 “토큰 만들기”를 누르세요. 내 계정으로 도구를 쓰는 열쇠가 만들어집니다.' },
+      body: '이름을 정하고 “토큰 만들기”를 누르세요. 내 계정으로 스킬을 쓰는 열쇠가 만들어집니다.' },
     { target: 'connect-cmd', placement: 'top', title: '2. 명령 복사',
       body: '토큰이 들어간 명령이 여기에 나타납니다. 복사해서 Claude Code 터미널에 붙여 넣으세요. 토큰은 이 화면에서만 볼 수 있습니다.' },
     { target: 'connect-list', placement: 'top', title: '토큰 관리',

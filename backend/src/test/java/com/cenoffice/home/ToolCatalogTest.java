@@ -31,14 +31,14 @@ class ToolCatalogTest {
     }
 
     @Test void commonWordsAreIgnored() {
-        assertTrue(ToolCatalog.words("도구 작성 처리 해줘").isEmpty());
+        assertTrue(ToolCatalog.words("스킬 작성 처리 해줘").isEmpty());
         assertTrue(ToolCatalog.words("a 1 가").isEmpty()); // 한 글자는 제외
         assertEquals(2, ToolCatalog.words("회의록, SQL!").size());
     }
 
     @Test void promptCandidatesAreBoundedAndPutTheBestMatchesFirst() {
         List<Tool> many = new ArrayList<>();
-        for (int i = 0; i < 100; i++) many.add(tool(100 + i, "도구" + i, "설명" + i));
+        for (int i = 0; i < 100; i++) many.add(tool(100 + i, "스킬" + i, "설명" + i));
         many.add(minutes);
         var picked = ToolCatalog.forPrompt("회의록 정리해줘", many);
         assertEquals(ToolCatalog.MAX_IN_PROMPT, picked.size());

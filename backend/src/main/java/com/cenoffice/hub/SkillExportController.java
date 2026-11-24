@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 승인된 Skill 을 Claude Code / Codex 등이 읽는 폴더 구조(<name>/SKILL.md)의 ZIP 으로 내려준다.
- * 열람 권한이 있는 승인 Skill 만 포함하고, 내장 도구는 항상 최신 번들 SKILL.md 를 사용한다.
+ * 열람 권한이 있는 승인 Skill 만 포함하고, 내장 스킬은 항상 최신 번들 SKILL.md 를 사용한다.
  */
 @RestController
 @RequestMapping("/api/hub/skills")
@@ -110,8 +110,8 @@ public class SkillExportController {
             ## Codex
             `~/.codex/skills/` (또는 프로젝트의 `.codex/skills/`) 에 풀어 넣습니다.
 
-            ## 그 밖의 도구
-            `<이름>/SKILL.md` 를 해당 도구의 지침/스킬 폴더에 넣거나 내용을 시스템 지침으로 붙여 넣으세요.
+            ## 그 밖의 스킬
+            `<이름>/SKILL.md` 를 해당 AI의 지침/스킬 폴더에 넣거나 내용을 시스템 지침으로 붙여 넣으세요.
 
             ## 주의
             - 이 파일의 지침은 AI 가 읽고 따르는 문서이며, AI HUB 서버의 승인된 버전입니다.

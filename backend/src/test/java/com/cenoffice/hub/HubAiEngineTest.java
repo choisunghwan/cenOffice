@@ -21,7 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** AI 엔진(HUB_AI_ENGINE=true, 테스트는 Mock LLM): 내장 도구를 engine=ai 로 실행하면 시뮬레이션으로 표시되어 KPI 에서 제외된다. */
+/** AI 엔진(HUB_AI_ENGINE=true, 테스트는 Mock LLM): 내장 스킬을 engine=ai 로 실행하면 시뮬레이션으로 표시되어 KPI 에서 제외된다. */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:hubaiengine;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
         "app.seed.admin-password=test-admin-pw-1234",

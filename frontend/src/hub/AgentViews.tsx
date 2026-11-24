@@ -20,7 +20,7 @@ export function AgentDetailView({ id, onBack, onChanged, startWithRun = false }:
   return (
     <div>
       <button className="text-sm text-slate-400 hover:text-white mb-3" onClick={onBack}>← 목록으로</button>
-      <details className="hub-advanced"><summary>도구 정보 · 관리</summary><div className="flex items-start gap-4 flex-wrap my-4">
+      <details className="hub-advanced"><summary>스킬 정보 · 관리</summary><div className="flex items-start gap-4 flex-wrap my-4">
         <div className="w-14 h-14 rounded-2xl bg-violet-500/20 grid place-items-center text-3xl">🤖</div>
         <div className="flex-1 min-w-[16rem]">
           <div className="flex items-center gap-2 flex-wrap"><h2 className="text-xl font-bold">{a.name}</h2><StatusBadge status={a.status} /><Badge tone="idle">v{a.version}</Badge>{a.sample && <Badge tone="warn">샘플 (KPI 제외)</Badge>}</div>
@@ -41,7 +41,7 @@ export function AgentDetailView({ id, onBack, onChanged, startWithRun = false }:
         {([['info', '소개'], ['run', '사용하기']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-sm -mb-px border-b-2 ${tab === k ? 'border-sky-400 text-white' : 'border-transparent text-slate-400'}`}>{l}</button>)}
       </div>
       {tab === 'run' ? <RunTab target={{ agentId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={a.status === 'APPROVED'} runtime={runtime} /> : (
-        <><ToolIntroduction name={a.name} description={a.description} owner={a.ownerName} category="업무 자동화" usage={a.duties} ready={runtime.state === 'RUNTIME_AVAILABLE' && a.status === 'APPROVED'} simulated={runtime.simulated} onUse={() => setTab('run')} /><details className="hub-advanced"><summary>연결된 도구와 구성 정보</summary><div className="grid gap-4 lg:grid-cols-2 mt-4">
+        <><ToolIntroduction name={a.name} description={a.description} owner={a.ownerName} category="업무 자동화" usage={a.duties} ready={runtime.state === 'RUNTIME_AVAILABLE' && a.status === 'APPROVED'} simulated={runtime.simulated} onUse={() => setTab('run')} /><details className="hub-advanced"><summary>연결된 스킬과 구성 정보</summary><div className="grid gap-4 lg:grid-cols-2 mt-4">
           <Card title={`연결된 업무 지침 (${skills.length})`}>
             {skills.length === 0 && <Empty>연결된 업무 지침 이 없습니다.</Empty>}
             <ul className="divide-y divide-white/8 text-sm">{skills.map((s) => (
@@ -66,7 +66,7 @@ export function AgentDetailView({ id, onBack, onChanged, startWithRun = false }:
   )
 }
 
-/** AI 도구 등록 */
+/** AI 스킬 등록 */
 export function AgentForm({ onDone }: { onDone: (id: number) => void }) {
   const skills = useLoad(() => hub.skills({ status: 'APPROVED', size: 100 }), [])
   const [name, setName] = useState('')
@@ -85,9 +85,9 @@ export function AgentForm({ onDone }: { onDone: (id: number) => void }) {
   }
   return (
     <div className="space-y-4 max-w-3xl">
-      <Card title="AI 도구 등록">
+      <Card title="AI 스킬 등록">
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="이름"><Input value={name} onChange={(e) => setName(e.target.value)} maxLength={63} placeholder="예: 개발 지원 AI 도구" /></Field>
+          <Field label="이름"><Input value={name} onChange={(e) => setName(e.target.value)} maxLength={63} placeholder="예: 개발 지원 AI 스킬" /></Field>
           <Field label="공개 범위"><Select value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="PUBLIC">전사 공개 (승인 후)</option><option value="TEAM">우리 팀만 (승인 후)</option></Select></Field>
           <div className="md:col-span-2"><Field label="설명"><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} /></Field></div>
           <div className="md:col-span-2"><Field label="담당 업무"><Input value={duties} onChange={(e) => setDuties(e.target.value)} maxLength={1000} placeholder="예: 오류 분석, 코드 리뷰, 테스트 케이스 작성" /></Field></div>
@@ -105,8 +105,8 @@ export function AgentForm({ onDone }: { onDone: (id: number) => void }) {
         )}
         <label className="text-sm text-slate-300 flex items-center gap-2 mt-3"><input type="checkbox" checked={submit} onChange={(e) => setSubmit(e.target.checked)} />등록과 동시에 관리자 검토 요청</label>
         <ErrorNote message={err} />
-        <div className="mt-3"><Btn disabled={busy || !name.trim() || !description.trim()} onClick={send}>{busy ? '등록 중…' : 'AI 도구 등록'}</Btn></div>
-        <p className="text-[11px] text-slate-500 mt-2">AI 도구 실행은 실행 런타임이 연결된 경우에만 활성화됩니다.</p>
+        <div className="mt-3"><Btn disabled={busy || !name.trim() || !description.trim()} onClick={send}>{busy ? '등록 중…' : 'AI 스킬 등록'}</Btn></div>
+        <p className="text-[11px] text-slate-500 mt-2">AI 스킬 실행은 실행 런타임이 연결된 경우에만 활성화됩니다.</p>
       </Card>
     </div>
   )

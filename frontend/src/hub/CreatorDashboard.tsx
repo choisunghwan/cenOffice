@@ -18,12 +18,12 @@ export function CreatorDashboard({ onOpenSkill, onOpenAgent }: { onOpenSkill: (i
           : <AgentCard key={`a${it.a.id}`} a={it.a} onClick={() => onOpenAgent(it.a.id)} />)}
       </div>
       <Pager page={paged.page} pages={paged.pages} total={paged.total} onChange={paged.setPage} />
-      {!d.skills.length && !d.agents.length && <Card><Empty>아직 만든 도구가 없습니다. 왼쪽 ‘도구 만들기’에서 업무 노하우를 공유해 보세요.</Empty></Card>}
+      {!d.skills.length && !d.agents.length && <Card><Empty>아직 만든 스킬이 없습니다. 왼쪽 ‘스킬 만들기’에서 업무 노하우를 공유해 보세요.</Empty></Card>}
       <details className="hub-advanced"><summary>사용 통계와 동료들의 피드백 보기</summary><div className="space-y-5 mt-5">
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
         <Stat label="등록한 업무 지침" value={d.skillsRegistered} />
         <Stat label="공개된 업무 지침" value={d.skillsApproved} tone="ok" />
-        <Stat label="등록한 조합 도구" value={d.agentsRegistered} />
+        <Stat label="등록한 조합 스킬" value={d.agentsRegistered} />
         <Stat label="실행 요청 (집계)" value={d.totals.requests} tone="info" />
         <Stat label="성공 / 실패" value={`${d.totals.succeeded} / ${d.totals.failed}`} />
       </div>

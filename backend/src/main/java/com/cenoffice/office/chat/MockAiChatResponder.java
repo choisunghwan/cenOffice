@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MockAiChatResponder implements AiChatResponder {
     private static final String SYSTEM = "당신은 CEN HUB 의 AI 직원 '아리'입니다. 대화만 할 수 있으며 어떤 작업도 실행하거나 시스템을 변경할 수 없습니다. "
-            + "작업을 했다고 말하지 마세요. 일정·회의·도구 같은 요청은 업무 화면의 홈 입력창에 말로 요청하도록 안내하세요. 300자 이내 한국어로 답하세요.";
+            + "작업을 했다고 말하지 마세요. 일정·회의·스킬 같은 요청은 업무 화면의 홈 입력창에 말로 요청하도록 안내하세요. 300자 이내 한국어로 답하세요.";
 
     private final ServerMonitor monitor;
     private final LlmProvider llm;
@@ -35,6 +35,6 @@ public class MockAiChatResponder implements AiChatResponder {
             return "안녕하세요, " + agent.getName() + "입니다. 지금은 Mock 모드라 간단한 안내와 서버 상태 조회만 가능해요.";
         }
         return "(Mock AI) 메시지를 받았습니다. 아직 LLM 이 연결되지 않아서 요청하신 작업을 실제로 수행하지는 않았어요. "
-                + "\"서버 상태\"를 물어보시면 조회 결과를 알려드릴 수 있고, 일정·회의·도구는 업무 화면의 홈 입력창에서 요청하실 수 있어요.";
+                + "\"서버 상태\"를 물어보시면 조회 결과를 알려드릴 수 있고, 일정·회의·스킬은 업무 화면의 홈 입력창에서 요청하실 수 있어요.";
     }
 }

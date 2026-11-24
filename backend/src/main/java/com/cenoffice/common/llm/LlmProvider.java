@@ -2,7 +2,7 @@ package com.cenoffice.common.llm;
 
 
 /**
- * LLM 연동 경계. 구현체는 "텍스트/JSON 을 돌려주는 것"만 하며, DB 변경·도구 실행·권한 판단은 절대 하지 않는다.
+ * LLM 연동 경계. 구현체는 "텍스트/JSON 을 돌려주는 것"만 하며, DB 변경·스킬 실행·권한 판단은 절대 하지 않는다.
  * 반환값은 호출 측이 스키마·권한을 서버에서 다시 검증한 뒤에만 사용한다.
  */
 public interface LlmProvider {

@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-/** 도구 결과(Markdown 부분집합: 제목·문단·목록·표)를 xlsx/docx/pptx/pdf 파일로 변환한다. 외부 호출 없음. */
+/** 스킬 결과(Markdown 부분집합: 제목·문단·목록·표)를 xlsx/docx/pptx/pdf 파일로 변환한다. 외부 호출 없음. */
 @Component
 public class DocumentExporter {
     public record Block(String type, int level, String text, List<List<String>> rows) {}

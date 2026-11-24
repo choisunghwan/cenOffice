@@ -32,7 +32,7 @@ export interface HubAgentDetail {
 }
 /** 실행을 시작한 곳을 사람이 읽는 문구로 (WEB 은 표시하지 않는다) */
 export const sourceLabel = (e: { source?: string; sourceHost?: string }) =>
-  e.source === 'CENNAVI' ? `CenNavi에서 시작${e.sourceHost ? ` (${e.sourceHost})` : ''}` : e.source === 'MCP' ? 'AI 도구에서 시작' : ''
+  e.source === 'CENNAVI' ? `CenNavi에서 시작${e.sourceHost ? ` (${e.sourceHost})` : ''}` : e.source === 'MCP' ? 'AI 스킬에서 시작' : ''
 
 export interface HubExecution {
   id: string; targetType: 'SKILL' | 'AGENT'; skillId?: number; agentId?: number; targetName: string; requester: string; input?: string
@@ -155,7 +155,7 @@ export const hub = {
     a.href = url; a.download = 'cen-ai-hub-skills.zip'; a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   },
-  /** 도구 결과(Markdown)를 xlsx/docx/pptx/pdf 파일로 변환해 저장한다 */
+  /** 스킬 결과(Markdown)를 xlsx/docx/pptx/pdf 파일로 변환해 저장한다 */
   exportDoc: async (format: 'xlsx' | 'docx' | 'pptx' | 'pdf' | 'hwpx', title: string, markdown: string) => {
     const token = tokenStore.get()
     const res = await fetch(`${API_URL}/api/hub/documents/export`, {

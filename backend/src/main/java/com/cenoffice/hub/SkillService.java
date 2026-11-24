@@ -493,7 +493,7 @@ public class SkillService {
     }
 
     String displayName(String username) {
-        if (BuiltinSkillSeeder.OWNER.equals(username)) return BuiltinSkillSeeder.AUTHOR_NAME; // 내장 도구의 제작자 표시
+        if (BuiltinSkillSeeder.OWNER.equals(username)) return BuiltinSkillSeeder.AUTHOR_NAME; // 내장 스킬의 제작자 표시
         return users.findByUsername(username).map(UserAccount::getDisplayName).orElse(username);
     }
 
@@ -593,13 +593,13 @@ public class SkillService {
 
     public Optional<HubSkill> findByName(String name) { return skills.findByName(name); }
 
-    /** 내장 문서 도구 중 이 사용자에게 보이는 것의 상세 */
+    /** 내장 문서 스킬 중 이 사용자에게 보이는 것의 상세 */
     public List<SkillDetail> builtinDocumentTools(String username, boolean admin) {
         return BuiltinSkillSeeder.DOCUMENT_TOOLS.stream().map(skills::findByName).flatMap(Optional::stream).filter(BuiltinSkillSeeder::trusted)
             .map(s -> detail(s.id, null, username, admin)).toList();
     }
 
-    /** 이름순 전체 도구(내보내기용) */
+    /** 이름순 전체 스킬(내보내기용) */
     public List<HubSkill> allByName() { return skills.findAll(org.springframework.data.domain.Sort.by("name")); }
 
     public Optional<HubSkillVersion> versionById(Long id) { return versions.findById(id); }

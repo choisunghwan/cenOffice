@@ -4,7 +4,7 @@ import { Btn, Card, ErrorNote } from '../workspace/kit'
 import { FormatIcon } from './FormatIcon'
 import { templateApi, type FormatSlot, type FormTarget } from './templateApi'
 
-/** 제작자용: 이 도구의 결과물 양식을 형식별(한글·워드·엑셀·파워포인트)로 올린다. 올린 형식은 켜지고, 안 올린 형식은 흐리게 보인다. */
+/** 제작자용: 이 스킬의 결과물 양식을 형식별(한글·워드·엑셀·파워포인트)로 올린다. 올린 형식은 켜지고, 안 올린 형식은 흐리게 보인다. */
 export function TemplateUploader({ skillId, title = '결과물 양식', hint, onChange }: { skillId: FormTarget; title?: string; hint?: string; onChange?: () => void }) {
   const [slots, setSlots] = useState<FormatSlot[] | undefined>(undefined) // undefined: 불러오는 중
   const [picked, setPicked] = useState<string | null>(null) // 자세히 보는 형식
@@ -38,7 +38,7 @@ export function TemplateUploader({ skillId, title = '결과물 양식', hint, on
   const detail = slots?.find((s) => s.format === picked && s.template)
   return (
     <Card title={title}>
-      <p className="text-sm text-slate-400 mb-4">{hint ?? '정해진 양식이 있다면 형식에 맞는 아이콘을 눌러 올려 두세요. 이 도구를 쓰는 사람이 결과를 그 양식에 맞춰 채운 파일로 받습니다.'} 본문에 <code>{'{{항목}}'}</code> 자리표시자를 넣거나, 표에 ‘항목 이름 칸 + 빈 칸’을 만들어 두면 됩니다.</p>
+      <p className="text-sm text-slate-400 mb-4">{hint ?? '정해진 양식이 있다면 형식에 맞는 아이콘을 눌러 올려 두세요. 이 스킬을 쓰는 사람이 결과를 그 양식에 맞춰 채운 파일로 받습니다.'} 본문에 <code>{'{{항목}}'}</code> 자리표시자를 넣거나, 표에 ‘항목 이름 칸 + 빈 칸’을 만들어 두면 됩니다.</p>
       <input ref={input} type="file" hidden onChange={(e) => void upload(e.target.files?.[0])} />
       {slots === undefined ? <p role="status" className="text-sm text-slate-400">불러오는 중…</p> : (
         <div className="tpl-slots" role="group" aria-label="양식 형식">

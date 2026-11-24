@@ -89,7 +89,7 @@ public class ExecutionService {
         if (r == null) throw new ApiException(HttpStatus.BAD_REQUEST, "실행 요청이 필요합니다");
         HubSkill requested = r.skillId() == null ? null : skillService.visible(r.skillId(), user, admin);
         if (documents && (requested == null || !BuiltinSkillSeeder.trusted(requested)))
-            throw new ApiException(HttpStatus.BAD_REQUEST, "내장 도구에만 문서를 입력할 수 있습니다");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "내장 스킬에만 문서를 입력할 수 있습니다");
         boolean useAi = "ai".equalsIgnoreCase(r.engine());
         if (useAi && (documents || requested == null)) throw new ApiException(HttpStatus.BAD_REQUEST, "AI 모델 실행은 Skill 단건에서만 사용할 수 있습니다");
         if (useAi && !runtime.aiAvailable()) throw new ApiException(HttpStatus.CONFLICT, "AI 모델 연동이 꺼져 있습니다. 관리자에게 문의하세요");

@@ -7,7 +7,7 @@ import { Field } from './shared'
 
 const TEMPLATE = `---
 name: my-skill
-title: 내 업무 도구
+title: 내 업무 스킬
 description: 이 Skill 이 무엇을 하고 언제 쓰는지 한두 문장으로 설명하세요.
 version: 1.0.0
 category: dev
@@ -48,9 +48,9 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
         ? await hub.upload(file!, { ...common, tags })
         : await hub.registerMd({ skillMd: md, ...common, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })
       if (form) {
-        // 양식은 도구가 만들어진 뒤에 붙인다. 실패해도 도구는 저장된 상태라, 알리고 상세 화면에서 다시 올릴 수 있게 한다.
+        // 양식은 스킬이 만들어진 뒤에 붙인다. 실패해도 스킬은 저장된 상태라, 알리고 상세 화면에서 다시 올릴 수 있게 한다.
         try { await templateApi.put(d.summary.id, form) } catch (x) {
-          await askConfirm({ title: '양식을 올리지 못했어요', message: `도구는 저장되었습니다. ${(x as Error).message} 도구 화면에서 양식을 다시 올릴 수 있어요.`, okText: '확인', cancelText: '닫기' })
+          await askConfirm({ title: '양식을 올리지 못했어요', message: `스킬은 저장되었습니다. ${(x as Error).message} 스킬 화면에서 양식을 다시 올릴 수 있어요.`, okText: '확인', cancelText: '닫기' })
         }
       }
       onDone(d.summary.id)
@@ -79,7 +79,7 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
         <label className="skill-upload-area form-upload">
           <span className="skill-upload-symbol" aria-hidden="true">▤</span>
           <strong>{form ? form.name : '결과물 양식 (선택)'}</strong>
-          <span>{form ? `${(form.size / 1024).toFixed(1)} KB · 도구 결과가 이 양식에 맞춰 채워집니다` : '정해진 양식이 있다면 올려 두세요. 결과를 그 양식에 맞춰 받을 수 있어요. (한글·워드·엑셀·파워포인트)'}</span>
+          <span>{form ? `${(form.size / 1024).toFixed(1)} KB · 스킬 결과가 이 양식에 맞춰 채워집니다` : '정해진 양식이 있다면 올려 두세요. 결과를 그 양식에 맞춰 받을 수 있어요. (한글·워드·엑셀·파워포인트)'}</span>
           <input aria-label="결과물 양식" type="file" accept=".hwpx,.docx,.xlsx,.pptx" onChange={(e) => { setErr(null); setForm(e.target.files?.[0] ?? null) }} />
           {form && <button type="button" className="form-upload-clear" onClick={(e) => { e.preventDefault(); setForm(null) }}>양식 빼기</button>}
         </label>

@@ -26,7 +26,7 @@ public class TemplateController {
 
     public TemplateController(TemplateService templates) { this.templates = templates; }
 
-    /** 경로의 id 가 "me" 이면 내 양식, 숫자면 그 도구의 양식 */
+    /** 경로의 id 가 "me" 이면 내 양식, 숫자면 그 스킬의 양식 */
     private Long key(String id, Authentication a) {
         if ("me".equals(id)) return templates.myKey(a.getName());
         try { return Long.valueOf(id); } catch (NumberFormatException e) { throw new ApiException(HttpStatus.NOT_FOUND, "양식을 찾을 수 없습니다."); }

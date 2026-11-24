@@ -11,7 +11,7 @@ public class BuiltinRuntimeAdapter implements AgentRuntimeAdapter {
     public boolean simulated() { return false; }
     public boolean supportsCancel() { return false; }
     public boolean cancel(String id) { return false; }
-    public String description() { return "내장 문서 도구 · 규칙 기반 초안 생성 · 외부 전송 없음 · 결과 검토 필요"; }
+    public String description() { return "내장 문서 스킬 · 규칙 기반 초안 생성 · 외부 전송 없음 · 결과 검토 필요"; }
     public String submit(RuntimeRequest request) throws RuntimeFailure {
         String output = switch (request.targetName()) {
             case "cen-fp-estimator" -> fp(request.input());
@@ -21,7 +21,7 @@ public class BuiltinRuntimeAdapter implements AgentRuntimeAdapter {
             case "cen-meeting-minutes" -> BuiltinTextTools.meetingMinutes(request.input());
             case "cen-weekly-report" -> BuiltinTextTools.weeklyReport(request.input());
             case "cen-test-case-writer" -> BuiltinTextTools.testCases(request.input());
-            default -> throw new RuntimeFailure("지원하지 않는 내장 도구입니다");
+            default -> throw new RuntimeFailure("지원하지 않는 내장 스킬입니다");
         };
         String id = UUID.randomUUID().toString();
         results.put(id, new RuntimeStatus("SUCCEEDED", output, null));
