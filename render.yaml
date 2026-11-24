@@ -2,12 +2,7 @@
 # 안내: deploy/render/README.md
 # 화상 회의 서버(LiveKit)는 Render 에서 돌릴 수 없어(UDP 필요) LiveKit Cloud 를 씁니다.
 
-databases:
-  - name: cenhub-db
-    databaseName: cenhub
-    user: cenhub
-    plan: free          # 무료 DB 는 생성 30일 뒤 만료됩니다. 실제 사용 전 basic 이상으로 올리세요
-    region: singapore
+# DB 는 Supabase(PostgreSQL)를 씁니다. 무료이고 기간 제한이 없습니다 (Render 무료 DB 는 30일 뒤 지워짐).
 
 services:
   - type: web
@@ -20,16 +15,16 @@ services:
     healthCheckPath: /
     autoDeploy: true
     envVars:
-      - key: DB_HOST
-        fromDatabase: { name: cenhub-db, property: host }
-      - key: DB_PORT
-        fromDatabase: { name: cenhub-db, property: port }
-      - key: DB_NAME
-        fromDatabase: { name: cenhub-db, property: database }
-      - key: DB_USER
-        fromDatabase: { name: cenhub-db, property: user }
-      - key: DB_PASSWORD
-        fromDatabase: { name: cenhub-db, property: password }
+      # Supabase > Connect > Session pooler 값 (Render 는 IPv4 만 되므로 Direct connection 이 아닌 Session pooler)
+      - key: DB_URL               # 예: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+        sync: false
+      - key: DB_USER              # 예: postgres.<프로젝트 ref>
+        sync: false
+      - key: DB_PASSWORD          # Supabase 프로젝트를 만들 때 정한 DB 비밀번호
+        sync: false
+      # Supabase 무료 Session pooler 는 동시 연결 수가 적어 연결 풀을 작게 둔다
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "5"
       - key: JWT_SECRET
         generateValue: true
       # 처음 생성되는 계정 비밀번호: Render 가 임의로 만들고, 대시보드 Environment 에서 볼 수 있습니다
