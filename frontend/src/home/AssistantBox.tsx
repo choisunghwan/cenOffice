@@ -48,6 +48,8 @@ export function AssistantBox() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // 자동완성(Claude Code 방식): 회색 글씨로 이어질 말을 보여 주고 Tab(휴대폰은 제안 버튼)으로 받아들인다
   const [dismissed, setDismissed] = useState(false)
+  // 답변이 올 때마다 AI 가 대화를 보고 다음에 입력할 말을 만든다(AI 가 없거나 실패하면 규칙 기반 제안만 쓴다)
+  const [aiNext, setAiNext] = useState<{ after: number; list: string[] }>({ after: -1, list: [] })
   const coarse = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches, [])
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false; assistantMemory.nextId = nextId.current; assistantMemory.previous = previous.current } }, [])
@@ -221,8 +223,18 @@ export function AssistantBox() {
     return [{ id: t.id, question: t.text, answer: next && next.role === 'assistant' ? next.reply.message : '' }]
   })
 
+  const lastTurn = turns[turns.length - 1]
+  useEffect(() => {
+    if (!ai || busy || !lastTurn || lastTurn.role !== 'assistant') return
+    const ctl = new AbortController()
+    const history = turns.slice(-8).map((t) => ({ role: t.role, text: (t.role === 'user' ? t.text : t.reply.message).slice(0, 800) })).filter((h) => h.text.trim())
+    assistantApi.suggest(history, ctl.signal).then((r) => setAiNext({ after: lastTurn.id, list: r.suggestions ?? [] })).catch(() => { /* 규칙 기반 제안을 쓴다 */ })
+    return () => ctl.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ai, busy, lastTurn?.id])
   const lastBot = [...turns].reverse().find((t) => t.role === 'assistant')
-  const nextSteps = lastBot && lastBot.role === 'assistant' ? lastBot.reply.suggestions ?? [] : []
+  const fromAi = lastBot && aiNext.after === lastBot.id ? aiNext.list : []
+  const nextSteps = [...fromAi, ...(lastBot && lastBot.role === 'assistant' ? lastBot.reply.suggestions ?? [] : [])]
   const pool = buildPool(nextSteps, [...turns].reverse().flatMap((t) => (t.role === 'user' ? [t.text] : [])), EXAMPLES)
   const ghost = busy || dismissed ? null : suggestion(text, pool, nextSteps[0] ?? (turns.length === 0 ? EXAMPLES[0] : null))
   const acceptGhost = () => {

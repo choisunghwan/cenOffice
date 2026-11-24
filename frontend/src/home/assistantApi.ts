@@ -1,4 +1,4 @@
-import { API_URL, tokenStore } from '../api'
+﻿import { API_URL, tokenStore } from '../api'
 import type { Entry, Person } from '../calendar/api'
 import type { MyItem, PendingMinutes } from '../meeting/minutesApi'
 
@@ -58,4 +58,6 @@ export const assistantApi = {
   status: () => call<{ ai: boolean }>('GET', '/status'),
   interpret: (text: string, previous?: string, history?: HistoryTurn[], signal?: AbortSignal) =>
     call<Reply>('POST', '/interpret', { text, ...(previous ? { previous } : {}), ...(history && history.length ? { history } : {}) }, signal),
+  /** 입력창 자동완성: 대화를 보고 AI 가 다음에 입력할 만한 말을 제안한다(실행은 하지 않음) */
+  suggest: (history: HistoryTurn[], signal?: AbortSignal) => call<{ suggestions: string[] }>('POST', '/suggest', { history }, signal),
 }
