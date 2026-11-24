@@ -44,6 +44,14 @@ public class MeetingAssistantService {
         return sessions.computeIfAbsent(id,k->new Session());
     }
     private boolean available(){return allowed&&llm.isReal()&&tts.available();}
+    /** 회의 AI 를 쓸 수 없을 때 무엇이 빠졌는지 서버 설정 이름으로 알려 준다 */
+    private String missing(){
+        var m=new java.util.ArrayList<String>();
+        if(!allowed)m.add("MEETING_AI_ENABLED=true");
+        if(!llm.isReal())m.add("LLM_PROVIDER와 API 키");
+        if(!tts.available())m.add("GEMINI_API_KEY(음성 합성)");
+        return m.isEmpty()?"":"회의 AI를 쓰려면 서버 환경 변수에 "+String.join(", ",m)+" 설정이 필요합니다. 켜면 회의 질문이 AI 서비스로 전송됩니다.";
+    }
     private boolean active(Turn t){return t!=null&&Set.of("GENERATING","READY","PLAYING").contains(t.state());}
     private void requireOpen(String id,String actor){if(!"OPEN".equals(meetings.detail(id,actor).state()))throw error(HttpStatus.CONFLICT,"종료된 회의입니다");}
     private void host(String id,String actor){if(!meetings.detail(id,actor).host().equals(actor))throw error(HttpStatus.FORBIDDEN,"회의 진행자만 센을 켜거나 끌 수 있습니다");requireOpen(id,actor);}
@@ -56,10 +64,10 @@ public class MeetingAssistantService {
             var history=db.query("select * from meeting_ai_turns where meeting_id=? order by created_at desc limit 6",
                 (r,i)->new Turn(r.getString("id"),r.getString("username"),r.getString("question"),r.getString("answer"),r.getString("state"),"",r.getTimestamp("created_at").toInstant()),id);
             Collections.reverse(history);
-            return new State(available(),s.enabled,available()?"":"실제 LLM과 TTS 설정이 필요합니다. AI 음성 시연 설정으로 실행하세요.",s.turn,history);
+            return new State(available(),s.enabled,missing(),s.turn,history);
         }
     }
-    public State enable(String id,String actor){host(id,actor);if(!available())throw error(HttpStatus.SERVICE_UNAVAILABLE,"실제 LLM과 TTS API 설정이 필요합니다");var s=session(id);synchronized(s){s.enabled=true;}return status(id,actor);}
+    public State enable(String id,String actor){host(id,actor);if(!available())throw error(HttpStatus.SERVICE_UNAVAILABLE,missing());var s=session(id);synchronized(s){s.enabled=true;}return status(id,actor);}
     public State disable(String id,String actor){host(id,actor);var s=session(id);String turn;
         synchronized(s){s.enabled=false;turn=s.turn==null?null:s.turn.id();stopState(s);}if(turn!=null)media.removeAssistant(id,turn);return status(id,actor);}
     public State stop(String id,String actor){meetings.detail(id,actor);var s=session(id);String turn;

@@ -51,5 +51,8 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      # 회의 AI(센) 음성 답변: true 로 켜면 회의 질문이 LLM 과 음성 합성(Gemini)으로 전송됩니다
+      - key: MEETING_AI_ENABLED
+        sync: false
       - key: EXT_ALLOWED_ORIGINS
         sync: false
