@@ -216,7 +216,7 @@ public class AssistantService {
 
     /** "어떤 스킬 있어?", "보고서 관련 스킬 알려줘" 같은 스킬 탐색 말. 스킬을 쓰라는 말("스킬로 정리해줘")과 구분하려고 묻는 표현이 스킬 바로 곁에 있을 때만 잡는다. */
     private static final java.util.regex.Pattern TOOL_ASK = java.util.regex.Pattern.compile(
-        "(어떤|무슨|뭐\\s*있|뭐가)\\s*(AI\\s*)?(도구|툴|스킬)|(도구|툴|스킬)\\s*(목록|추천|뭐|있어|있나|있는지|알려|보여|찾아)");
+        "(어떤|무슨|뭐\\s*있|뭐가)\\s*(AI\\s*)?(스킬|툴)|(스킬|툴)\\s*(목록|추천|뭐|있어|있나|있는지|알려|보여|찾아)");
 
     private Reply toolListReply(String text, List<ToolCatalog.Tool> catalog, String source) {
         if (catalog.isEmpty()) return reply("UNSUPPORTED", "지금 쓸 수 있는 스킬이 없습니다. 스킬 메뉴에서 승인된 스킬을 확인해 주세요.", false, source);
@@ -440,7 +440,7 @@ public class AssistantService {
             try {
                 List<ToolCatalog.Tool> catalog = tools.runnable(me, admin);
                 var related = ToolCatalog.rank(question, catalog).stream().filter(r -> r.score() >= ToolCatalog.ALT_THRESHOLD).limit(2).map(ToolCatalog.Ranked::tool).toList();
-                boolean asksTools = question.matches("(?is).*(도구|툴|스킬|tool).*");
+                boolean asksTools = question.matches("(?is).*(스킬|툴|tool).*");
                 if (!catalog.isEmpty() && (asksTools || !related.isEmpty())) {
                     sb.append("## 사용할 수 있는 스킬 (총 ").append(catalog.size()).append("개)\n");
                     for (ToolCatalog.Tool t : catalog.stream().limit(40).toList())
