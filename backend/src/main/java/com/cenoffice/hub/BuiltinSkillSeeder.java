@@ -40,13 +40,14 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
     @Override @Transactional
     public void run(String... args) throws Exception {
         for (String name : NAMES) {
-            if (skills.findByName(name).isPresent()) continue;
             var path = "hub-builtins/" + name + "/SKILL.md";
             SkillPackageReader.Parsed p;
             try (var in = getClass().getClassLoader().getResourceAsStream(path)) {
                 if (in == null) throw new IllegalStateException("내장 Skill 파일 누락: " + path);
                 p = reader.readMarkdown(in.readAllBytes());
             }
+            var existing = skills.findByName(name);
+            if (existing.isPresent()) { upgrade(existing.get(), p); continue; }
             var now = Instant.now();
             var s = new HubSkill();
             s.name = name; s.description = p.meta().description(); s.category = p.meta().category(); s.icon = p.meta().icon();
@@ -59,5 +60,24 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
             v = versions.save(v); s.publishedVersionId = v.id; skills.save(s);
             audit.log(OWNER, "HUB_BUILTIN_INSTALLED", "hub-skill:" + s.id, name + " v" + v.version);
         }
+    }
+
+    /**
+     * 번들된 SKILL.md 의 version 이 DB 에 없는 새 버전이면 그 버전을 추가하고 공개 버전으로 바꾼다.
+     * 내장 소유자(hub-builtin)의 스킬만 대상이며, 같은 이름을 직원이 쓰고 있으면 건드리지 않는다.
+     */
+    private void upgrade(HubSkill s, SkillPackageReader.Parsed p) {
+        if (!trusted(s)) return;
+        String ver = p.meta().version();
+        if (versions.findBySkillIdAndVersion(s.id, ver).isPresent()) return;
+        var now = Instant.now();
+        var v = new HubSkillVersion();
+        v.skillId = s.id; v.version = ver; v.status = "APPROVED"; v.frontmatter = "{}"; v.skillMd = p.skillMd();
+        v.fileList = p.fileListJson(); v.packageKind = "MD"; v.packageData = p.packageData(); v.sha256 = p.sha256(); v.createdBy = OWNER; v.createdAt = now;
+        v = versions.save(v);
+        s.description = p.meta().description(); s.category = p.meta().category(); s.icon = p.meta().icon();
+        s.publishedVersionId = v.id; s.updatedBy = OWNER; s.updatedAt = now;
+        skills.save(s);
+        audit.log(OWNER, "HUB_BUILTIN_UPGRADED", "hub-skill:" + s.id, s.name + " v" + ver);
     }
 }
