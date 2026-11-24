@@ -126,7 +126,7 @@ export default function App() {
       {mode === 'office' && conn === 'online' && panel === 'none' && <ChatDock />}
 
       {conn === 'replaced' && (
-        <div className="glass absolute top-20 left-1/2 -translate-x-1/2 z-20 rounded-xl px-5 py-3 text-sm flex items-center gap-3" role="alert">
+        <div className="glass absolute top-20 left-1/2 -translate-x-1/2 max-sm:left-3 max-sm:right-3 max-sm:translate-x-0 max-sm:flex-wrap max-sm:justify-center max-sm:text-center z-20 rounded-xl px-5 py-3 text-sm flex items-center gap-3" role="alert">
           같은 계정으로 다른 곳에서 접속해 이 연결이 종료되었습니다.
           <button onClick={() => window.location.reload()} className="px-3 py-1 rounded-lg bg-sky-500 text-white font-semibold">여기서 다시 접속</button>
         </div>
