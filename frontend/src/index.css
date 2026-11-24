@@ -274,3 +274,8 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 
 /* 업무 화면 안에서 띄운 창(일정 만들기·회의록 확인 등)이 상단 막대 아래에 깔리지 않게, 창이 열린 동안만 업무 영역을 위로 올린다 */
 .hub-shell:has(.cal-modal, .minutes-dialog-bg) { z-index: 30; }
+
+/* 아이폰 사파리는 글자가 16px보다 작은 입력칸을 누르면 화면 전체를 확대해 버린다(되돌아오지 않아 불편). 터치 화면에서는 입력칸 글자를 16px로 맞춘다. */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]), textarea, select { font-size: 16px !important; }
+}

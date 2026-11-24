@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useMultiplayer } from '../multiplayer'
+import { setChatDockVisible, useMultiplayer } from '../multiplayer'
 import { useOffice } from '../store'
 import { theme } from '../theme'
 
@@ -19,6 +19,14 @@ export function ChatDock() {
   const list = (s.activeRoomId != null && s.messages[s.activeRoomId]) || []
   const totalUnread = Object.values(s.unread).reduce((a, b) => a + b, 0)
   const unreadOf = (type: string) => rooms.filter((r) => r.type === type).reduce((a, r) => a + (s.unread[r.id] ?? 0), 0)
+
+  // 채팅창이 화면에 있는 동안만 '보고 있음'으로 친다. 다시 보이면 열려 있던 대화의 안 읽음을 지운다.
+  useEffect(() => {
+    setChatDockVisible(true)
+    const st = useMultiplayer.getState()
+    if (st.open) st.setOpen(true)
+    return () => setChatDockVisible(false)
+  }, [])
 
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [list.length, s.open, s.activeRoomId])
 

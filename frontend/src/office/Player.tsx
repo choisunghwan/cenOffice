@@ -2,7 +2,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Character, type CharacterHandle } from './Character'
-import { bindInput, cameraRig, keys } from './input'
+import { bindInput, cameraRig, keys, stick } from './input'
 import { resolve, raySpan } from './collision'
 import { COLLIDERS, INTERACTABLES } from './layout'
 import { useOffice } from '../store'
@@ -70,7 +70,10 @@ export function Player() {
     if (!paused) {
       iz = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0)
       ix = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0)
+      // 휴대폰 조이스틱: 키보드 입력이 없을 때만 쓰고, 기울인 만큼(0~1) 천천히~빠르게 움직인다
+      if (ix === 0 && iz === 0 && (stick.x !== 0 || stick.z !== 0)) { ix = stick.x; iz = stick.z }
     }
+    const throttle = Math.min(1, Math.abs(iz) || Math.abs(ix))
     if (TURN_MODE) {
       cameraRig.yaw -= ix * TURN_SPEED * dt
       ix = 0
@@ -90,8 +93,8 @@ export function Player() {
 
     // ── 가속/감속 ─────────────────────────────────────────────
     const v = vel.current
-    const tx = wx * MAX_SPEED
-    const tz = wz * MAX_SPEED
+    const tx = wx * MAX_SPEED * throttle
+    const tz = wz * MAX_SPEED * throttle
     const rate = (wl > 0 ? ACCEL : DECEL) * dt
     const dvx = tx - v.x
     const dvz = tz - v.z

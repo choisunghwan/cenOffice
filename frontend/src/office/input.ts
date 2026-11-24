@@ -1,4 +1,6 @@
 ﻿export const keys = new Set<string>()
+/** 화면 조이스틱 입력. x: 오른쪽(+)/왼쪽(-), z: 앞(+)/뒤(-), 각 -1~1. 손을 떼면 0. */
+export const stick = { x: 0, z: 0 }
 
 /** 휴대폰처럼 좁은 화면인지. 좁은 화면은 카메라를 더 멀리 두고 시야각을 넓혀 너무 확대돼 보이지 않게 한다. */
 export const isNarrowScreen = typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
