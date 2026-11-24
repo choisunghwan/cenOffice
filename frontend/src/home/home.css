@@ -221,3 +221,19 @@
 .ha-dl-info b{font-size:14px;font-weight:700;overflow-wrap:anywhere}
 .ha-dl-info small{font-size:12px;color:var(--c-muted);overflow-wrap:anywhere}
 .ha-dl-list .ha-dl-row .cal-primary{flex:none;width:auto;min-width:84px}
+
+/* AI 답변 카드: 문단·목록·소제목·굵은 글씨를 읽기 좋게 */
+.ha-bot>.ha-answer-card{margin:0 0 8px;background:var(--c-panel);border:1px solid var(--c-border);border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:min(100%,720px);line-height:1.75;overflow-wrap:anywhere;font-size:13.5px}
+.rt>*{margin:0}
+.rt>*+*{margin-top:8px}
+.rt p{white-space:pre-wrap}
+.rt .rt-head{font-weight:700;font-size:13.5px;margin-top:12px}
+.rt .rt-head:first-child{margin-top:0}
+.rt ul,.rt ol{padding-left:20px}
+.rt ul{list-style:disc}
+.rt ol{list-style:decimal}
+.rt li{padding-left:2px}
+.rt li+li{margin-top:4px}
+.rt li::marker{color:var(--c-muted)}
+.rt strong{font-weight:700}
+.rt code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;padding:1px 5px;border-radius:5px;background:rgba(127,140,156,.16)}

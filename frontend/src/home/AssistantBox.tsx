@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useChat } from './chatStore'
 import { runUiAction } from './uiActions'
@@ -16,6 +16,7 @@ import { ExportButtons } from '../hub/ExportButtons'
 import { askConfirm } from '../common/confirm'
 import { meetingsApi } from '../meeting/api'
 import { assistantApi, type Ambiguity, type Draft, type HistoryTurn, type Reply, type Room, type ToolPick } from './assistantApi'
+import { RichText } from './RichText'
 
 export type Turn =
   | { id: number; role: 'user'; text: string }
@@ -232,7 +233,7 @@ export function AssistantBox() {
             : (
               <div key={t.id} id={`ha-t-${t.id}`} className="ha-bot">
                 <Flow turn={t} />
-                <p className={t.reply.intent === 'ANSWER' ? 'ha-answer' : undefined}>{t.reply.message}</p>
+                {t.reply.intent === 'ANSWER' ? <RichText className="ha-answer-card" text={t.reply.message} /> : <p>{t.reply.message}</p>}
                 {(t.reply.suggestions ?? []).length > 0 && (
                   <div className="ha-suggest" role="group" aria-label="이어서 해 볼 말">
                     <span>이렇게 물어보세요</span>
