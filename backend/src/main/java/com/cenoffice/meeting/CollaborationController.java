@@ -20,7 +20,7 @@ public class CollaborationController {
     public record Chat(@NotBlank @Size(max=1000) String content) {}
     @GetMapping public List<CollaborationService.Meeting> list(Authentication a) {return meetings.list(a.getName());}
     @GetMapping("/page") public CollaborationService.Page page(@RequestParam(required=false) String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="10") int size,Authentication a) {return meetings.search(a.getName(),q,page,size);}
-    @GetMapping("/media-status") public Map<String,Object> status() {return Map.of("configured",media.configured(),"available",media.available());}
+    @GetMapping("/media-status") public Map<String,Object> status() {String r=media.check(); return Map.of("configured",media.configured(),"available","ok".equals(r),"reason",r);}
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public CollaborationService.Meeting create(@Valid @RequestBody Create r,Authentication a) {return meetings.create(r.title(),a.getName());}
     @PostMapping("/join") public CollaborationService.Meeting join(@Valid @RequestBody Join r,Authentication a) {return meetings.join(r.code(),a.getName());}
     @GetMapping("/{id}") public CollaborationService.Meeting detail(@PathVariable String id,Authentication a) {return meetings.detail(id,a.getName());}

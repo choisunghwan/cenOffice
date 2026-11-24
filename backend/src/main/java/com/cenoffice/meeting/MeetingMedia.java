@@ -40,12 +40,27 @@ public class MeetingMedia {
         return new Grant(url, token(username, displayName, Map.of("room", room(id), "roomJoin", true,
             "canPublish", true, "canSubscribe", true, "canPublishData", false)));
     }
-    public boolean available() {
-        if (!configured()) return false;
-        try { return http.send(HttpRequest.newBuilder(URI.create(apiUrl + "/")).timeout(Duration.ofSeconds(2)).GET().build(), HttpResponse.BodyHandlers.discarding()).statusCode() == 200; }
-        catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
-        catch (Exception e) { return false; }
+    /** ok · not_configured(값 없음) · unreachable(주소에 접속 안 됨) · key_rejected(키·시크릿이 LiveKit 에서 거부됨) */
+    public String check() {
+        if (!configured()) return "not_configured";
+        var c = cached;
+        if (c != null && c.at().isAfter(Instant.now().minusSeconds(15))) return c.result();
+        String r;
+        try {
+            // 실제 키로 서명한 토큰으로 회의방 목록을 요청해 본다. 주소만 맞고 키가 틀려도 "준비 완료"로 보이지 않게
+            var req = HttpRequest.newBuilder(URI.create(apiUrl + "/twirp/livekit.RoomService/ListRooms")).timeout(Duration.ofSeconds(3))
+                .header("Authorization", "Bearer " + token("meeting-service", "", Map.of("roomList", true)))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{}")).build();
+            int st = http.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
+            r = st == 200 ? "ok" : (st == 401 || st == 403) ? "key_rejected" : "unreachable";
+        } catch (InterruptedException e) { Thread.currentThread().interrupt(); r = "unreachable"; }
+        catch (Exception e) { r = "unreachable"; }
+        cached = new Checked(Instant.now(), r);
+        return r;
     }
+    private record Checked(Instant at, String result) {}
+    private volatile Checked cached;
+    public boolean available() { return "ok".equals(check()); }
     public Grant assistantGrant(String id,String turnId) {
         if(!available())throw unavailable();
         return new Grant(url,token("cen-ai-"+turnId,"센 (AI)",Map.of("room",room(id),"roomJoin",true,
