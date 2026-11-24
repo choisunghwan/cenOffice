@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { LiveKitRoom, RoomAudioRenderer, ParticipantTile, useTracks, useLocalParticipant, useParticipants, useConnectionState, StartAudio } from '@livekit/components-react'
 import { Room, Track, ConnectionState } from 'livekit-client'
@@ -10,6 +10,19 @@ import { useSpeechRecognition } from './useSpeechRecognition'
 import { CaptionBar, SttConsentDialog, TranscriptList, useTranscript } from './Transcript'
 import { MeetingAssistant, useMeetingAssistant } from './MeetingAssistant'
 
+/** 브라우저가 돌려주는 영어 장치 오류를 사용자가 할 일로 바꿔 보여 준다 */
+export function deviceErrorMessage(e: unknown): string {
+  const err = e as { name?: string; message?: string }
+  const text = `${err?.name ?? ''} ${err?.message ?? ''}`
+  const how = '주소창 왼쪽의 사이트 설정 아이콘에서 카메라·마이크를 "허용"으로 바꾼 뒤 새로고침해 주세요.'
+  if (/dismissed/i.test(text)) return `카메라·마이크 사용 허용 창이 닫혔습니다. ${how}`
+  if (/NotAllowed|denied|Permission/i.test(text)) return `브라우저에서 카메라·마이크 사용이 막혀 있습니다. ${how}`
+  if (/NotFound|Requested device not found|no device/i.test(text)) return '카메라나 마이크를 찾지 못했습니다. 장치가 연결되어 있는지 확인해 주세요. 장치 없이도 회의에는 참여할 수 있습니다.'
+  if (/NotReadable|Could not start|in use|TrackStart/i.test(text)) return '다른 프로그램(줌, 팀즈 등)이 카메라나 마이크를 쓰고 있습니다. 그 프로그램을 닫고 다시 켜 주세요.'
+  if (/screen|getDisplayMedia/i.test(text) && /abort|cancel/i.test(text)) return '화면 공유를 취소했습니다.'
+  return `연결 또는 장치 오류: ${err?.message ?? String(e)}`
+}
+
 export function MeetingCall({ meeting, grant, mic, camera, onLeave }: { meeting: Meeting; grant: MediaGrant; mic: boolean; camera: boolean; onLeave: (message?: string) => void }) {
   const [error, setError] = useState('')
   const room = useMemo(() => new Room({ adaptiveStream: true, dynacast: true, videoCaptureDefaults: { resolution: { width: 640, height: 360, frameRate: 24 } } }), [])
@@ -17,8 +30,8 @@ export function MeetingCall({ meeting, grant, mic, camera, onLeave }: { meeting:
   useEffect(() => () => { void room.disconnect(true) }, [room])
   useEffect(() => { if (!user) void room.disconnect(true) }, [user, room])
   return createPortal(<LiveKitRoom room={room} serverUrl={grant.url} token={grant.token} connect audio={mic} video={camera}
-    onError={e => setError(`연결 또는 장치 오류: ${e.message}`)}
-    onMediaDeviceFailure={() => setError('장치를 사용할 수 없습니다. 브라우저 권한을 확인해 주세요. 카메라·마이크 없이도 회의에 참여할 수 있습니다.')}
+    onError={e => setError(deviceErrorMessage(e))}
+    onMediaDeviceFailure={(_f, kind) => setError(`${kind === 'videoinput' ? '카메라' : kind === 'audioinput' ? '마이크' : '장치'}를 쓸 수 없습니다. 주소창 왼쪽의 사이트 설정 아이콘에서 카메라·마이크를 "허용"으로 바꾼 뒤 새로고침해 주세요. 카메라·마이크 없이도 회의에는 참여할 수 있습니다.`)}
     onDisconnected={() => onLeave('회의 연결이 종료되었습니다. 회의가 진행 중이면 다시 참여할 수 있습니다.')}
     data-lk-theme="default" className="meeting-call">
     <CallContent meeting={meeting} room={room} error={error} setError={setError} onLeave={onLeave} />
@@ -75,7 +88,7 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
   useEffect(() => { end.current?.scrollIntoView({ block: 'nearest' }) }, [messages.length])
   const device = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
-    try { await fn() } catch (e) { setError(`장치를 켜지 못했습니다: ${(e as Error).message}`) } finally { setBusy(false) }
+    try { await fn() } catch (e) { setError(deviceErrorMessage(e)) } finally { setBusy(false) }
   }
   const copy = async () => { try { await navigator.clipboard.writeText(meeting.code); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { setError(`참여 코드: ${meeting.code}`) } }
   const send = async () => {
