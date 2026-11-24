@@ -11,6 +11,7 @@ import static org.mockito.Mockito.*;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -152,5 +153,37 @@ class MeetingAssistantApiTest {
             var e=assertThrows(java.util.concurrent.ExecutionException.class,()->granting.get(3,TimeUnit.SECONDS));
             assertInstanceOf(com.cenoffice.common.api.ApiException.class,e.getCause());
         }
+    }
+
+    /** 첫 문장 음성이 나오면 바로 READY. 다음 문장은 만드는 동안 202, 다 들려준 뒤에는 410 */
+    @Test void answerIsSpokenSentenceBySentence() throws Exception {
+        configured();
+        when(llm.chatQuick(anyString(),anyString())).thenReturn("첫째로 금요일 배포 일정을 먼저 확인하는 것이 좋겠습니다. 둘째로 테스트 범위를 작게 나눠 검증해 보세요. 셋째로 결과를 회의록에 남겨 두면 좋습니다.");
+        var hold=new java.util.concurrent.CountDownLatch(1);
+        byte[] w=GeminiSpeechTest.wave();
+        when(tts.synthesize(anyString())).thenAnswer(i->{if(((String)i.getArgument(0)).startsWith("둘째"))hold.await(5,java.util.concurrent.TimeUnit.SECONDS);return w;});
+        var x=meeting();String h=x[0],g=x[1],b=x[2];
+        call("POST",b+"/assistant/enable",h,Map.of(),200);
+        call("POST",b+"/assistant/ask",g,Map.of("question","다음 할 일은?"),202);
+        String turn=waitFor(b,h,"READY").path("turn").path("id").asText();
+        String audio=b+"/assistant/turns/"+turn+"/audio?index=";
+        mvc.perform(get(audio+0).header("Authorization","Bearer "+g)).andExpect(status().isOk());
+        mvc.perform(get(audio+1).header("Authorization","Bearer "+g)).andExpect(status().isAccepted());
+        hold.countDown();
+        int got=0;
+        for(int i=0;i<100&&got==0;i++){got=mvc.perform(get(audio+1).header("Authorization","Bearer "+g)).andReturn().getResponse().getStatus()==200?1:0;if(got==0)Thread.sleep(30);}
+        assertEquals(1,got,"둘째 문장 음성");
+        int st=0;
+        for(int i=0;i<100;i++){st=mvc.perform(get(audio+3).header("Authorization","Bearer "+g)).andReturn().getResponse().getStatus();if(st!=202)break;Thread.sleep(30);}
+        assertEquals(410,st,"세 문장 뒤에는 더 없음");
+        mvc.perform(get(audio+2).header("Authorization","Bearer "+g)).andExpect(status().isOk());
+        verify(tts,times(3)).synthesize(anyString());
+    }
+
+    @Test void sentencesAreGroupedForSpeech() {
+        assertEquals(List.of("제안입니다. 작은 범위부터 검증하세요."),MeetingAssistantService.sentences("제안입니다. 작은 범위부터 검증하세요."));
+        var p=MeetingAssistantService.sentences("가".repeat(25)+". "+"나".repeat(25)+"? "+"다".repeat(25)+"! "+"라".repeat(25)+". "+"마".repeat(25)+".");
+        assertEquals(4,p.size(),"최대 네 묶음");
+        assertTrue(p.get(0).startsWith("가"));
     }
 }

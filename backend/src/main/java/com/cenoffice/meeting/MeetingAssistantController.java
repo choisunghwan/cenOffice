@@ -20,8 +20,13 @@ public class MeetingAssistantController {
     @PostMapping("/stop") public MeetingAssistantService.State stop(@PathVariable String id,Authentication a){return service.stop(id,a.getName());}
     @PostMapping("/ask") @ResponseStatus(HttpStatus.ACCEPTED)
     public MeetingAssistantService.State ask(@PathVariable String id,@Valid @RequestBody Ask r,Authentication a){return service.ask(id,a.getName(),r.question());}
-    @GetMapping("/turns/{turn}/audio") public ResponseEntity<byte[]> audio(@PathVariable String id,@PathVariable String turn,Authentication a){
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).cacheControl(CacheControl.noStore()).body(service.audio(id,a.getName(),turn));
+    /** 문장별 음성: 200 = 그 문장의 WAV, 202 = 아직 만드는 중(잠시 뒤 다시), 410 = 더 들려줄 문장이 없음 */
+    @GetMapping("/turns/{turn}/audio") public ResponseEntity<byte[]> audio(@PathVariable String id,@PathVariable String turn,
+            @RequestParam(defaultValue="0") int index,Authentication a){
+        byte[] wav=service.audio(id,a.getName(),turn,index);
+        if(wav==null)return ResponseEntity.status(HttpStatus.ACCEPTED).cacheControl(CacheControl.noStore()).build();
+        if(wav.length==0)return ResponseEntity.status(HttpStatus.GONE).cacheControl(CacheControl.noStore()).build();
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).cacheControl(CacheControl.noStore()).body(wav);
     }
     @PostMapping("/turns/{turn}/grant") public MeetingMedia.Grant grant(@PathVariable String id,@PathVariable String turn,Authentication a){return service.grant(id,a.getName(),turn);}
     @PostMapping("/turns/{turn}/playing") public MeetingAssistantService.State playing(@PathVariable String id,@PathVariable String turn,Authentication a){return service.playing(id,a.getName(),turn);}

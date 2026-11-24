@@ -1,4 +1,4 @@
-import { API_URL, tokenStore } from '../api'
+﻿import { API_URL, tokenStore } from '../api'
 import type { MediaGrant } from './api'
 
 export interface AssistantTurn { id: string; username: string; question: string; answer: string; state: string; message: string; createdAt: string }
@@ -21,9 +21,12 @@ export const assistantApi = {
   grant: (id: string, turn: string) => request<MediaGrant>(id, `/turns/${turn}/grant`, {}),
   playing: (id: string, turn: string) => request<AssistantState>(id, `/turns/${turn}/playing`, {}),
   complete: (id: string, turn: string) => request<AssistantState>(id, `/turns/${turn}/complete`, {}),
-  audio: async (id: string, turn: string, signal: AbortSignal) => {
-    const r = await fetch(`${API_URL}/api/meetings/${id}/assistant/turns/${turn}/audio`, { signal,
+  /** index 번째 문장의 음성. 'wait' = 아직 만드는 중, 'end' = 더 없음 */
+  audio: async (id: string, turn: string, index: number, signal: AbortSignal): Promise<ArrayBuffer | 'wait' | 'end'> => {
+    const r = await fetch(`${API_URL}/api/meetings/${id}/assistant/turns/${turn}/audio?index=${index}`, { signal,
       headers: { Authorization: `Bearer ${tokenStore.get() ?? ''}` }, cache: 'no-store' })
+    if (r.status === 202) return 'wait'
+    if (r.status === 410) return 'end'
     if (!r.ok) throw new Error('음성을 불러오지 못했습니다')
     return r.arrayBuffer()
   },

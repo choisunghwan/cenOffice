@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { LocalAudioTrack, Room, Track } from 'livekit-client'
 import { assistantApi, type AssistantState } from './assistantApi'
 import type { Meeting } from './api'
@@ -52,21 +52,31 @@ export function useMeetingAssistant(meeting: Meeting) {
     const abort = new AbortController()
     let cancelled = false
     let voiceRoom: Room | null = null
-    let source: AudioBufferSourceNode | null = null
+    const sources: AudioBufferSourceNode[] = []
     let track: LocalAudioTrack | null = null
     const cleanup = () => {
       cancelled = true; abort.abort()
-      if (source) { source.onended = null; try { source.stop() } catch { /* not started */ }; source.disconnect() }
+      for (const src of sources) { src.onended = null; try { src.stop() } catch { /* not started */ }; src.disconnect() }
       track?.stop(); void voiceRoom?.disconnect(true)
     }
     playback.current = { id: turn.id, cancel: cleanup }
+    /** index 번째 문장 음성을 받아 푼다. 아직 만드는 중이면 잠깐씩 기다린다 */
+    const fetchChunk = async (ctx: AudioContext, index: number): Promise<AudioBuffer | null> => {
+      for (;;) {
+        const r = await assistantApi.audio(meeting.id, turn.id, index, abort.signal)
+        if (r === 'end') return null
+        if (r !== 'wait') return ctx.decodeAudioData(r)
+        await new Promise(res => setTimeout(res, 250))
+        if (cancelled) return null
+      }
+    }
     void (async () => {
       try {
         const ctx = context.current
         if (!ctx || ctx.state !== 'running') throw new Error('소리 재생이 허용되지 않았습니다. 질문 버튼을 다시 눌러 주세요.')
-        const data = await assistantApi.audio(meeting.id, turn.id, abort.signal)
-        const buffer = await ctx.decodeAudioData(data)
-        if (buffer.duration > 90) throw new Error('음성 답변이 너무 깁니다')
+        // 첫 문장 음성이 오면 바로 회의방에 연결해 틀고, 다음 문장은 재생하는 동안 받아 이어 붙인다
+        const first = await fetchChunk(ctx, 0)
+        if (!first) throw new Error('empty')
         if (cancelled) return
         const grant = await assistantApi.grant(meeting.id, turn.id)
         if (cancelled) return
@@ -74,13 +84,30 @@ export function useMeetingAssistant(meeting: Meeting) {
         await voiceRoom.connect(grant.url, grant.token, { autoSubscribe: false })
         if (cancelled) { await voiceRoom.disconnect(true); return }
         const destination = ctx.createMediaStreamDestination()
-        source = ctx.createBufferSource(); source.buffer = buffer; source.connect(destination)
         track = new LocalAudioTrack(destination.stream.getAudioTracks()[0], undefined, true, ctx)
         await voiceRoom.localParticipant.publishTrack(track, { source: Track.Source.Microphone, name: '센의 답변' })
         if (cancelled) { cleanup(); return }
         await assistantApi.playing(meeting.id, turn.id)
         if (cancelled) { cleanup(); return }
-        source.onended = () => {
+        let at = ctx.currentTime + 0.5, total = 0
+        const schedule = (buffer: AudioBuffer) => {
+          total += buffer.duration
+          if (total > 90) throw new Error('음성 답변이 너무 깁니다')
+          const src = ctx.createBufferSource(); src.buffer = buffer; src.connect(destination)
+          at = Math.max(at, ctx.currentTime + 0.05) // 다음 문장이 늦게 오면 끊긴 뒤 바로 이어 튼다
+          src.start(at); at += buffer.duration
+          sources.push(src)
+          return src
+        }
+        let last = schedule(first)
+        await refresh()
+        for (let i = 1; ; i++) {
+          const next = await fetchChunk(ctx, i)
+          if (cancelled) return
+          if (!next) break
+          last = schedule(next)
+        }
+        const finish = () => {
           if (cancelled) return
           // Leave a little time for the last encoded audio frames to reach subscribers.
           setTimeout(() => {
@@ -89,8 +116,8 @@ export function useMeetingAssistant(meeting: Meeting) {
             void assistantApi.complete(meeting.id, turn.id).then(() => refresh()).catch(() => refresh())
           }, 400)
         }
-        source.start(ctx.currentTime + 0.5)
-        await refresh()
+        // "더 없음"을 받기 전에 마지막 문장이 이미 끝났을 수도 있다
+        if (ctx.currentTime >= at - 0.02) finish(); else last.onended = finish
       } catch (e) {
         if (!cancelled && mounted.current) {
           setError((e as Error).message.startsWith('소리 재생이') ? (e as Error).message : '회의에 센의 목소리를 연결하지 못했습니다. 답변 글은 남아 있습니다. 다시 질문해 주세요.')

@@ -26,7 +26,9 @@ public class MeetingAssistantService {
     public record Turn(String id,String username,String question,String answer,String state,String message,Instant createdAt) {}
     public record State(boolean available,boolean enabled,String reason,Turn turn,List<Turn> history) {}
     private static class Session {
-        boolean enabled,inflight; Turn turn; byte[] audio; long touched=System.currentTimeMillis();
+        boolean enabled,inflight; Turn turn; long touched=System.currentTimeMillis();
+        /** 문장별 음성. 첫 문장이 만들어지면 READY 가 되고, 나머지는 재생하는 동안 이어서 만든다 */
+        List<byte[]> audio; boolean audioDone;
     }
     private final ConcurrentHashMap<String,Session> sessions=new ConcurrentHashMap<>();
     private final ExecutorService executor=Executors.newFixedThreadPool(2,r->{var t=new Thread(r,"meeting-ai");t.setDaemon(true);return t;});
@@ -82,6 +84,20 @@ public class MeetingAssistantService {
     public State stop(String id,String actor){meetings.detail(id,actor);var s=session(id);String turn;
         synchronized(s){turn=s.turn==null?null:s.turn.id();stopState(s);}if(turn!=null)media.removeAssistant(id,turn);return status(id,actor);}
     private void stopState(Session s){if(active(s.turn))change(s,"STOPPED","중단했습니다");s.audio=null;}
+    /** 답변 글을 소리로 들려줄 문장 묶음으로 나눈다. 너무 짧은 문장은 다음 문장과 붙여 음성 합성 횟수를 줄인다 */
+    static List<String> sentences(String a){
+        var parts=new ArrayList<String>();var cur=new StringBuilder();
+        for(String p:a.strip().split("(?<=[.?!。])\\s+")){
+            if(p.isBlank())continue;
+            if(cur.length()>0)cur.append(' ');cur.append(p.strip());
+            if(cur.length()>=20){parts.add(cur.toString());cur.setLength(0);}
+        }
+        if(cur.length()>0){if(!parts.isEmpty()&&cur.length()<20)parts.set(parts.size()-1,parts.get(parts.size()-1)+" "+cur);else parts.add(cur.toString());}
+        while(parts.size()>4){parts.set(parts.size()-2,parts.get(parts.size()-2)+" "+parts.remove(parts.size()-1));}
+        return parts;
+    }
+    /** 이 차례가 아직 살아 있는지(중단·종료·다음 질문으로 바뀌지 않았는지) */
+    private boolean alive(Session s,String turnId){return s.enabled&&s.turn!=null&&s.turn.id().equals(turnId)&&active(s.turn);}
     private void change(Session s,String state,String message){
         var t=s.turn;if(t==null)return;
         s.turn=new Turn(t.id(),t.username(),t.question(),t.answer(),state,message,t.createdAt());
@@ -122,10 +138,27 @@ public class MeetingAssistantService {
             answer=shorten(answer,MAX_ANSWER);
             requireOpen(id,actor);
             synchronized(s){if(!current(s,turnId))return;var t=s.turn;s.turn=new Turn(t.id(),t.username(),t.question(),answer,t.state(),"",t.createdAt());change(s,"GENERATING","");}
-            byte[] audio;
-            try{audio=tts.synthesize(answer);}catch(Exception e){synchronized(s){if(current(s,turnId))change(s,"TEXT_ONLY","목소리를 만들지 못했습니다. 글로 답변을 확인해 주세요.");}return;}
-            requireOpen(id,actor);
-            synchronized(s){if(!current(s,turnId))return;s.audio=audio;change(s,"READY","");}
+            // 문장마다 음성을 만들어, 첫 문장이 나오면 바로 READY 로 바꿔 재생을 시작하게 한다. 나머지는 재생하는 동안 만든다
+            var parts=sentences(answer);
+            for(int i=0;i<parts.size();i++){
+                byte[] audio;
+                try{audio=tts.synthesize(parts.get(i));}
+                catch(Exception e){
+                    synchronized(s){
+                        if(i==0){if(current(s,turnId))change(s,"TEXT_ONLY","목소리를 만들지 못했습니다. 글로 답변을 확인해 주세요.");}
+                        else if(alive(s,turnId))s.audioDone=true; // 앞 문장까지만 들려준다
+                    }
+                    return;
+                }
+                if(i==0)requireOpen(id,actor);
+                synchronized(s){
+                    if(!alive(s,turnId))return;
+                    if(i==0){s.audio=new ArrayList<>();s.audioDone=false;}
+                    s.audio.add(audio);
+                    if(i==parts.size()-1)s.audioDone=true;
+                    if(i==0)change(s,"READY","");
+                }
+            }
         }catch(Exception e){synchronized(s){if(current(s,turnId))change(s,"FAILED","답변을 만들지 못했습니다. AI 연결을 확인하고 다시 질문해 주세요.");}}
         finally{synchronized(s){s.inflight=false;}slots.release();}
     }
@@ -134,7 +167,17 @@ public class MeetingAssistantService {
         if(!s.enabled||s.turn==null||!s.turn.id().equals(turnId)||!s.turn.username().equals(actor)||!Set.of("READY","PLAYING").contains(s.turn.state()))
             throw error(HttpStatus.CONFLICT,"재생 가능한 내 답변이 없습니다");
     }
-    public byte[] audio(String id,String actor,String turnId){requireOpen(id,actor);var s=session(id);synchronized(s){requireOwner(s,actor,turnId);if(s.audio==null)throw error(HttpStatus.CONFLICT,"음성 재생이 만료되었습니다");return s.audio;}}
+    /** 문장별 음성. index 번째가 아직 만들어지는 중이면 null, 더 없으면 빈 배열 */
+    public byte[] audio(String id,String actor,String turnId,int index){
+        requireOpen(id,actor);var s=session(id);
+        synchronized(s){
+            requireOwner(s,actor,turnId);
+            if(s.audio==null||index<0)throw error(HttpStatus.CONFLICT,"음성 재생이 만료되었습니다");
+            if(index<s.audio.size())return s.audio.get(index);
+            return s.audioDone?new byte[0]:null;
+        }
+    }
+    public byte[] audio(String id,String actor,String turnId){return audio(id,actor,turnId,0);}
     public MeetingMedia.Grant grant(String id,String actor,String turnId){requireOpen(id,actor);var s=session(id);synchronized(s){requireOwner(s,actor,turnId);return meetings.assistantGrant(id,actor,turnId);}}
     public State playing(String id,String actor,String turnId){requireOpen(id,actor);var s=session(id);synchronized(s){requireOwner(s,actor,turnId);change(s,"PLAYING","");}return status(id,actor);}
     public State complete(String id,String actor,String turnId){requireOpen(id,actor);var s=session(id);synchronized(s){requireOwner(s,actor,turnId);change(s,"DONE","");s.audio=null;}media.removeAssistant(id,turnId);return status(id,actor);}
