@@ -5,7 +5,7 @@ import type { MyItem, PendingMinutes } from '../meeting/minutesApi'
 export interface Draft { scope: 'PERSONAL' | 'SHARED'; title: string; description: string | null; location: string | null; startAt: string; endAt: string; allDay: boolean; attendees: Person[] }
 export interface Ambiguity { name: string; candidates: Person[] }
 /** 추천한 AI 허브 스킬. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
-export interface ToolPick { skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean; /** 결과물 양식이 등록된 스킬이면 'hwpx' */ templateFormat?: string | null }
+export interface ToolPick { name?: string; skillId: number; title: string; description: string; icon: string | null; category: string | null; engine: 'rule' | 'ai'; external: boolean; /** 결과물 양식이 등록된 스킬이면 'hwpx' */ templateFormat?: string | null }
 export interface ChatSummary { id: string; title: string; updatedAt: string }
 export interface Room { id: number; name: string; capacity: number }
 /**
@@ -13,7 +13,7 @@ export interface Room { id: number; name: string; capacity: number }
  * DELETE_ITEM: 삭제·취소 카드 · MOVE_EVENT: 일정 변경 카드 · CLARIFY: 되묻기 · UNSUPPORTED: 아직 못 하는 요청
  */
 export interface Reply {
-  intent: 'CREATE_EVENT' | 'LIST_EVENTS' | 'LIST_TASKS' | 'LIST_PENDING' | 'BRIEFING' | 'ANSWER' | 'USE_TOOL' | 'BOOK_ROOM' | 'START_MEETING' | 'JOIN_MEETING' | 'DOWNLOAD_MINUTES' | 'UI_ACTION' | 'DELETE_ITEM' | 'MOVE_EVENT' | 'CLARIFY' | 'UNSUPPORTED'; message: string; draft: Draft | null
+  intent: 'SKILL_DRAFT' | 'CREATE_EVENT' | 'LIST_EVENTS' | 'LIST_TASKS' | 'LIST_PENDING' | 'BRIEFING' | 'ANSWER' | 'USE_TOOL' | 'BOOK_ROOM' | 'START_MEETING' | 'JOIN_MEETING' | 'DOWNLOAD_MINUTES' | 'UI_ACTION' | 'DELETE_ITEM' | 'MOVE_EVENT' | 'CLARIFY' | 'UNSUPPORTED'; message: string; draft: Draft | null
   ambiguous: Ambiguity[]; unresolved: string[]; entries: Entry[]; ai: boolean; source: string
   tool: ToolPick | null; alternatives: ToolPick[]
   /** START_MEETING: 만들 회의 이름(title) · JOIN_MEETING: 참여 코드(code) */
@@ -56,6 +56,8 @@ export const assistantApi = {
     removeAll: () => call<{ deleted: number }>('DELETE', '/sessions'),
   },
   status: () => call<{ ai: boolean }>('GET', '/status'),
+  /** 입력창 '/' 메뉴에 보여 줄 스킬 목록(스킬 만들기 도우미가 맨 앞) */
+  skills: () => call<ToolPick[]>('GET', '/skills'),
   interpret: (text: string, previous?: string, history?: HistoryTurn[], signal?: AbortSignal) =>
     call<Reply>('POST', '/interpret', { text, ...(previous ? { previous } : {}), ...(history && history.length ? { history } : {}) }, signal),
   /** 입력창 자동완성: 대화를 보고 AI 가 다음에 입력할 만한 말을 제안한다(실행은 하지 않음) */

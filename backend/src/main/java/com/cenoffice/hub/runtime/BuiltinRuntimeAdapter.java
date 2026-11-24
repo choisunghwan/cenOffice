@@ -21,6 +21,8 @@ public class BuiltinRuntimeAdapter implements AgentRuntimeAdapter {
             case "cen-meeting-minutes" -> BuiltinTextTools.meetingMinutes(request.input());
             case "cen-weekly-report" -> BuiltinTextTools.weeklyReport(request.input());
             case "cen-test-case-writer" -> BuiltinTextTools.testCases(request.input());
+            // 스킬 만들기 도우미는 대화로 진행한다. 한 번 실행으로 부르면 어디서 쓰는지 안내한다
+            case "skill-creator" -> "스킬 만들기 도우미는 대화로 진행합니다.\n- 홈 입력창에 / 를 치고 '스킬 만들기 도우미'를 고르거나\n- 스킬 화면의 '스킬 만들기 → AI와 만들기'에서 시작하세요.\n\n입력하신 내용: " + request.input();
             default -> throw new RuntimeFailure("지원하지 않는 내장 스킬입니다");
         };
         String id = UUID.randomUUID().toString();

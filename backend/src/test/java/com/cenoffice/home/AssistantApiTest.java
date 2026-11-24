@@ -403,4 +403,23 @@ class AssistantApiTest {
         assertFalse(read(req(get("/api/assistant/status"), admin, null).andExpect(status().isOk())).path("ai").asBoolean());
     }
 
+
+    /** 입력창 '/' 메뉴: 쓸 수 있는 스킬 전체, 스킬 만들기 도우미가 맨 앞. 도우미를 한 번 실행으로 부르면 대화로 쓰라고 안내한다 */
+    @Test
+    void slashMenuListsSkillsWithSkillCreatorFirst() throws Exception {
+        JsonNode list = read(req(get("/api/assistant/skills"), user, null).andExpect(status().isOk()));
+        assertTrue(list.size() >= 8, "내장 스킬 8개");
+        assertEquals("skill-creator", list.get(0).path("name").asText());
+        assertEquals("스킬 만들기 도우미", list.get(0).path("title").asText());
+        long id = list.get(0).path("skillId").asLong();
+        JsonNode ex = read(req(post("/api/hub/executions"), user, Map.of("skillId", id, "input", "주간 보고서")).andExpect(status().is2xxSuccessful()));
+        String exId = ex.path("id").asText();
+        JsonNode done = ex;
+        for (int i = 0; i < 50 && !"SUCCEEDED".equals(done.path("status").asText()) && !"FAILED".equals(done.path("status").asText()); i++) {
+            Thread.sleep(100);
+            done = read(req(get("/api/hub/executions/" + exId), user, null).andExpect(status().isOk()));
+        }
+        assertEquals("SUCCEEDED", done.path("status").asText(), done.toString());
+        assertTrue(done.path("result").asText().contains("대화로 진행"));
+    }
 }

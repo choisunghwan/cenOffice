@@ -250,3 +250,21 @@
 .ha-suggest-chip{display:flex;align-items:center;gap:8px;max-width:100%;margin:0 0 8px;padding:7px 12px;border:1px dashed rgba(127,140,156,.6);border-radius:12px;background:var(--c-panel);color:var(--c-text);font-size:13px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .ha-suggest-chip>span{flex:none;color:var(--c-muted);font-size:12px}
 .ha-suggest-chip:active{background:rgba(42,109,178,.12)}
+
+/* 입력창 '/' 스킬 메뉴 */
+.ha-slash{margin:0 0 8px;max-height:min(46vh,360px);overflow-y:auto;border:1px solid var(--c-border);border-radius:14px;background:var(--c-panel);box-shadow:0 8px 28px #0003;padding:6px}
+.ha-slash button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:10px;text-align:left;background:transparent;color:var(--c-text)}
+.ha-slash button.on{background:rgba(42,109,178,.14)}
+.ha-slash .ic{flex:none;width:28px;text-align:center;font-size:18px}
+.ha-slash .tx{display:flex;flex-direction:column;min-width:0;flex:1}
+.ha-slash .tx b{font-size:13.5px;font-weight:650}
+.ha-slash .tx small{font-size:12px;color:var(--c-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ha-slash code{flex:none;font-size:11px;color:var(--c-muted);font-family:ui-monospace,Menlo,Consolas,monospace}
+.ha-slash-empty{padding:10px;font-size:12.5px;color:var(--c-muted)}
+.ha-skill-chip{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:6px 8px 6px 12px;border:1px solid rgba(42,109,178,.45);border-radius:12px;background:rgba(42,109,178,.08);font-size:13px;min-width:0}
+.ha-skill-chip b{white-space:nowrap}
+.ha-skill-chip small{color:var(--c-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.ha-skill-chip button{flex:none;margin-left:auto;width:26px;height:26px;border-radius:8px;color:var(--c-muted)}
+.ha-skill-chip button:hover{background:rgba(127,140,156,.18)}
+.ha-skill-md{width:100%;margin:8px 0;padding:10px 12px;border:1px solid var(--c-border);border-radius:10px;background:var(--c-bg,transparent);color:var(--c-text);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;resize:vertical}
+@media (max-width:600px){.ha-slash code{display:none}.ha-skill-chip small{display:none}}

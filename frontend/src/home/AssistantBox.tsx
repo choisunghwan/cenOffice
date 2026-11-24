@@ -21,9 +21,12 @@ import { buildPool, suggestion } from './suggest'
 
 export type Turn =
   | { id: number; role: 'user'; text: string }
-  | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string; meetingId?: string }
+  | { id: number; role: 'assistant'; reply: Reply; input: string; draft: Draft | null; ambiguous: Ambiguity[]; tool: ToolPick | null; room: Room | null; rooms: Room[]; target: Entry | null; candidates: Entry[]; state: 'open' | 'saving' | 'done' | 'cancelled'; result?: string; output?: string; error?: string; meetingId?: string; skillMd?: string; skillError?: string | null; skillRisks?: string[] }
 
 const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘', '쓸 만한 스킬 뭐 있어?']
+const CREATOR = 'skill-creator'
+const CREATOR_HELLO = '스킬 만들기 도우미예요. 어떤 업무를 스킬로 만들까요? 평소 하시는 방법을 편하게 말씀해 주세요.\n예: 매주 쓰는 주간 보고서, 고객 문의 답변 초안, 코드 리뷰 체크리스트'
+const bare = (intent: Reply['intent'], message: string): Reply => ({ intent, message, draft: null, ambiguous: [], unresolved: [], entries: [], ai: true, source: '', tool: null, alternatives: [] })
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 const asEntry = (d: Draft): Entry => ({ kind: 'EVENT', id: 'draft', eventId: null, scope: d.scope, title: d.title, description: d.description, location: d.location,
@@ -48,6 +51,11 @@ export function AssistantBox() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // 자동완성(Claude Code 방식): 회색 글씨로 이어질 말을 보여 주고 Tab(휴대폰은 제안 버튼)으로 받아들인다
   const [dismissed, setDismissed] = useState(false)
+  // '/' 메뉴: 스킬 목록을 띄우고, 고른 스킬을 입력창에 붙인다. 스킬 만들기 도우미는 대화 모드로 연다
+  const [slashSkills, setSlashSkills] = useState<ToolPick[] | null>(null)
+  const [slashIdx, setSlashIdx] = useState(0)
+  const [skill, setSkill] = useState<ToolPick | null>(null)
+  const [creator, setCreator] = useState<{ msgs: { role: 'user' | 'assistant'; text: string }[] } | null>(null)
   // 답변이 올 때마다 AI 가 대화를 보고 다음에 입력할 말을 만든다(AI 가 없거나 실패하면 규칙 기반 제안만 쓴다)
   const [aiNext, setAiNext] = useState<{ after: number; list: string[] }>({ after: -1, list: [] })
   const coarse = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches, [])
@@ -83,6 +91,18 @@ export function AssistantBox() {
   const send = async (raw?: string) => {
     const value = (raw ?? text).trim()
     if (!value || busy) return
+    if (creator && raw === undefined) { setText(''); return void sendCreator(value) }
+    if (skill && raw === undefined) {
+      // '/'로 고른 스킬: 고른 것 자체가 실행하겠다는 뜻이라 바로 실행한다
+      setText('')
+      const chosen = skill
+      setSkill(null)
+      const mine: Turn = { id: nextId.current++, role: 'user', text: `/${chosen.title} ${value}` }
+      const bot: Turn = { id: nextId.current++, role: 'assistant', reply: bare('USE_TOOL', `‘${chosen.title}’ 스킬로 처리합니다.`), input: value, draft: null, ambiguous: [], tool: chosen, room: null, rooms: [], target: null, candidates: [], state: 'open' }
+      setTurns((cur) => [...cur, mine, bot].slice(-30))
+      void runTool(bot, chosen)
+      return
+    }
     setText('')
     const mySeq = ++seq.current
     const ctl = new AbortController()
@@ -120,6 +140,46 @@ export function AssistantBox() {
         reply: { intent: 'UNSUPPORTED', message: (e as Error).message, draft: null, ambiguous: [], unresolved: [], entries: [], ai: false, source: '', tool: null, alternatives: [] } }
       commit((cur) => [...cur, failed])
     } finally { if (abortRef.current === ctl) abortRef.current = null; if (seq.current === mySeq) setBusy(false) }
+  }
+
+  /** 스킬 만들기 도우미와의 대화. 초안이 나오면 고치고 등록할 수 있는 카드로 보여 준다 */
+  const sendCreator = async (value: string) => {
+    if (!creator) return
+    const lastDraft = [...turns].reverse().find((t) => t.role === 'assistant' && t.skillMd)
+    const msgs = [...creator.msgs, { role: 'user' as const, text: value }]
+    setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn].slice(-30))
+    setBusy(true)
+    try {
+      const r = await hub.assist({ messages: msgs.slice(1), draft: lastDraft && lastDraft.role === 'assistant' ? lastDraft.skillMd : undefined })
+      setCreator({ msgs: [...msgs, { role: 'assistant', text: r.reply }] })
+      const bot: Turn = { id: nextId.current++, role: 'assistant', reply: bare(r.skillMd ? 'SKILL_DRAFT' : 'ANSWER', r.reply), input: value, draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open',
+        ...(r.skillMd ? { skillMd: r.skillMd, skillError: r.error, skillRisks: r.risks } : {}) }
+      setTurns((cur) => [...cur, bot].slice(-30))
+      if (!r.ai) setCreator(null)
+    } catch (e) {
+      setTurns((cur) => [...cur, { id: nextId.current++, role: 'assistant', reply: bare('UNSUPPORTED', (e as Error).message), input: value, draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open' } as Turn])
+    } finally { setBusy(false) }
+  }
+
+  const registerDraft = async (t: Extract<Turn, { role: 'assistant' }>, submit: boolean) => {
+    if (!t.skillMd || t.state === 'saving') return
+    patch(t.id, { state: 'saving', error: undefined })
+    try {
+      const d = await hub.registerMd({ skillMd: t.skillMd, visibility: 'PUBLIC', submit })
+      patch(t.id, { state: 'done', result: submit ? `‘${d.summary.title ?? d.summary.name}’ 등록을 요청했습니다. 관리자 검토 뒤 공개됩니다.` : `‘${d.summary.title ?? d.summary.name}’ 초안을 임시 저장했습니다. 스킬 → 내 스킬에서 이어서 고칠 수 있어요.` })
+      setCreator(null)
+    } catch (e) { patch(t.id, { state: 'open', error: (e as Error).message }) }
+  }
+
+  /** '/' 메뉴에서 스킬을 골랐다 */
+  const chooseSkill = (p: ToolPick) => {
+    setText('')
+    if (p.name === CREATOR) {
+      setSkill(null)
+      setCreator({ msgs: [{ role: 'assistant', text: CREATOR_HELLO }] })
+      setTurns((cur) => [...cur, { id: nextId.current++, role: 'assistant', reply: bare('ANSWER', CREATOR_HELLO), input: '', draft: null, ambiguous: [], tool: null, room: null, rooms: [], target: null, candidates: [], state: 'open' } as Turn].slice(-30))
+    } else { setCreator(null); setSkill(p) }
+    requestAnimationFrame(() => inputRef.current?.focus())
   }
 
   /** 답을 기다리는 중에 멈춘다. 서버가 이미 하던 일은 되돌리지 않지만, 확인 카드가 나오기 전이라 저장되거나 실행되는 것은 없다. */
@@ -223,6 +283,15 @@ export function AssistantBox() {
     return [{ id: t.id, question: t.text, answer: next && next.role === 'assistant' ? next.reply.message : '' }]
   })
 
+  const slashOpen = !busy && text.startsWith('/') && !text.includes('\n')
+  useEffect(() => {
+    if (slashOpen && slashSkills === null) assistantApi.skills().then(setSlashSkills).catch(() => setSlashSkills([]))
+  }, [slashOpen, slashSkills])
+  const slashQuery = text.slice(1).trim().toLowerCase()
+  const slashList = !slashOpen ? [] : (slashSkills ?? []).filter((p) => !slashQuery
+    || [p.title, p.name ?? '', p.description, p.category ?? ''].some((x) => x.toLowerCase().includes(slashQuery)))
+  const slashPick = slashList[Math.min(slashIdx, Math.max(0, slashList.length - 1))]
+  useEffect(() => { setSlashIdx(0) }, [slashQuery])
   const lastTurn = turns[turns.length - 1]
   useEffect(() => {
     if (!ai || busy || !lastTurn || lastTurn.role !== 'assistant') return
@@ -236,7 +305,7 @@ export function AssistantBox() {
   const fromAi = lastBot && aiNext.after === lastBot.id ? aiNext.list : []
   const nextSteps = [...fromAi, ...(lastBot && lastBot.role === 'assistant' ? lastBot.reply.suggestions ?? [] : [])]
   const pool = buildPool(nextSteps, [...turns].reverse().flatMap((t) => (t.role === 'user' ? [t.text] : [])), EXAMPLES)
-  const ghost = busy || dismissed ? null : suggestion(text, pool, nextSteps[0] ?? (turns.length === 0 ? EXAMPLES[0] : null))
+  const ghost = busy || dismissed || slashOpen || creator ? null : suggestion(text, pool, nextSteps[0] ?? (turns.length === 0 ? EXAMPLES[0] : null))
   const acceptGhost = () => {
     if (!ghost) return
     setText(ghost)
@@ -258,7 +327,23 @@ export function AssistantBox() {
             : (
               <div key={t.id} id={`ha-t-${t.id}`} className="ha-bot">
                 <Flow turn={t} />
-                {t.reply.intent === 'ANSWER' ? <RichText className="ha-answer-card" text={t.reply.message} /> : <p>{t.reply.message}</p>}
+                {t.reply.intent === 'ANSWER' || t.reply.intent === 'SKILL_DRAFT' ? <RichText className="ha-answer-card" text={t.reply.message} /> : <p>{t.reply.message}</p>}
+                {t.reply.intent === 'SKILL_DRAFT' && t.skillMd !== undefined && (
+                  <div className={`ha-card ${t.state}`}>
+                    <p className="ha-toolname"><span aria-hidden="true">🛠️</span> <b>스킬 초안 (SKILL.md)</b><small>직접 고쳐도 됩니다</small></p>
+                    {t.skillError && <p className="ha-error">등록 규칙에 맞지 않는 부분이 있어요: {t.skillError} 도우미에게 고쳐 달라고 하거나 직접 고쳐 주세요.</p>}
+                    {(t.skillRisks ?? []).length > 0 && <p className="cal-muted">검토가 필요한 표현: {(t.skillRisks ?? []).join(', ')}</p>}
+                    <textarea className="ha-skill-md" aria-label="스킬 초안" rows={14} value={t.skillMd} disabled={t.state !== 'open'} onChange={(e) => patch(t.id, { skillMd: e.target.value })} />
+                    {t.error && <p className="ha-error" role="alert">{t.error}</p>}
+                    {t.state === 'done' ? <p className="ha-done">✓ {t.result}</p> : (
+                      <div className="ha-actions">
+                        <button type="button" className="cal-primary" disabled={t.state === 'saving'} onClick={() => void registerDraft(t, true)}>등록 요청</button>
+                        <button type="button" className="cal-ghost" disabled={t.state === 'saving'} onClick={() => void registerDraft(t, false)}>임시 저장</button>
+                        <span className="cal-muted">더 고칠 점은 아래 입력창에 말씀해 주세요.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {(t.reply.suggestions ?? []).length > 0 && (
                   <div className="ha-suggest" role="group" aria-label="이어서 해 볼 말">
                     <span>이렇게 물어보세요</span>
@@ -420,14 +505,43 @@ export function AssistantBox() {
       </div>
 
       <div className="ha-dock">
+      {slashOpen && (
+        <div className="ha-slash" role="listbox" aria-label="스킬 목록">
+          {slashSkills === null && <p className="ha-slash-empty">스킬 목록을 불러오는 중…</p>}
+          {slashSkills !== null && slashList.length === 0 && <p className="ha-slash-empty">‘{text.slice(1)}’에 맞는 스킬이 없습니다.</p>}
+          {slashList.map((p, i) => (
+            <button key={p.skillId} type="button" role="option" aria-selected={p === slashPick} className={p === slashPick ? 'on' : ''}
+              onMouseEnter={() => setSlashIdx(i)} onClick={() => chooseSkill(p)}>
+              <span className="ic" aria-hidden="true">{p.icon ?? '🧩'}</span>
+              <span className="tx"><b>{p.title}</b><small>{p.name === CREATOR ? '대화로 새 스킬 만들기' : p.description}</small></span>
+              {p.name && <code>/{p.name}</code>}
+            </button>
+          ))}
+        </div>
+      )}
+      {(skill || creator) && (
+        <div className="ha-skill-chip">
+          <span aria-hidden="true">{creator ? '🛠️' : skill?.icon ?? '🧩'}</span>
+          <b>{creator ? '스킬 만들기 도우미' : skill?.title}</b>
+          <small>{creator ? '대화로 스킬을 만드는 중' : '입력한 내용을 이 스킬로 바로 처리합니다'}</small>
+          <button type="button" aria-label={creator ? '스킬 만들기 끝내기' : '스킬 선택 취소'} onClick={() => { setSkill(null); setCreator(null) }}>✕</button>
+        </div>
+      )}
       {coarse && ghost && ghost !== text && <button type="button" className="ha-suggest-chip" onClick={acceptGhost} aria-label={`제안 입력: ${ghost}`}><span aria-hidden="true">↹</span>{ghost}</button>}
       <form className="ha-form" data-coach="home-input" onSubmit={(e) => { e.preventDefault(); void send() }}>
         <div className="ha-input-wrap">
         {ghost && <div className="ha-ghost" aria-hidden="true"><span className="ha-ghost-typed">{text}</span><span className="ha-ghost-rest">{ghost.slice(text.length)}</span>{!coarse && <kbd>Tab</kbd>}</div>}
-        <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder={ghost ? '' : '일정·회의실 예약, 할 일 확인, 회의 메모 정리까지 무엇이든 말씀하세요'} aria-label="입력창"
+        <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder={ghost ? '' : creator ? '스킬 만들기 도우미에게 말하기 (끝내려면 ✕)' : skill ? `‘${skill.title}’에 넣을 내용을 입력하세요` : '무엇이든 말씀하세요 · / 를 치면 스킬 목록'} aria-label="입력창"
           aria-description={ghost ? `제안: ${ghost}. Tab 키로 입력` : undefined}
           onChange={(e) => { setText(e.target.value); setDismissed(false) }}
           onKeyDown={(e) => {
+            if (slashOpen && !e.nativeEvent.isComposing) {
+              if (e.key === 'ArrowDown' && slashList.length) { e.preventDefault(); setSlashIdx((i) => (i + 1) % slashList.length); return }
+              if (e.key === 'ArrowUp' && slashList.length) { e.preventDefault(); setSlashIdx((i) => (i - 1 + slashList.length) % slashList.length); return }
+              if ((e.key === 'Enter' || e.key === 'Tab') && slashPick) { e.preventDefault(); chooseSkill(slashPick); return }
+              if (e.key === 'Escape') { e.preventDefault(); setText(''); return }
+            }
+            if (e.key === 'Backspace' && !text && (skill || creator)) { e.preventDefault(); setSkill(null); setCreator(null); return }
             const atEnd = e.currentTarget.selectionStart === text.length && e.currentTarget.selectionEnd === text.length
             if (ghost && !e.nativeEvent.isComposing && ((e.key === 'Tab' && !e.shiftKey) || (e.key === 'ArrowRight' && atEnd && text.length > 0))) { e.preventDefault(); acceptGhost() }
             else if (e.key === 'Escape' && !busy && ghost) { e.preventDefault(); setDismissed(true) }

@@ -59,7 +59,7 @@ public class AssistantService {
     public record HistoryTurn(@Size(max = 20) String role, @Size(max = 1500) String text) {}
     /** 추천한 AI 허브 스킬. engine: rule(서버 안에서 처리) | ai(AI 모델로 처리). external=true 면 입력이 AI 서비스로 전송된다. */
     /** templateFormat: 결과물 양식이 등록된 스킬이면 "hwpx", 아니면 없음 */
-    public record ToolPick(Long skillId, String title, String description, String icon, String category, String engine, boolean external, String templateFormat) {}
+    public record ToolPick(Long skillId, String title, String description, String icon, String category, String engine, boolean external, String templateFormat, String name) {}
     public record Draft(String scope, String title, String description, String location, Instant startAt, Instant endAt, boolean allDay, List<Person> attendees) {}
     public record Ambiguity(String name, List<Person> candidates) {}
     public record Room(Long id, String name, int capacity) {}
@@ -194,10 +194,17 @@ public class AssistantService {
 
     // ───────────────────────── 허브 스킬 추천 ─────────────────────────
 
+    /** 입력창 '/' 메뉴: 이 사용자가 쓸 수 있는 스킬 전체(스킬 만들기 도우미가 맨 앞) */
+    public List<ToolPick> slashSkills(String me, boolean admin) {
+        var list = new ArrayList<>(tools.runnable(me, admin).stream().map(this::pick).toList());
+        list.sort(java.util.Comparator.comparing((ToolPick p) -> !com.cenoffice.hub.BuiltinSkillSeeder.CREATOR.equals(p.name())));
+        return list;
+    }
+
     private ToolPick pick(ToolCatalog.Tool t) {
         String templateFormat = null;
         try { templateFormat = templates.find(t.id()).map(com.cenoffice.hub.form.TemplateService.Info::format).orElse(null); } catch (RuntimeException e) { log.warn("양식 정보를 읽지 못했습니다: {}", e.toString()); }
-        return new ToolPick(t.id(), t.title(), t.description(), t.icon(), t.category(), t.engine(), t.engine().equals("ai") && llm.isReal(), templateFormat);
+        return new ToolPick(t.id(), t.title(), t.description(), t.icon(), t.category(), t.engine(), t.engine().equals("ai") && llm.isReal(), templateFormat, t.name());
     }
 
     private Reply toolReply(Long id, String text, List<ToolCatalog.Tool> catalog, boolean ai, String source) {

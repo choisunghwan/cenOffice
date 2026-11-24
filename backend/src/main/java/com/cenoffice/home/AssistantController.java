@@ -25,6 +25,13 @@ public class AssistantController {
     /** AI 가 연결되어 있는지(연결되면 입력 문장과 동료 이름이 해당 AI 서비스로 전송된다는 안내에 쓴다) */
     @GetMapping("/status") public Status status() { return new Status(assistant.aiConnected()); }
 
+    /** 입력창 '/' 메뉴에 보여 줄 스킬 목록 */
+    @GetMapping("/skills")
+    public java.util.List<AssistantService.ToolPick> skills(Authentication a) {
+        boolean admin = a.getAuthorities().stream().anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN"));
+        return assistant.slashSkills(a.getName(), admin);
+    }
+
     @PostMapping("/interpret")
     public AssistantService.Reply interpret(@Valid @RequestBody AssistantService.Ask ask, Authentication a) {
         boolean admin = a.getAuthorities().stream().anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN"));
