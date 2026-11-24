@@ -69,7 +69,7 @@ class MeetingAssistantApiTest {
     }
     void configured() throws Exception {
         when(llm.isReal()).thenReturn(true);when(tts.available()).thenReturn(true);
-        when(llm.chat(anyString(),anyString())).thenReturn("제안입니다. 작은 범위부터 검증하세요.");
+        when(llm.chatQuick(anyString(),anyString())).thenReturn("제안입니다. 작은 범위부터 검증하세요.");
         when(tts.synthesize(anyString())).thenReturn(GeminiSpeechTest.wave());
     }
     JsonNode waitFor(String base,String token,String expected) throws Exception {
@@ -92,7 +92,7 @@ class MeetingAssistantApiTest {
         var ready=waitFor(b,h,"READY");
         assertTrue(ready.path("turn").path("answer").asText().contains("제안"));
         var captured=org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(llm).chat(anyString(),captured.capture());
+        verify(llm).chatQuick(anyString(),captured.capture());
         assertTrue(captured.getValue().contains("금요일 배포"));
         assertFalse(captured.getValue().contains("비공개로 제외할 발언"));
         String turn=ready.path("turn").path("id").asText();
@@ -111,7 +111,7 @@ class MeetingAssistantApiTest {
     }
     @Test void stopDuringGenerationDiscardsLateAudioAndRejectsConcurrentQuestion() throws Exception {
         configured();var entered=new CountDownLatch(1);var release=new CountDownLatch(1);
-        when(llm.chat(anyString(),anyString())).thenAnswer(i->{entered.countDown();release.await(5,TimeUnit.SECONDS);return "늦은 응답";});
+        when(llm.chatQuick(anyString(),anyString())).thenAnswer(i->{entered.countDown();release.await(5,TimeUnit.SECONDS);return "늦은 응답";});
         var x=meeting();String h=x[0],g=x[1],b=x[2];
         call("POST",b+"/assistant/enable",h,Map.of(),200);
         call("POST",b+"/assistant/ask",h,Map.of("question","첫 질문"),202);

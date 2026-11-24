@@ -40,23 +40,25 @@ public class GeminiLlmProvider implements LlmProvider {
 
     @Override
     public String chat(String systemPrompt, String userText) throws LlmException {
-        return call(systemPrompt, userText, false).trim();
+        return call(systemPrompt, userText, false, false).trim();
+    }
+
+    @Override
+    public String chatQuick(String systemPrompt, String userText) throws LlmException {
+        return call(systemPrompt, userText, false, true).trim();
     }
 
     @Override
     public String generateJson(String systemPrompt, String userText) throws LlmException {
-        return call(systemPrompt, userText, true).trim();
+        return call(systemPrompt, userText, true, false).trim();
     }
 
-    private String call(String system, String user, boolean json) throws LlmException {
+    private String call(String system, String user, boolean json, boolean quick) throws LlmException {
         try {
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
             body.put("contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", user)))));
-            Map<String, Object> gen = new LinkedHashMap<>();
-            if (json) gen.put("responseMimeType", "application/json");
-            gen.put("maxOutputTokens", json ? 8192 : 800);
-            body.put("generationConfig", gen);
+            body.put("generationConfig", generationConfig(json, quick));
             URI uri = URI.create(BASE + URLEncoder.encode(model, StandardCharsets.UTF_8) + ":generateContent");
             HttpRequest r = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(90))
                     .header("x-goog-api-key", apiKey).header("Content-Type", "application/json")
@@ -80,5 +82,16 @@ public class GeminiLlmProvider implements LlmProvider {
         } catch (Exception e) {
             throw new LlmException("LLM 호출 중 오류가 발생했습니다", e);
         }
+    }
+
+    static boolean thinkingOff(String model) { return model != null && model.toLowerCase().contains("flash"); }
+
+    /** 빠른 답(quick)은 출력을 줄이고, Flash 계열이면 답하기 전 추론(생각) 단계를 끈다(Pro 계열은 끌 수 없어 그대로 둔다) */
+    Map<String, Object> generationConfig(boolean json, boolean quick) {
+        Map<String, Object> gen = new LinkedHashMap<>();
+        if (json) gen.put("responseMimeType", "application/json");
+        gen.put("maxOutputTokens", json ? 8192 : quick ? 400 : 800);
+        if (quick && thinkingOff(model)) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
+        return gen;
     }
 }

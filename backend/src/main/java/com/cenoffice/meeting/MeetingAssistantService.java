@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class MeetingAssistantService {
     static final String SYSTEM="""
-        당신은 회의에 참여하는 AI '센'입니다. 한국어로 자연스럽게 말할 3~5문장, 350자 이내로 답하세요.
+        당신은 회의에 참여하는 AI '센'입니다. 회의 중에 소리 내어 들려줄 답이므로 한국어로 자연스럽게 말할 2~3문장, 200자 이내로 핵심만 답하세요.
         회의에서 실제로 나온 사실은 제공된 기록만 근거로 쓰고, 자신의 의견과 제안은 명확히 구분하세요.
         일반적인 아이디어나 의견 요청에는 기록이 없어도 질문의 조건에 맞춰 '제 의견으로는'이라고 제안하세요.
         기록에 없는 회의 사실을 묻거나 질문의 대상 자체를 알 수 없을 때만 모른다고 말하거나 되물으세요.
@@ -42,6 +42,15 @@ public class MeetingAssistantService {
         // Session controls/audio are deliberately ephemeral; idle entries must not retain WAVs forever.
         sessions.entrySet().removeIf(e->{synchronized(e.getValue()){return !e.getValue().inflight && System.currentTimeMillis()-e.getValue().touched>3_600_000;}});
         return sessions.computeIfAbsent(id,k->new Session());
+    }
+    /** 소리로 들려줄 답의 최대 길이. 길수록 음성 합성과 재생이 오래 걸린다 */
+    static final int MAX_ANSWER=300;
+    /** 길면 한도 안의 마지막 문장 끝에서 자른다(문장 끝이 없으면 한도에서 자른다) */
+    static String shorten(String a,int max){
+        if(a.length()<=max)return a;
+        String cut=a.substring(0,max);
+        int end=Math.max(cut.lastIndexOf('.'),Math.max(cut.lastIndexOf('?'),cut.lastIndexOf('!')));
+        return (end>=max/3?cut.substring(0,end+1):cut).strip();
     }
     private boolean available(){return allowed&&llm.isReal()&&tts.available();}
     /** 회의 AI 를 쓸 수 없을 때 무엇이 빠졌는지 서버 설정 이름으로 알려 준다 */
@@ -108,9 +117,9 @@ public class MeetingAssistantService {
             var lines=db.query("select t.display_name,t.content from meeting_transcript t join meeting_stt_consent c on c.meeting_id=t.meeting_id and c.username=t.username where t.meeting_id=? order by t.id desc limit 40",
                 (r,i)->r.getString(1)+": "+r.getString(2),id);Collections.reverse(lines);
             String context=String.join("\n",lines);if(context.length()>16000)context=context.substring(context.length()-16000);
-            String answer=llm.chat(SYSTEM,"회의 제목: "+title+"\n<회의기록>\n"+context+"\n</회의기록>\n<질문>"+question+"</질문>").strip();
+            String answer=llm.chatQuick(SYSTEM,"회의 제목: "+title+"\n<회의기록>\n"+context+"\n</회의기록>\n<질문>"+question+"</질문>").strip();
             if(answer.isBlank())throw new IllegalStateException("empty");
-            if(answer.length()>1000)answer=answer.substring(0,1000);
+            answer=shorten(answer,MAX_ANSWER);
             requireOpen(id,actor);
             synchronized(s){if(!current(s,turnId))return;var t=s.turn;s.turn=new Turn(t.id(),t.username(),t.question(),answer,t.state(),"",t.createdAt());change(s,"GENERATING","");}
             byte[] audio;
