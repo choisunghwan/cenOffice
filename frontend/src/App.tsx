@@ -101,10 +101,10 @@ export default function App() {
       </div>
 
       {mode === 'office' && <>
-      <nav className="glass absolute left-4 top-1/2 -translate-y-1/2 rounded-2xl p-2 flex flex-col gap-1 z-10">
+      <nav className="glass absolute left-4 max-sm:left-3 top-1/2 -translate-y-1/2 max-sm:top-[38%] rounded-2xl p-2 max-sm:p-1.5 flex flex-col gap-1 z-10">
         {menu.map((m) => (
-          <button key={m.label} onClick={m.action} className="w-16 py-2.5 rounded-xl hover:bg-white/10 flex flex-col items-center gap-1 text-[11px] text-slate-200 transition">
-            <span className="text-xl">{m.icon}</span>{m.label}
+          <button key={m.label} onClick={m.action} className="w-16 max-sm:w-12 py-2.5 max-sm:py-2 rounded-xl hover:bg-white/10 flex flex-col items-center gap-1 text-[11px] max-sm:text-[10px] text-slate-200 transition">
+            <span className="text-xl max-sm:text-lg">{m.icon}</span>{m.label}
           </button>
         ))}
       </nav>
