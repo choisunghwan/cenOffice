@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { assistantMemory, clearAssistantMemory } from './assistantMemory'
 import { useChat } from './chatStore'
 import { runUiAction } from './uiActions'
@@ -17,6 +17,7 @@ import { askConfirm } from '../common/confirm'
 import { meetingsApi } from '../meeting/api'
 import { assistantApi, type Ambiguity, type Draft, type HistoryTurn, type Reply, type Room, type ToolPick } from './assistantApi'
 import { RichText } from './RichText'
+import { buildPool, suggestion } from './suggest'
 
 export type Turn =
   | { id: number; role: 'user'; text: string }
@@ -45,6 +46,9 @@ export function AssistantBox() {
   const endRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // 자동완성(Claude Code 방식): 회색 글씨로 이어질 말을 보여 주고 Tab(휴대폰은 제안 버튼)으로 받아들인다
+  const [dismissed, setDismissed] = useState(false)
+  const coarse = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches, [])
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false; assistantMemory.nextId = nextId.current; assistantMemory.previous = previous.current } }, [])
   // 화면이 닫힌 뒤에 도착한 답도 잃지 않도록, 화면이 없으면 메모리에 바로 쌓는다. 바뀔 때마다 서버에 저장도 맡긴다.
@@ -217,6 +221,15 @@ export function AssistantBox() {
     return [{ id: t.id, question: t.text, answer: next && next.role === 'assistant' ? next.reply.message : '' }]
   })
 
+  const lastBot = [...turns].reverse().find((t) => t.role === 'assistant')
+  const nextSteps = lastBot && lastBot.role === 'assistant' ? lastBot.reply.suggestions ?? [] : []
+  const pool = buildPool(nextSteps, [...turns].reverse().flatMap((t) => (t.role === 'user' ? [t.text] : [])), EXAMPLES)
+  const ghost = busy || dismissed ? null : suggestion(text, pool, nextSteps[0] ?? (turns.length === 0 ? EXAMPLES[0] : null))
+  const acceptGhost = () => {
+    if (!ghost) return
+    setText(ghost)
+    requestAnimationFrame(() => { const el = inputRef.current; if (el) { el.focus(); el.setSelectionRange(ghost.length, ghost.length) } })
+  }
   return (
     <section className="home-assistant" aria-label="입력창으로 업무 처리">
       <TurnRail items={rail} scrollRef={scrollRef} />
@@ -395,13 +408,21 @@ export function AssistantBox() {
       </div>
 
       <div className="ha-dock">
+      {coarse && ghost && ghost !== text && <button type="button" className="ha-suggest-chip" onClick={acceptGhost} aria-label={`제안 입력: ${ghost}`}><span aria-hidden="true">↹</span>{ghost}</button>}
       <form className="ha-form" data-coach="home-input" onSubmit={(e) => { e.preventDefault(); void send() }}>
-        <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder="일정·회의실 예약, 할 일 확인, 회의 메모 정리까지 무엇이든 말씀하세요" aria-label="입력창"
-          onChange={(e) => setText(e.target.value)}
+        <div className="ha-input-wrap">
+        {ghost && <div className="ha-ghost" aria-hidden="true"><span className="ha-ghost-typed">{text}</span><span className="ha-ghost-rest">{ghost.slice(text.length)}</span>{!coarse && <kbd>Tab</kbd>}</div>}
+        <textarea ref={inputRef} value={text} rows={2} maxLength={4000} placeholder={ghost ? '' : '일정·회의실 예약, 할 일 확인, 회의 메모 정리까지 무엇이든 말씀하세요'} aria-label="입력창"
+          aria-description={ghost ? `제안: ${ghost}. Tab 키로 입력` : undefined}
+          onChange={(e) => { setText(e.target.value); setDismissed(false) }}
           onKeyDown={(e) => {
-            if (e.key === 'Escape' && busy) { e.preventDefault(); stop() }
+            const atEnd = e.currentTarget.selectionStart === text.length && e.currentTarget.selectionEnd === text.length
+            if (ghost && !e.nativeEvent.isComposing && ((e.key === 'Tab' && !e.shiftKey) || (e.key === 'ArrowRight' && atEnd && text.length > 0))) { e.preventDefault(); acceptGhost() }
+            else if (e.key === 'Escape' && !busy && ghost) { e.preventDefault(); setDismissed(true) }
+            else if (e.key === 'Escape' && busy) { e.preventDefault(); stop() }
             else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); if (!busy) void send() }
           }} />
+        </div>
         {busy
           ? <button type="button" className="cal-primary ha-stop" onClick={stop} aria-label="중단" title="답 기다리기를 멈추고, 보낸 말을 입력창으로 되돌립니다 (Esc)"><span aria-hidden="true">■</span> 중단</button>
           : <button className="cal-primary" disabled={!text.trim()} aria-label="보내기">보내기</button>}

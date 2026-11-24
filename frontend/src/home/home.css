@@ -237,3 +237,16 @@
 .rt li::marker{color:var(--c-muted)}
 .rt strong{font-weight:700}
 .rt code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;padding:1px 5px;border-radius:5px;background:rgba(127,140,156,.16)}
+
+/* 입력창 자동완성: 회색 글씨(ghost)를 textarea 뒤에 같은 글꼴·여백으로 겹쳐 그린다 */
+.ha-input-wrap{position:relative;flex:1;min-width:0;display:flex}
+.ha-input-wrap textarea{position:relative;z-index:1;background:transparent!important} /* 테마의 입력칸 흰 배경이 회색 제안 글씨를 가리지 않게 */
+.ha-ghost{position:absolute;inset:0;z-index:0;pointer-events:none;padding:8px 0;font-size:14px;font-family:inherit;line-height:normal;white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;color:transparent}
+.chat-home .ha-ghost{font-size:15px}
+.ha-ghost-typed{color:transparent}
+.ha-ghost-rest{color:var(--c-muted);opacity:.75}
+.ha-ghost kbd{margin-left:8px;padding:1px 6px;border:1px solid var(--c-border);border-radius:5px;font-size:10.5px;font-family:inherit;color:var(--c-muted);vertical-align:1px}
+/* 휴대폰: Tab 이 없으니 입력창 위의 제안 버튼을 눌러 채운다 */
+.ha-suggest-chip{display:flex;align-items:center;gap:8px;max-width:100%;margin:0 0 8px;padding:7px 12px;border:1px dashed rgba(127,140,156,.6);border-radius:12px;background:var(--c-panel);color:var(--c-text);font-size:13px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ha-suggest-chip>span{flex:none;color:var(--c-muted);font-size:12px}
+.ha-suggest-chip:active{background:rgba(42,109,178,.12)}
