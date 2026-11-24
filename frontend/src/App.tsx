@@ -59,22 +59,25 @@ export default function App() {
         <Scene active={mode === 'office'} />
       </div>
 
+      {/* 상단 바: 폰에서는 한 줄로 나란히, 넓은 화면에서는 탭을 가운데에 띄운다 */}
+      <div className="absolute inset-x-3 sm:inset-x-4 top-4 z-20 flex items-center justify-between gap-1.5 sm:gap-2 pointer-events-none">
       <button type="button" aria-label="홈으로 이동" title="홈으로 이동"
         onClick={() => { setMode('workspace'); useOffice.getState().setWorkspacePage('dashboard'); window.dispatchEvent(new Event('hub-navigation')) }}
-        className="glass absolute left-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-2 z-10 cursor-pointer hover:bg-white/10 transition">
-        <img src="/itcen-logo.png" alt="" className="h-5 w-auto" draggable={false} />
-        <span className="w-px h-4 bg-white/20" />
+        className="glass pointer-events-auto shrink-0 h-[42px] rounded-xl px-2.5 sm:px-4 flex items-center gap-2 cursor-pointer hover:bg-white/10 transition">
+        <img src="/favicon.png" alt="" className="h-5 w-5 sm:hidden" draggable={false} />
+        <img src="/itcen-logo.png" alt="" className="h-5 w-auto hidden sm:block" draggable={false} />
+        <span className="w-px h-4 bg-white/20 hidden sm:block" />
         <span className="font-bold tracking-[0.2em] text-sm hidden sm:inline">CEN HUB</span>
       </button>
 
-      <div className="glass absolute left-1/2 -translate-x-1/2 top-4 h-[42px] rounded-xl p-1 flex items-center gap-1 z-20 text-xs font-semibold" role="tablist" aria-label="화면 모드">
+      <div className="glass pointer-events-auto shrink-0 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:top-0 h-[42px] rounded-xl p-1 flex items-center gap-1 text-xs font-semibold" role="tablist" aria-label="화면 모드">
         {([['workspace', '업무'], ['office', '3D 오피스']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
-            className={`px-4 py-2 rounded-lg tracking-wide transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'}`}>{l}</button>
+            className={`px-2.5 sm:px-4 py-2 rounded-lg tracking-wide whitespace-nowrap transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'}`}>{l}</button>
         ))}
       </div>
 
-      <div data-coach="topbar-right" className="glass absolute right-4 top-4 h-[42px] rounded-xl px-4 flex items-center gap-3 z-10 text-xs max-w-[30vw] whitespace-nowrap">
+      <div data-coach="topbar-right" className="glass pointer-events-auto min-w-0 h-[42px] rounded-xl px-2 sm:px-4 flex items-center gap-1.5 sm:gap-3 text-xs whitespace-nowrap">
         {mode === 'workspace' && <button className="appearance-toggle" onClick={toggleAppearance} aria-label={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'} title={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}><span aria-hidden="true">{appearance === 'light' ? '☾' : '☀'}</span></button>}
         <details className="hidden lg:block">
           <summary className="cursor-pointer list-none" title={c.label}><span style={{ color: c.color }}>●</span><span className="sr-only">연결 상태</span></summary>
@@ -85,11 +88,15 @@ export default function App() {
             <span className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-sky-500 grid place-items-center text-[11px] font-bold text-slate-900">{user.displayName.slice(0, 1)}</span>
             <span className="hidden md:inline">{user.displayName}</span>
             <NotificationBell />
-            <button onClick={logout} className="text-slate-400 hover:text-white underline-offset-2 hover:underline">로그아웃</button>
+            <button onClick={logout} aria-label="로그아웃" title="로그아웃" className="text-slate-400 hover:text-white underline-offset-2 hover:underline">
+              <span className="hidden sm:inline">로그아웃</span>
+              <svg className="sm:hidden w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
+            </button>
           </span>
         ) : (
           <button onClick={() => setLoginOpen(true)} className="px-3 py-1 rounded-lg bg-sky-500 text-white font-semibold">로그인</button>
         )}
+      </div>
       </div>
 
       {mode === 'office' && <>
