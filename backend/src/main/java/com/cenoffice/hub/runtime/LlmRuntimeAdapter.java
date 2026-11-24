@@ -10,7 +10,7 @@ import java.util.concurrent.Future;
 
 /**
  * 승인된 LLM Provider(app.llm.*)로 Skill 지침을 "텍스트 생성"에 사용하는 런타임. HUB_RUNTIME=llm 으로 명시적으로 켠 경우에만 사용된다.
- *  - 도구/파일/네트워크/명령 실행 권한이 전혀 없다. 모델이 돌려준 텍스트만 결과로 저장한다.
+ *  - 스킬/파일/네트워크/명령 실행 권한이 전혀 없다. 모델이 돌려준 텍스트만 결과로 저장한다.
  *  - SKILL.md 는 신뢰할 수 없는 사용자 콘텐츠이므로 구분자로 감싸 "지침 데이터"로 전달하고, 고정 안전 지침이 항상 앞선다.
  *  - Provider 가 Mock 이면 시뮬레이션으로 표시되어 KPI 에 집계되지 않는다. 실제 외부 LLM 이면 입력과 Skill 내용이 외부로 전송된다.
  */
@@ -42,7 +42,7 @@ public class LlmRuntimeAdapter implements AgentRuntimeAdapter {
 
     @Override
     public String description() {
-        return llm.isReal() ? "LLM 런타임(" + llm.name() + ") — Skill 지침과 입력이 외부 LLM 서비스로 전송됩니다. 도구/명령 실행 없음"
+        return llm.isReal() ? "LLM 런타임(" + llm.name() + ") — Skill 지침과 입력이 외부 LLM 서비스로 전송됩니다. 스킬/명령 실행 없음"
                 : "LLM 런타임(Mock Provider) — 시뮬레이션이며 KPI 에 집계되지 않습니다";
     }
 

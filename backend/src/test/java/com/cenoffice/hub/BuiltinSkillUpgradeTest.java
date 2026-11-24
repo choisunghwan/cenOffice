@@ -25,7 +25,7 @@ class BuiltinSkillUpgradeTest {
         var current = versions.findById(s.publishedVersionId).orElseThrow();
         String bundled = current.version;
         // 예전 서버처럼 이전 버전만 공개된 상태로 되돌린다
-        current.version = "0.9.0"; current.skillMd = current.skillMd.replace("스킬이며", "도구이며");
+        current.version = "0.9.0"; current.skillMd = current.skillMd.replace("스킬이며", "예전문구이며");
         versions.save(current);
 
         seeder.run();
