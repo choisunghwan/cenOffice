@@ -51,4 +51,10 @@ class MeetingMediaTokenTest {
         } finally { srv.stop(0); }
         org.junit.jupiter.api.Assertions.assertEquals("unreachable", new MeetingMedia("APIkey", "s".repeat(40), "ws://x", "http://127.0.0.1:1", new com.fasterxml.jackson.databind.ObjectMapper()).check());
     }
+
+    @org.junit.jupiter.api.Test void pastedCredentialsAreCleaned() {
+        org.junit.jupiter.api.Assertions.assertEquals("abcDEF123", MeetingMedia.credential("  LIVEKIT_API_SECRET=abc\nDEF 123 "));
+        org.junit.jupiter.api.Assertions.assertEquals("APIxyz", MeetingMedia.credential("\"APIxyz\""));
+        org.junit.jupiter.api.Assertions.assertEquals("APIxyz", MeetingMedia.credential("LIVEKIT_API_KEY=APIxyz"));
+    }
 }

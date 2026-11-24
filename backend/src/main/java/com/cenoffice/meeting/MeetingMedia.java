@@ -27,7 +27,12 @@ public class MeetingMedia {
                         @Value("${livekit.api-url:${LIVEKIT_API_URL:http://127.0.0.1:7880}}") String apiUrl,
                         ObjectMapper json) {
         // 대시보드에 붙여 넣을 때 들어간 공백을 지우고, API 주소를 wss:// 로 넣었어도 https:// 로 바꿔 쓴다
-        this.key=key.strip(); this.secret=secret.strip(); this.url=url.strip(); this.apiUrl=httpUrl(apiUrl.strip()); this.json=json;
+        this.key=credential(key); this.secret=credential(secret); this.url=url.strip(); this.apiUrl=httpUrl(apiUrl.strip()); this.json=json;
+    }
+    /** 키·시크릿에는 공백이 없다. "LIVEKIT_API_SECRET=..." 줄을 통째로 붙였거나 두 줄로 나뉘어 들어간 값도 바로잡는다 */
+    static String credential(String v) {
+        String r = v == null ? "" : v.replaceAll("\\s+", "");
+        return r.replaceFirst("^(?i)LIVEKIT_API_(?:KEY|SECRET)=", "").replaceAll("^[\"']+|[\"']+$", "");
     }
     static String httpUrl(String u) {
         String r = u.replaceFirst("^(?i)wss://", "https://").replaceFirst("^(?i)ws://", "http://");
