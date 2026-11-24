@@ -143,7 +143,7 @@ export default function App() {
         {/* 키보드가 없는 화면에서도 누를 수 있게 상호작용 안내 자체를 버튼으로 둔다 */}
         {nearby && panel === 'none' && (
           <button type="button" onClick={() => open(nearby.id)} className="glass slide-in pointer-events-auto whitespace-nowrap rounded-full px-5 py-2 max-sm:py-3 text-sm flex items-center gap-2.5 hover:bg-white/10">
-            <kbd className="px-2 py-0.5 rounded bg-sky-500 text-white text-xs font-bold">E</kbd>
+            <kbd className="px-2 py-0.5 rounded bg-sky-500 text-white text-xs font-bold pointer-coarse:hidden">E</kbd>
             <span>{nearby.label} 상호작용</span>
           </button>
         )}

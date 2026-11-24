@@ -2,7 +2,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Character, type CharacterHandle } from './Character'
-import { bindInput, cameraRig, keys, stick } from './input'
+import { bindInput, cameraRig, keys, moveTarget } from './input'
 import { resolve, raySpan } from './collision'
 import { COLLIDERS, INTERACTABLES } from './layout'
 import { useOffice } from '../store'
@@ -29,6 +29,12 @@ function lerpAngle(a: number, b: number, t: number) {
 }
 
 const _fwd = new THREE.Vector3()
+const _ray = new THREE.Raycaster()
+const _ndc = new THREE.Vector2()
+const _floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+const _hit = new THREE.Vector3()
+const ARRIVE = 0.2 // 이만큼 가까워지면 도착
+const SLOW_NEAR = 1.0 // 목표까지 이 거리 안에서는 천천히 멈춘다
 
 export function Player() {
   const group = useRef<THREE.Group>(null)
@@ -40,6 +46,8 @@ export function Player() {
   const camDist = useRef(cameraRig.dist)
   const { gl, camera } = useThree()
   const spawned = useRef(false)
+  const marker = useRef<THREE.Mesh>(null)
+  const stuck = useRef(0) // 벽에 막혀 거의 못 움직인 시간(s). 길이 막혔으면 이동을 그만둔다
 
   useEffect(
     () =>
@@ -48,8 +56,16 @@ export function Player() {
         if (s.mode !== 'office') return
         if (code === 'Escape') s.close()
         else if (code === 'KeyE' && s.panel === 'none' && s.nearby) s.open(s.nearby.id)
+      }, (cx, cy) => {
+        // 톡 누른 화면 지점을 바닥(y=0)에 비춰 그곳을 걸어갈 목표로 삼는다
+        const s = useOffice.getState()
+        if (s.mode !== 'office' || s.panel !== 'none') return
+        const r = gl.domElement.getBoundingClientRect()
+        _ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1)
+        _ray.setFromCamera(_ndc, camera)
+        if (_ray.ray.intersectPlane(_floor, _hit)) { moveTarget.current = { x: _hit.x, z: _hit.z }; stuck.current = 0 }
       }),
-    [gl],
+    [gl, camera],
   )
 
   useFrame((_, rawDt) => {
@@ -70,10 +86,17 @@ export function Player() {
     if (!paused) {
       iz = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0)
       ix = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0)
-      // 휴대폰 조이스틱: 키보드 입력이 없을 때만 쓰고, 기울인 만큼(0~1) 천천히~빠르게 움직인다
-      if (ix === 0 && iz === 0 && (stick.x !== 0 || stick.z !== 0)) { ix = stick.x; iz = stick.z }
+      if (ix !== 0 || iz !== 0) moveTarget.current = null // 키보드로 움직이면 톡 이동은 그만둔다
+    } else moveTarget.current = null
+    // 톡 누른 곳으로 걷기: 카메라 방향과 상관없이 목표 쪽으로 곧장 걷고, 가까워지면 천천히 멈춘다
+    const goal = moveTarget.current
+    let toGoal: { x: number; z: number; d: number } | null = null
+    if (goal) {
+      const gx = goal.x - pos.current.x, gz = goal.z - pos.current.z, gd = Math.hypot(gx, gz)
+      if (gd < ARRIVE) moveTarget.current = null
+      else toGoal = { x: gx / gd, z: gz / gd, d: gd }
     }
-    const throttle = Math.min(1, Math.abs(iz) || Math.abs(ix))
+    const throttle = toGoal ? Math.min(1, Math.max(0.35, toGoal.d / SLOW_NEAR)) : Math.min(1, Math.abs(iz) || Math.abs(ix))
     if (TURN_MODE) {
       cameraRig.yaw -= ix * TURN_SPEED * dt
       ix = 0
@@ -86,8 +109,8 @@ export function Player() {
     const rx = -_fwd.z
     const rz = _fwd.x
 
-    let wx = _fwd.x * iz + rx * ix
-    let wz = _fwd.z * iz + rz * ix
+    let wx = toGoal ? toGoal.x : _fwd.x * iz + rx * ix
+    let wz = toGoal ? toGoal.z : _fwd.z * iz + rz * ix
     const wl = Math.hypot(wx, wz)
     if (wl > 0) { wx /= wl; wz /= wl } // 대각선 속도 증가 방지
 
@@ -112,9 +135,17 @@ export function Player() {
       if (Math.abs(pos.current.x - px) > 1e-4) v.x = 0
       if (Math.abs(pos.current.z - pz) > 1e-4) v.z = 0
     }
+    // 톡 이동 중인데 벽·가구에 막혀 거의 움직이지 못하면 잠시 뒤 멈춘다
+    if (toGoal) { stuck.current = Math.hypot(v.x, v.z) < 0.4 ? stuck.current + dt : 0; if (stuck.current > 0.6) { moveTarget.current = null; stuck.current = 0 } }
+    if (marker.current) {
+      const g = moveTarget.current
+      marker.current.visible = !!g
+      if (g) { marker.current.position.set(g.x, 0.03, g.z); const k = 1 + 0.12 * Math.sin(performance.now() / 160); marker.current.scale.set(k, k, k) }
+    }
     // ── 캐릭터 회전: 실제 이동 방향을 부드럽게 바라봄 ──────────
-    const target = TURN_MODE ? cameraRig.yaw + Math.PI : Math.atan2(v.x, v.z)
-    if (TURN_MODE || speed > 0.3) heading.current = lerpAngle(heading.current, target, damp(TURN_RATE, dt))
+    // 톡 이동 중에는 걷는 방향을 바라보고, 그 밖에는 기존처럼 카메라 방향을 바라본다
+    const target = TURN_MODE && !toGoal ? cameraRig.yaw + Math.PI : Math.atan2(v.x, v.z)
+    if ((TURN_MODE && !toGoal) || speed > 0.3) heading.current = lerpAngle(heading.current, target, damp(TURN_RATE, dt))
     char.current?.setWalking(speed > 0.3)
 
     localPose.x = pos.current.x
@@ -165,10 +196,17 @@ export function Player() {
   })
 
   return (
-    <group ref={group}>
-      <Character ref={char} shirt="#4f8cff" hair="#2a1d1a" />
-      <SelfTag />
-    </group>
+    <>
+      <group ref={group}>
+        <Character ref={char} shirt="#4f8cff" hair="#2a1d1a" />
+        <SelfTag />
+      </group>
+      {/* 톡 누른 목적지 표시 */}
+      <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} visible={false} renderOrder={2}>
+        <ringGeometry args={[0.22, 0.34, 32]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.85} depthWrite={false} />
+      </mesh>
+    </>
   )
 }
 
