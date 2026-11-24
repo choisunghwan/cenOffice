@@ -1,4 +1,4 @@
-import { ApiError, API_URL, tokenStore } from './api'
+﻿import { ApiError, API_URL, tokenStore } from './api'
 
 /** AI HUB API 클라이언트 (기존 api.ts 의 토큰/오류 규칙을 재사용) */
 
@@ -101,6 +101,9 @@ export const hub = {
   overview: () => req<HubOverview>('/api/hub/analytics/overview'),
   skills: (q: SkillQuery) => req<HubPage<HubSkillSummary>>('/api/hub/skills' + qs({ ...q })),
   skill: (id: number, versionId?: number) => req<HubSkillDetail>(`/api/hub/skills/${id}` + qs({ versionId })),
+  /** 스킬 만들기 도우미: 대화를 보고 질문을 이어 가거나 SKILL.md 초안을 만든다(저장하지 않음) */
+  assist: (b: { messages: { role: 'user' | 'assistant'; text: string }[]; draft?: string }) =>
+    req<{ reply: string; skillMd: string | null; error: string | null; risks: string[]; ai: boolean }>('/api/hub/skills/assist', { method: 'POST', body: JSON.stringify(b) }),
   registerMd: (b: { skillMd: string; category?: string; tags?: string[]; visibility?: string; submit?: boolean }) =>
     req<HubSkillDetail>('/api/hub/skills', { method: 'POST', body: JSON.stringify(b) }),
   upload: (file: File, o: { category?: string; tags?: string; visibility?: string; submit?: boolean }) => {

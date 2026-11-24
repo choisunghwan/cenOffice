@@ -28,9 +28,16 @@ public class HubSkillController {
     private static final String ADMIN = "hasRole('ADMIN')";
 
     private final SkillService skills;
+    private final SkillCreatorService creator;
 
-    public HubSkillController(SkillService skills) {
-        this.skills = skills;
+    public HubSkillController(SkillService skills, SkillCreatorService creator) {
+        this.skills = skills; this.creator = creator;
+    }
+
+    /** 스킬 만들기 도우미: 대화를 보고 질문을 이어 가거나 SKILL.md 초안을 만든다(저장하지 않음, 등록은 /skills) */
+    @PostMapping("/skills/assist") @PreAuthorize(WRITE)
+    public SkillCreatorService.Reply assist(@jakarta.validation.Valid @RequestBody SkillCreatorService.Request r, Authentication a) {
+        return creator.assist(a.getName(), r);
     }
 
     public static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(x -> x.getAuthority().equals("ROLE_ADMIN")); }

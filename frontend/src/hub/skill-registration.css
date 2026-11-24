@@ -28,3 +28,29 @@
 .form-upload{margin-top:14px;padding:18px 16px}
 .form-upload-clear{margin-top:8px;font-size:12px;text-decoration:underline;opacity:.75}
 .form-upload-clear:hover{opacity:1}
+
+/* AI 와 대화로 만들기 */
+.skill-chat{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+.skill-chat.with-draft{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+.skill-chat-talk{display:flex;flex-direction:column;gap:10px;min-width:0}
+.skill-chat-log{display:flex;flex-direction:column;gap:10px;min-height:240px;max-height:52vh;overflow-y:auto;padding:4px 2px}
+.skill-chat-log p{max-width:88%;padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.skill-chat-log p.ai{align-self:flex-start;background:#1d2f48;border:1px solid #ffffff14;border-bottom-left-radius:4px}
+.skill-chat-log p.me{align-self:flex-end;background:#2a6db2;color:#fff;border-bottom-right-radius:4px}
+.skill-chat-log p.pending{opacity:.7;font-style:italic}
+.skill-chat-input{display:flex;gap:8px;align-items:flex-end}
+.skill-chat-input textarea{flex:1;resize:none}
+.skill-chat-noai{display:flex;justify-content:flex-start}
+.skill-chat-draft{display:flex;flex-direction:column;gap:8px;min-width:0}
+.skill-chat-draft-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.skill-chat-draft-head strong{font-size:13px}
+.skill-chat-draft-head span{font-size:11.5px;color:#94a3b8}
+.skill-chat-draft textarea{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.7;min-height:360px}
+.skill-chat-warn{font-size:12px;line-height:1.6;padding:8px 10px;border-radius:8px;background:#5a3d1a55;color:#ffd9a3;border:1px solid #8a5a2a}
+@media (max-width: 900px){.skill-chat.with-draft{grid-template-columns:minmax(0,1fr)}.skill-chat-log{max-height:46vh}}
+[data-workspace-theme="light"] .skill-chat-log p.ai{background:#f1f5fa;border-color:#dce4ee;color:#24364c}
+[data-workspace-theme="light"] .skill-chat-draft-head span{color:#6a7a90}
+[data-workspace-theme="light"] .skill-chat-warn{background:#fff5e6;color:#7a4a10;border-color:#f0c88a}
+.skill-chat-box{flex:1;min-width:0;resize:none;background:#0e1a2e;border:1px solid #ffffff1a;border-radius:8px;padding:8px 12px;font-size:14px;color:inherit;outline:none;font-family:inherit}
+.skill-chat-box:focus{border-color:#38bdf8}
+@media (max-width: 640px){.skill-register-tabs{gap:18px;overflow-x:auto}.skill-register-tabs button{white-space:nowrap;font-size:13px}}
