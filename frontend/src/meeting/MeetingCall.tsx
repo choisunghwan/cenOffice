@@ -23,6 +23,35 @@ export function deviceErrorMessage(e: unknown): string {
   return `연결 또는 장치 오류: ${err?.message ?? String(e)}`
 }
 
+/** 화면 폭이 휴대폰 크기인지 (화면 회전·창 크기 변경을 따라간다) */
+function useNarrow(query = '(max-width: 600px)') {
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setNarrow(m.matches)
+    on(); m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [query])
+  return narrow
+}
+
+/**
+ * 인원수에 따른 영상 배치 (줌·미트·팀즈 방식).
+ * 넓은 화면: 1명 1칸, 2명 2열, 3~4명 2×2, 5~6명 3×2, 7~9명 3×3, 10명 이상 4열.
+ * 휴대폰: 2명은 상대를 꽉 채우고 내 화면을 작은 창(pip)으로, 3~4명 2×2, 5명 이상 2열 스크롤.
+ */
+export function gridLayout(count: number, narrow: boolean): { cols: number; rows: number; scroll: boolean } {
+  const n = Math.max(count, 1)
+  if (narrow) {
+    if (n <= 2) return { cols: 1, rows: n, scroll: false }
+    if (n <= 4) return { cols: 2, rows: 2, scroll: false }
+    return { cols: 2, rows: Math.ceil(n / 2), scroll: true }
+  }
+  const cols = n === 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4
+  const rows = Math.ceil(n / cols)
+  return { cols, rows, scroll: rows > 4 }
+}
+
 export function MeetingCall({ meeting, grant, mic, camera, onLeave }: { meeting: Meeting; grant: MediaGrant; mic: boolean; camera: boolean; onLeave: (message?: string) => void }) {
   const [error, setError] = useState('')
   const room = useMemo(() => new Room({ adaptiveStream: true, dynacast: true, videoCaptureDefaults: { resolution: { width: 640, height: 360, frameRate: 24 } } }), [])
@@ -53,6 +82,9 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
   const [ending, setEnding] = useState(false)
   const [seconds, setSeconds] = useState(0)
   const [tab, setTab] = useState<'chat' | 'voice' | 'assistant'>('chat')
+  const narrow = useNarrow()
+  const [sheet, setSheet] = useState(false) // 휴대폰: 대화·음성 기록·AI 센 패널을 아래에서 올라오는 시트로 연다
+  const [seen, setSeen] = useState(0)
   const [askStt, setAskStt] = useState(false)
   const [sttBusy, setSttBusy] = useState(false)
   const { segments, status: stt, refresh: refreshStt } = useTranscript(meeting.id, true)
@@ -70,6 +102,13 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
   }
   const shares = tracks.filter(t => t.source === Track.Source.ScreenShare)
   const cameras = tracks.filter(t => t.source === Track.Source.Camera && !t.participant.identity.startsWith('cen-ai-'))
+  // 휴대폰에서 둘이 회의하면 상대를 꽉 채우고 내 화면은 모서리의 작은 창으로 띄운다
+  const pip = narrow && shares.length === 0 && cameras.length === 2 ? cameras.find(t => t.participant.isLocal) : undefined
+  const tiles = pip ? cameras.filter(t => t !== pip) : cameras
+  const layout = gridLayout(tiles.length, narrow)
+  const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices
+  const unread = !sheet && messages.length > seen
+  const openSheet = (open: boolean) => { setSheet(open); if (open) setSeen(messages.length) }
   const reload = useCallback(async () => {
     try {
       const [m, msgs] = await Promise.all([meetingsApi.detail(meeting.id), meetingsApi.messages(meeting.id)])
@@ -106,11 +145,13 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
     {speech.error && <div className="meeting-call-error" role="alert">{speech.error}</div>}
     <div className="meeting-call-body"><section className={`meeting-stage ${shares.length ? 'with-share' : ''}`}>
       {shares.length > 0 && <div className="meeting-share-stage">{shares.map(t => <ParticipantTile key={t.participant.identity + t.source} trackRef={t} />)}</div>}
-      <div className="meeting-video-grid" data-count={Math.min(cameras.length, 4)}>{cameras.map(t => <ParticipantTile key={t.participant.identity} trackRef={t} />)}</div>
+      <div className={`meeting-video-grid ${layout.scroll ? 'scroll' : ''}`} data-count={Math.min(tiles.length, 4)}
+        style={{ '--cols': layout.cols, '--rows': layout.rows } as React.CSSProperties}>{tiles.map(t => <ParticipantTile key={t.participant.identity} trackRef={t} />)}</div>
+      {pip && <div className="meeting-pip"><ParticipantTile trackRef={pip} /></div>}
       {participants.length < 2 && <div className="meeting-waiting" role="status"><span>아직 나 혼자예요. 코드를 공유하면 동료가 여기에 나타납니다.</span><button onClick={() => void copy()}>{copied ? '✓ 복사됨' : '참여 코드 복사'}</button></div>}
       <RoomAudioRenderer /><StartAudio label="클릭해서 회의 소리 듣기" />
       {stt.recording.length > 0 && <CaptionBar segments={segments} interim={speech.interim} meName={user?.displayName ?? ''} />}
-    </section><aside className="meeting-chat"><div className="meeting-chat-heading"><h3>함께하는 사람들 <span>{participants.length}</span></h3><div className="meeting-people">{participants.map(p => <span key={p.identity} title={p.name || p.identity}>{(p.name || p.identity).slice(0, 1)}</span>)}</div></div>
+    </section>{narrow && sheet && <div className="meeting-sheet-backdrop" onClick={() => openSheet(false)} />}<aside className={`meeting-chat ${sheet ? 'open' : ''}`}>{narrow && <button className="meeting-sheet-close" aria-label="패널 닫기" onClick={() => openSheet(false)}>닫기 ✕</button>}<div className="meeting-chat-heading"><h3>함께하는 사람들 <span>{participants.length}</span></h3><div className="meeting-people">{participants.map(p => <span key={p.identity} title={p.name || p.identity}>{(p.name || p.identity).slice(0, 1)}</span>)}</div></div>
       <div className="meeting-chat-tabs" role="tablist" aria-label="회의 패널"><button role="tab" aria-selected={tab === 'chat'} onClick={() => setTab('chat')}>회의 대화</button><button role="tab" aria-selected={tab === 'voice'} onClick={() => setTab('voice')}>음성 기록{segments.length ? ` ${segments.length}` : ''}</button><button role="tab" aria-label="AI 센" aria-selected={tab === 'assistant'} onClick={() => setTab('assistant')}>AI 센{(assistant.blocked || assistant.listening) && <span className="meeting-ai-tab-dot" aria-hidden="true" />}</button></div>
       {tab !== 'assistant' && (assistant.blocked || assistant.listening) && <div className="meeting-ai-callout" role="status"><span>{assistant.listening ? '센이 질문을 듣고 있어요' : assistant.pauseTranscription ? '센이 이야기하고 있어요' : '센이 답변을 준비하고 있어요'}</span>{assistant.listening ? <button onClick={() => setTab('assistant')}>질문 화면</button> : <button onClick={() => void assistant.stop()} disabled={assistant.pending}>말 멈추기</button>}</div>}
       {tab !== 'assistant' && <>
@@ -124,7 +165,8 @@ function CallContent({ meeting, room, error, setError, onLeave }: { meeting: Mee
       <button disabled={busy} aria-pressed={isMicrophoneEnabled} onClick={() => void device(() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled))}><span>{isMicrophoneEnabled ? '◉' : '⊘'}</span>{isMicrophoneEnabled ? '마이크 끄기' : '마이크 켜기'}</button>
       {speech.supported && <button className={stt.consented ? 'stt-on' : ''} disabled={busy || sttBusy} aria-pressed={stt.consented} onClick={() => (stt.consented ? void toggleStt(false) : setAskStt(true))}><span>{stt.consented ? '●' : '◌'}</span>{stt.consented ? '음성 기록 끄기' : '음성 기록'}</button>}
       <button disabled={busy} aria-pressed={isCameraEnabled} onClick={() => void device(() => localParticipant.setCameraEnabled(!isCameraEnabled))}><span>▣</span>{isCameraEnabled ? '카메라 끄기' : '카메라 켜기'}</button>
-      <button disabled={busy} aria-pressed={isScreenShareEnabled} onClick={() => void device(() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled, { audio: false }))}><span>↥</span>{isScreenShareEnabled ? '공유 중지' : '화면 공유'}</button>
+      {narrow && <button className={`meeting-chat-toggle ${unread ? 'unread' : ''}`} aria-pressed={sheet} onClick={() => openSheet(!sheet)}><span>💬</span>대화</button>}
+      {canShare && <button disabled={busy} aria-pressed={isScreenShareEnabled} onClick={() => void device(() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled, { audio: false }))}><span>↥</span>{isScreenShareEnabled ? '공유 중지' : '화면 공유'}</button>}
       <button className="meeting-leave" onClick={() => { void room.disconnect(true); onLeave() }}><span>↗</span>나가기</button>
     </div>{meeting.host === user?.username && <button className="meeting-end" onClick={() => setEnding(true)}>전체 종료</button>}</footer>
     {askStt && <SttConsentDialog busy={sttBusy} onCancel={() => setAskStt(false)} onAgree={() => void toggleStt(true)} />}

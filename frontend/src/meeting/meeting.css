@@ -61,3 +61,42 @@
   .meeting-controls button>span{font-size:17px;margin-bottom:3px}
   .meeting-controls .meeting-end{width:100%;padding:8px}
 }
+
+/* ── 인원수에 따른 영상 배치 (줌·미트·팀즈 방식) ─────────────────────────────
+   --cols/--rows 는 MeetingCall 의 gridLayout 이 정한다. 칸이 무대를 꽉 채우고, 넘치면 스크롤한다. */
+/* 넓은 화면: 카메라와 같은 16:9 칸을 무대 가운데에 놓는다 */
+.meeting-video-grid{grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));grid-template-rows:repeat(var(--rows,1),auto);align-content:center}
+.meeting-video-grid .lk-participant-tile{aspect-ratio:16/9;min-height:0;height:auto}
+.meeting-video-grid.scroll{align-content:start;overflow-y:auto}
+.meeting-video-grid[data-count="1"]{max-width:1100px}
+/* 말하고 있는 사람 강조 */
+.meeting-call .lk-participant-tile[data-lk-speaking="true"]{outline:3px solid #3ecf8e;outline-offset:-3px}
+.meeting-call .lk-participant-tile{transition:outline-color .2s}
+/* 둘이 회의할 때 내 화면(작은 창) */
+.meeting-pip{position:absolute;right:16px;bottom:16px;z-index:6;width:min(28vw,220px);aspect-ratio:3/4;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px #0008;border:1px solid #ffffff2a}
+.meeting-pip .lk-participant-tile{width:100%;height:100%;min-height:0;aspect-ratio:auto;border-radius:0}
+.meeting-chat-toggle.unread>span{position:relative}
+.meeting-chat-toggle.unread>span::after{content:"";position:absolute;top:-2px;right:-6px;width:8px;height:8px;border-radius:50%;background:#ff6b6b}
+.meeting-sheet-close{display:none}
+
+@media(max-width:600px){
+  /* 영상 무대가 화면을 차지하고, 대화·음성 기록·AI 센은 버튼으로 여는 아래 시트로 옮긴다 */
+  .meeting-stage{padding:6px;gap:6px}
+  /* 휴대폰: 칸이 무대를 꽉 채운다(세로 화면이라 16:9 를 고집하면 영상이 손톱만 해진다) */
+  .meeting-video-grid{gap:6px;grid-template-rows:repeat(var(--rows,1),minmax(0,1fr));align-content:stretch}
+  .meeting-video-grid .lk-participant-tile{aspect-ratio:auto;height:100%}
+  .meeting-video-grid.scroll{grid-template-rows:none;grid-auto-rows:calc((100% - 12px)/3)}
+  .meeting-call .meeting-video-grid .lk-participant-tile{border-radius:10px}
+  .meeting-call .meeting-video-grid video{object-fit:cover}
+  .meeting-pip{right:12px;bottom:12px;width:28vw;max-width:130px}
+  .meeting-pip video{object-fit:cover}
+  .meeting-chat{display:none}
+  .meeting-chat.open{display:flex;position:fixed;left:0;right:0;bottom:0;height:72dvh;z-index:90;border-radius:16px 16px 0 0;border-top:1px solid #ffffff22;box-shadow:0 -10px 30px #0009}
+  .meeting-sheet-backdrop{position:fixed;inset:0;z-index:85;background:#0007}
+  .meeting-sheet-close{display:block;align-self:flex-end;margin:8px 10px 0;padding:6px 10px;border-radius:8px;background:#25354a;border:1px solid #354a61;color:#e2ebf5;font-size:12px}
+  /* 화면 공유: 공유 화면을 크게, 사람은 아래 가로 띠로 */
+  .meeting-stage.with-share .meeting-video-grid{flex:0 0 92px;display:flex;overflow-x:auto;justify-content:flex-start}
+  .meeting-stage.with-share .meeting-video-grid .lk-participant-tile{flex:0 0 120px;width:120px;height:100%}
+  .meeting-share-stage video{object-fit:contain}
+  .meeting-controls button{padding:6px 2px}
+}
