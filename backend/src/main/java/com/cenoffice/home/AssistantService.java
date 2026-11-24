@@ -66,7 +66,7 @@ public class AssistantService {
     /** START_MEETING: 만들 회의 이름 · JOIN_MEETING: 참여할 코드 */
     public record MeetingInfo(String title, String code) {}
     /**
-     * intent: CREATE_EVENT(등록 확인 카드) | LIST_EVENTS(조회 결과) | USE_TOOL(스킬 추천 카드) | BOOK_ROOM(회의실 예약 카드) |
+     * intent: CREATE_EVENT(등록 확인 카드) | LIST_EVENTS(조회 결과) | SKILL_SUGGEST(스킬 안내: /스킬이름 버튼, 실행은 하지 않음) | BOOK_ROOM(회의실 예약 카드) |
      *         DELETE_ITEM(삭제·취소 카드) | MOVE_EVENT(일정 변경 카드) | CLARIFY(되묻기) | UNSUPPORTED
      * BOOK_ROOM: draft 는 예약할 제목·시간, room 이 정해졌으면 그 방, 아니면 rooms 에서 고르게 한다.
      * DELETE_ITEM/MOVE_EVENT: target 이 대상 하나(삭제는 여러 개면 candidates 에서 고르게 함), MOVE_EVENT 의 draft 는 변경 후 모습.
@@ -225,38 +225,45 @@ public class AssistantService {
     private static final java.util.regex.Pattern TOOL_ASK = java.util.regex.Pattern.compile(
         "(어떤|무슨|뭐\\s*있|뭐가)\\s*(AI\\s*)?(스킬|툴)|(스킬|툴)\\s*(목록|추천|뭐|있어|있나|있는지|알려|보여|찾아)");
 
+    /**
+     * 스킬은 홈 입력창에서 '/스킬이름 내용' 으로만 실행한다. 대화로 스킬을 찾거나 AI 가 스킬이 맞다고 보면
+     * 실행 카드 대신 SKILL_SUGGEST 로 알려 주고, 화면은 /스킬이름 버튼(누르면 입력창에 채움)을 보여 준다.
+     */
     private Reply toolListReply(String text, List<ToolCatalog.Tool> catalog, String source) {
         if (catalog.isEmpty()) return reply("UNSUPPORTED", "지금 쓸 수 있는 스킬이 없습니다. 스킬 메뉴에서 승인된 스킬을 확인해 주세요.", false, source);
         var ranked = ToolCatalog.rank(text, catalog).stream().filter(r -> r.score() >= ToolCatalog.ALT_THRESHOLD).limit(3).map(ToolCatalog.Ranked::tool).toList();
-        boolean matched = !ranked.isEmpty();
-        if (!matched) return toolRanking(catalog, source); // 특정 주제가 없는 "쓸만한 스킬 뭐 있어?"는 한 개만 내밀지 않고 순위로 보여 준다
-        List<ToolCatalog.Tool> shown = ranked;
-        List<ToolPick> alts = shown.stream().skip(1).map(this::pick).toList();
-        Reply card = toolCard(shown.get(0), alts, false, source);
-        String head = matched ? "찾은 스킬입니다. " : "쓸 수 있는 스킬 중 일부입니다. 더 보려면 스킬 메뉴를 열어 보세요. ";
-        return new Reply("USE_TOOL", head + card.message(), null, List.of(), List.of(), List.of(), false, source, card.tool(), alts);
+        if (ranked.isEmpty()) return toolRanking(catalog, source); // 특정 주제가 없는 "쓸만한 스킬 뭐 있어?"는 목록으로 보여 준다
+        return skillSuggest("찾은 스킬입니다.", ranked, false, source);
     }
 
-    /** 주제 없이 스킬을 물었을 때: 많이 쓴 순서(같으면 최근에 고친 순)로 최대 5개를 순위로 알려 주고, 카드에서 고르게 한다. */
+    /** 주제 없이 스킬을 물었을 때: 많이 쓴 순서(같으면 최근에 고친 순)로 최대 8개 */
     private Reply toolRanking(List<ToolCatalog.Tool> catalog, String source) {
-        var top = catalog.stream().limit(5).toList();
-        var sb = new StringBuilder("쓸 수 있는 스킬 ").append(catalog.size()).append("개 중 많이 쓴 순서로 ").append(top.size()).append("개입니다. (사용 기록이 같으면 최근에 고친 순)\n");
-        for (int i = 0; i < top.size(); i++) {
-            var t = top.get(i);
-            sb.append(i + 1).append(". ").append(t.title());
-            if (!t.description().isBlank()) sb.append(" — ").append(cutText(t.description(), 40));
-            sb.append('\n');
-        }
-        sb.append("쓸 스킬을 아래에서 골라 주세요. 전체 스킬은 스킬 메뉴에서 볼 수 있습니다.");
-        List<ToolPick> alts = top.stream().skip(1).map(this::pick).toList();
-        return new Reply("USE_TOOL", sb.toString(), null, List.of(), List.of(), List.of(), false, source, pick(top.get(0)), alts);
+        var top = catalog.stream().limit(8).toList();
+        String head = "쓸 수 있는 스킬은 총 " + catalog.size() + "개입니다" + (catalog.size() > top.size() ? " (많이 쓴 순서로 " + top.size() + "개)" : "") + ".";
+        return skillSuggest(head, top, false, source);
     }
 
     private Reply toolCard(ToolCatalog.Tool t, List<ToolPick> alts, boolean ai, String source) {
-        ToolPick p = pick(t);
-        String msg = "‘" + p.title() + "’ 스킬로 처리할까요?" + (p.description().isBlank() ? "" : " " + cutText(t.description(), 80))
-            + (p.external() ? " (입력한 내용이 AI 서비스로 전송됩니다)" : "");
-        return new Reply("USE_TOOL", msg, null, List.of(), List.of(), List.of(), ai, source, p, alts);
+        var list = new ArrayList<ToolCatalog.Tool>();
+        list.add(t);
+        return skillSuggest("이 일은 아래 스킬로 할 수 있어요.", list, ai, source, alts);
+    }
+
+    private Reply skillSuggest(String head, List<ToolCatalog.Tool> tools, boolean ai, String source) { return skillSuggest(head, tools, ai, source, List.of()); }
+
+    private Reply skillSuggest(String head, List<ToolCatalog.Tool> tools, boolean ai, String source, List<ToolPick> extra) {
+        var picks = new ArrayList<ToolPick>();
+        tools.forEach(t -> picks.add(pick(t)));
+        for (var x : extra) if (picks.stream().noneMatch(p -> p.skillId().equals(x.skillId()))) picks.add(x);
+        var sb = new StringBuilder(head).append("\n\n");
+        for (int i = 0; i < picks.size(); i++) {
+            var p = picks.get(i);
+            sb.append(i + 1).append(". **").append(p.title()).append("** `/").append(p.name()).append('`');
+            if (!p.description().isBlank()) sb.append(" — ").append(cutText(p.description(), 70));
+            sb.append('\n');
+        }
+        sb.append("\n쓰려면 아래 버튼을 누르거나 입력창에 `/스킬이름 내용` 을 입력하세요.");
+        return new Reply("SKILL_SUGGEST", sb.toString(), null, List.of(), List.of(), List.of(), ai, source, picks.get(0), picks.subList(1, picks.size()));
     }
 
     /** 막다른 길이 되지 않게 할 수 있는 일을 예시와 함께 알려 준다 */
@@ -336,7 +343,9 @@ public class AssistantService {
             - '스킬'은 스킬 메뉴에 있는 승인된 AI 스킬입니다. '사용할 수 있는 스킬'이 있으면 그 목록의 개수와 내용으로 답하세요(개수는 "총 N개"를 그대로 쓰세요).
             - '‘…’ 사용 안내'가 있으면 그 내용으로 그 스킬을 언제·어떻게 쓰는지 설명하고, 써 보시라고 권하세요.
             - 앞서 한 말을 가리키는 질문("그건 뭔데", "왜 못해")은 '대화 이력'을 보고 이해하세요.
-            - 일정 등록·조회·변경·삭제, 회의실 예약, 내 할 일·확정할 회의록·오늘 브리핑, 허브 스킬 실행은 이 도우미가 할 수 있는 일입니다. 사용자가 이를 요청하는 듯하면 이렇게 말해 보라고 예시를 들어 주세요(예: "내일 오후 3시에 팀 회의 잡아줘").
+            - 일정 등록·조회·변경·삭제, 회의실 예약, 내 할 일·확정할 회의록·오늘 브리핑은 이 도우미가 할 수 있는 일입니다. 사용자가 이를 요청하는 듯하면 이렇게 말해 보라고 예시를 들어 주세요(예: "내일 오후 3시에 팀 회의 잡아줘").
+            - 스킬은 입력창에 '/스킬이름 내용' 으로만 실행합니다(예: /cen-weekly-report 이번 주 메모). 스킬을 권할 때는 이 형식을 알려 주고, 스킬을 실행했다거나 파일·양식을 만들어 주겠다고 하지 마세요.
+            - 묻는 것에만 짧게 답하세요. 묻지 않은 문서·보고서·양식을 만들어 주겠다고 먼저 제안하지 마세요.
             - 일반 상식·글쓰기·번역 같은 질문에도 자연스럽게 답해도 됩니다. 확실하지 않은 사실은 단정하지 마세요.
             - 읽기 쉽게 쓰세요: 첫 문장에 결론을 말하고, 길면 짧은 문단으로 나누세요(문단 사이는 빈 줄 "\n\n").
               순서가 있는 단계는 "1. " 번호 목록, 여러 항목은 "- " 목록으로 한 줄에 하나씩 쓰고, 꼭 필요한 핵심어만 **굵게** 하세요.

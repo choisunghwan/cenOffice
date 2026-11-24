@@ -273,3 +273,14 @@
 @media (max-width:600px){.ha-slash code.nm{min-width:0;display:none}}
 .ha-slash .tx small.nm-m{display:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--c-accent,#2a6db2)}
 @media (max-width:600px){.ha-slash .tx small.nm-m{display:block}}
+
+/* 스킬 안내: /스킬이름 버튼(누르면 입력창에 채움) */
+.ha-skill-picks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.ha-skill-picks button{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(42,109,178,.4);border-radius:10px;background:rgba(42,109,178,.06);color:var(--c-text);font-size:12.5px}
+.ha-skill-picks button:hover{background:rgba(42,109,178,.14)}
+.ha-skill-picks code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--c-accent,#2a6db2)}
+.ha-export{display:inline-block}
+.ha-export summary{cursor:pointer;font-size:12.5px;color:var(--c-muted);padding:6px 2px;list-style:none}
+.ha-export summary::before{content:"▸ "}
+.ha-export[open] summary::before{content:"▾ "}
+.ha-export[open]{display:block;width:100%}

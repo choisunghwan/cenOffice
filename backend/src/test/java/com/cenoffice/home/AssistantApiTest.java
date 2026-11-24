@@ -252,7 +252,7 @@ class AssistantApiTest {
     /** 주제 없이 스킬을 물으면 한 개만 내밀지 않고 순위로 알려 주고, 나머지를 카드에서 고르게 한다 */
     @Test void openToolQuestionShowsARankingNotJustOneTool() throws Exception {
         var r = ask(admin, "쓸만한 스킬 뭐 있어?");
-        assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
+        assertEquals("SKILL_SUGGEST", r.path("intent").asText(), r.toString());
         String msg = r.path("message").asText();
         assertTrue(msg.contains("1. ") && msg.contains("2. ") && msg.contains("3. "), msg);
         assertTrue(r.path("alternatives").size() >= 3, r.toString()); // 1위 외의 스킬들도 카드로 고를 수 있다
@@ -316,7 +316,7 @@ class AssistantApiTest {
         var tool = builtinTool("cen-sql-reviewer");
         String sample = "SELECT * FROM orders WHERE customer_name LIKE '%kim';";
         var r = ask(admin, "SQL 점검 부탁해\n" + sample);
-        assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
+        assertEquals("SKILL_SUGGEST", r.path("intent").asText(), r.toString());
         assertEquals("SQL 점검", r.path("tool").path("title").asText()); // 영문 식별자가 아니라 한글 제목
         assertEquals(tool.path("id").asLong(), r.path("tool").path("skillId").asLong());
         assertEquals("rule", r.path("tool").path("engine").asText()); // 기본 제공 스킬은 서버 안에서 처리 → 외부 전송 없음
@@ -332,10 +332,10 @@ class AssistantApiTest {
 
     @Test void askingWhichToolsExistShowsToolCandidates() throws Exception {
         var r = ask(admin, "쓸 만한 스킬 뭐 있어?");
-        assertEquals("USE_TOOL", r.path("intent").asText(), r.toString());
+        assertEquals("SKILL_SUGGEST", r.path("intent").asText(), r.toString());
         assertTrue(r.path("tool").path("skillId").asLong() > 0);
         var sql = ask(admin, "SQL 관련 스킬 알려줘");
-        assertEquals("USE_TOOL", sql.path("intent").asText(), sql.toString());
+        assertEquals("SKILL_SUGGEST", sql.path("intent").asText(), sql.toString());
         assertEquals("SQL 점검", sql.path("tool").path("title").asText());
     }
 
@@ -392,7 +392,7 @@ class AssistantApiTest {
     @Test void longPastedTextIsAcceptedForTools() throws Exception {
         String longText = "회의록 정리 부탁해\n" + "회의 내용입니다. ".repeat(200);
         assertTrue(longText.length() > 500 && longText.length() <= 4000);
-        assertEquals("USE_TOOL", ask(admin, longText).path("intent").asText());
+        assertEquals("SKILL_SUGGEST", ask(admin, longText).path("intent").asText());
     }
 
     @Test void inputIsValidatedAndRequiresLogin() throws Exception {

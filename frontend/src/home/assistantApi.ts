@@ -13,7 +13,7 @@ export interface Room { id: number; name: string; capacity: number }
  * DELETE_ITEM: 삭제·취소 카드 · MOVE_EVENT: 일정 변경 카드 · CLARIFY: 되묻기 · UNSUPPORTED: 아직 못 하는 요청
  */
 export interface Reply {
-  intent: 'SKILL_DRAFT' | 'CREATE_EVENT' | 'LIST_EVENTS' | 'LIST_TASKS' | 'LIST_PENDING' | 'BRIEFING' | 'ANSWER' | 'USE_TOOL' | 'BOOK_ROOM' | 'START_MEETING' | 'JOIN_MEETING' | 'DOWNLOAD_MINUTES' | 'UI_ACTION' | 'DELETE_ITEM' | 'MOVE_EVENT' | 'CLARIFY' | 'UNSUPPORTED'; message: string; draft: Draft | null
+  intent: 'SKILL_SUGGEST' | 'SKILL_DRAFT' | 'CREATE_EVENT' | 'LIST_EVENTS' | 'LIST_TASKS' | 'LIST_PENDING' | 'BRIEFING' | 'ANSWER' | 'USE_TOOL' | 'BOOK_ROOM' | 'START_MEETING' | 'JOIN_MEETING' | 'DOWNLOAD_MINUTES' | 'UI_ACTION' | 'DELETE_ITEM' | 'MOVE_EVENT' | 'CLARIFY' | 'UNSUPPORTED'; message: string; draft: Draft | null
   ambiguous: Ambiguity[]; unresolved: string[]; entries: Entry[]; ai: boolean; source: string
   tool: ToolPick | null; alternatives: ToolPick[]
   /** START_MEETING: 만들 회의 이름(title) · JOIN_MEETING: 참여 코드(code) */

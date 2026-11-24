@@ -99,7 +99,7 @@ class AssistantLlmTest {
         var tool = builtinTool();
         when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"use_tool\",\"tool\":{\"skillId\":" + tool.path("id").asLong() + "}}");
         var r = ask(admin, "이 내용 좀 처리해줘");
-        assertEquals("USE_TOOL", r.path("intent").asText());
+        assertEquals("SKILL_SUGGEST", r.path("intent").asText());
         assertEquals("fake/m1", r.path("source").asText());
         assertEquals(tool.path("id").asLong(), r.path("tool").path("skillId").asLong());
         var userText = ArgumentCaptor.forClass(String.class);
@@ -112,7 +112,7 @@ class AssistantLlmTest {
         assertEquals("UNSUPPORTED", ask(admin, "이 내용 좀 처리해줘").path("intent").asText());
         // 숫자가 아닌 값이나 음수도 마찬가지
         when(llm.generateJson(anyString(), anyString())).thenReturn("{\"intent\":\"use_tool\",\"tool\":{\"skillId\":\"drop table\"}}");
-        assertNotEquals("USE_TOOL", ask(admin, "이 내용 좀 처리해줘").path("intent").asText());
+        assertNotEquals("SKILL_SUGGEST", ask(admin, "이 내용 좀 처리해줘").path("intent").asText());
     }
 
     @Test void aiRoomBookingIsCheckedAgainstTheRealRoomsAndTheirAvailability() throws Exception {

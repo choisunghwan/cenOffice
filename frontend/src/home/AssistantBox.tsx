@@ -369,7 +369,18 @@ export function AssistantBox() {
             : (
               <div key={t.id} id={`ha-t-${t.id}`} className="ha-bot">
                 <Flow turn={t} />
-                {t.reply.intent === 'ANSWER' || t.reply.intent === 'SKILL_DRAFT' ? <RichText className="ha-answer-card" text={t.reply.message} /> : <p>{t.reply.message}</p>}
+                {t.reply.intent === 'ANSWER' || t.reply.intent === 'SKILL_DRAFT' || t.reply.intent === 'SKILL_SUGGEST' ? <RichText className="ha-answer-card" text={t.reply.message} /> : <p>{t.reply.message}</p>}
+                {t.reply.intent === 'SKILL_SUGGEST' && t.tool && (
+                  // 스킬은 /스킬이름 으로만 실행한다: 누르면 입력창에 채우고(요청에서 온 안내면 그 말도 함께) Enter 는 사용자가 누른다
+                  <div className="ha-skill-picks" role="group" aria-label="스킬 고르기">
+                    {[t.tool, ...t.reply.alternatives].map((p) => (
+                      <button key={p.skillId} type="button" title={p.description} onClick={() => {
+                        const fill = `/${p.name ?? p.title} ${t.reply.message.startsWith('이 일은') ? t.input : ''}`
+                        setText(fill); requestAnimationFrame(() => { const el = inputRef.current; if (el) { el.focus(); el.setSelectionRange(fill.length, fill.length) } })
+                      }}><span aria-hidden="true">{p.icon ?? '🧩'}</span><code>/{p.name ?? p.title}</code></button>
+                    ))}
+                  </div>
+                )}
                 {t.reply.intent === 'SKILL_DRAFT' && t.skillMd !== undefined && (
                   <div className={`ha-card ${t.state}`}>
                     <p className="ha-toolname"><span aria-hidden="true">🛠️</span> <b>스킬 초안 (SKILL.md)</b><small>직접 고쳐도 됩니다</small></p>
@@ -516,8 +527,13 @@ export function AssistantBox() {
                       <pre className="ha-output">{t.output}</pre>
                       <div className="ha-actions">
                         <button type="button" className="cal-ghost" onClick={() => void navigator.clipboard?.writeText(t.output ?? '')}>복사</button>
-                        {t.output && <ExportButtons title={t.tool.title} markdown={t.output} />}
-                        {t.output && t.tool.templateFormat && <TemplateFill skillId={t.tool.skillId} title={t.tool.title} result={t.output} />}
+                        {t.output && (
+                          <details className="ha-export">
+                            <summary>파일로 받기</summary>
+                            <ExportButtons title={t.tool.title} markdown={t.output} />
+                            {t.tool.templateFormat && <TemplateFill skillId={t.tool.skillId} title={t.tool.title} result={t.output} />}
+                          </details>
+                        )}
                       </div>
                     </>}
                     {t.state === 'cancelled' && <p className="cal-muted">취소했습니다.</p>}
