@@ -66,6 +66,8 @@ final class RuleParser {
     private static final Pattern CLOCK = Pattern.compile("(?<!\\d)(\\d{1,2}):(\\d{2})(?!\\d)");
     private static final Pattern KOR_TIME = Pattern.compile("(오전|오후|아침|저녁|밤|새벽)?\\s*(\\d{1,2})\\s*시(?!간)(?:\\s*(?:(\\d{1,2})\\s*분|(반)))?"); // "2시간"은 시각이 아니라 길이
     private static final Pattern DURATION = Pattern.compile("(\\d{1,2})\\s*시간(?:\\s*(?:동안|짜리|정도))?");
+    private static final Pattern WEEKDAY_WORD = Pattern.compile("\\(?\\s*[월화수목금토일]\\s*\\)|(?<![가-힣])[월화수목금토일]요일(?:에|날|은|는)?(?![가-힣])");
+    private static final Pattern TIME_TAIL = Pattern.compile("\\s*(?:에|부터|까지)?\\s*(?:(?:시작|종료|끝)(?:해서|하고|하며|하여|해요|해|함|이고|이며|이야|이에요|입니다|돼|되고|되며|나|나요|나고|나는|남|내)?(?![가-힣])|[~\\-–](?!\\s*\\d))");
     private static final Pattern ALL_DAY = Pattern.compile("하루\\s*종일|종일");
     private static final Pattern SHARED = Pattern.compile("전체\\s*일정|전사|회사\\s*(?:공통|일정)|공통\\s*일정");
     private static final Pattern LOCATION = Pattern.compile("([가-힣A-Za-z0-9]+(?:실|룸|층|관))\\s*에서");
@@ -223,6 +225,8 @@ final class RuleParser {
         String rest = t;
         LocalDate date = d != null && !d.range ? d.from : null;
         if (d != null) rest = rest.replace(d.matched, " ");
+        // "11월 27일 금요일에"처럼 날짜 옆에 덧붙인 요일은 제목이 아니다
+        if (date != null) rest = WEEKDAY_WORD.matcher(rest).replaceAll(" ");
         boolean allDay = ALL_DAY.matcher(rest).find();
         rest = ALL_DAY.matcher(rest).replaceAll(" ");
 
@@ -240,6 +244,10 @@ final class RuleParser {
         }
         spans.sort((a, b) -> Integer.compare(a[0], b[0]));
         int cursor = 0;
+        for (int[] s : spans) { // "9시에 시작해서", "5시에 끝나", "9시~"처럼 시각 바로 뒤의 시작·끝 표현도 시각의 일부로 지운다
+            Matcher tail = TIME_TAIL.matcher(rest).region(s[1], rest.length());
+            if (tail.lookingAt()) s[1] = tail.end();
+        }
         for (int[] s : spans) { if (s[0] < cursor) continue; times.add(LocalTime.of(s[2] / 60 % 24, s[2] % 60)); cleaned.append(rest, cursor, s[0]).append(' '); cursor = s[1]; }
         cleaned.append(rest.substring(cursor));
         rest = cleaned.toString();

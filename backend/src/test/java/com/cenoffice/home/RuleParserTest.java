@@ -223,4 +223,22 @@ class RuleParserTest {
         assertNull(p("2월 31일 오후 3시 회의 잡아줘").start());
         assertNull(p("2026-13-45 회의 잡아줘").start());
     }
+
+    /** 되묻기에 시각으로 답하면 원래 말과 이어 붙여 다시 해석한다. 요일·시작/끝 표현은 제목에 남지 않는다 */
+    @Test void weekdayAndStartEndWordsAreNotPartOfTheTitle() {
+        Intent i = p("11월 27일 금요일에 본사 학습조직 일정 잡아줘. 오전9시에 시작해서 오후 5시에 끝나");
+        assertEquals(Kind.CREATE_EVENT, i.kind());
+        assertEquals("본사 학습조직", i.title());
+        assertEquals(at(11, 27, 9, 0), i.start());
+        assertEquals(at(11, 27, 17, 0), i.end());
+
+        Intent j = p("11월 27일(금) 오후 2시부터 4시까지 주간 보고 등록해줘");
+        assertEquals("주간 보고", j.title());
+        assertEquals(at(11, 27, 14, 0), j.start());
+        assertEquals(at(11, 27, 16, 0), j.end());
+
+        assertEquals("본사 학습조직", p("11월 27일 금요일에 본사 학습조직 일정 잡아줘. 9시~5시").title());
+        // 시각과 떨어져 있는 "시작"은 제목의 일부다
+        assertEquals("프로젝트 시작 회의", p("내일 오후 3시에 프로젝트 시작 회의 잡아줘").title());
+    }
 }

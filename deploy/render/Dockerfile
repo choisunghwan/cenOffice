@@ -24,7 +24,9 @@ RUN useradd --system --uid 10001 cenhub
 WORKDIR /app
 COPY --from=api /src/app.jar /app/app.jar
 USER cenhub
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75" \
+# 서버 시간대를 한국으로 둔다. 서버(UTC)가 "오전 9시"를 UTC 로 읽어 화면에 18시로 보이던 문제를 막는다
+ENV TZ=Asia/Seoul \
+    JAVA_OPTS="-XX:MaxRAMPercentage=75 -Duser.timezone=Asia/Seoul" \
     SERVER_ADDRESS=0.0.0.0 \
     SERVER_FORWARD_HEADERS_STRATEGY=framework \
     APP_ENV=PROD

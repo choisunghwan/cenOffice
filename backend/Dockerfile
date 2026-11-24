@@ -14,5 +14,5 @@ WORKDIR /app
 COPY --from=build /src/app.jar /app/app.jar
 USER cenhub
 EXPOSE 8080
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+ENV TZ=Asia/Seoul JAVA_OPTS="-XX:MaxRAMPercentage=75 -Duser.timezone=Asia/Seoul"
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
