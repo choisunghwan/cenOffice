@@ -15,8 +15,11 @@ public class CalendarController {
 
     private final CalendarService calendar;
     private final CalendarManagerService managers;
+    private final com.cenoffice.common.api.UserAdminService userAdmin;
 
-    public CalendarController(CalendarService calendar, CalendarManagerService managers) { this.calendar = calendar; this.managers = managers; }
+    public CalendarController(CalendarService calendar, CalendarManagerService managers, com.cenoffice.common.api.UserAdminService userAdmin) {
+        this.calendar = calendar; this.managers = managers; this.userAdmin = userAdmin;
+    }
 
     private static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN")); }
 
@@ -42,6 +45,9 @@ public class CalendarController {
 
     @GetMapping("/api/admin/users") @PreAuthorize("hasRole('ADMIN')")
     public List<CalendarManagerService.UserRow> userList() { return managers.userList(); }
+
+    @DeleteMapping("/api/admin/users/{username}") @PreAuthorize("hasRole('ADMIN')") @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable String username, Authentication a) { userAdmin.delete(a.getName(), username); }
 
     @PutMapping("/api/admin/users/{username}/calendar-manager") @PreAuthorize("hasRole('ADMIN')")
     public CalendarManagerService.UserRow setManager(@PathVariable String username, @RequestBody ManagerRequest r, Authentication a) {

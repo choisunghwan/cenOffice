@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { startTour } from '../common/coach'
+import { askConfirm } from '../common/confirm'
 import { api, type ServerSnapshot } from '../api'
 import { useOffice } from '../store'
 import { theme } from '../theme'
@@ -109,11 +110,46 @@ export function SettingsPage() {
           <dl className="text-sm space-y-2">
             <div className="flex justify-between"><dt className="text-slate-400">백엔드</dt><dd>{conn === 'online' ? '연결됨' : conn}</dd></div>
             <div className="flex justify-between"><dt className="text-slate-400">장비 어댑터</dt><dd>Mock (MQTT/HTTP 는 Phase 4)</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-400">AI</dt><dd>Mock (LLM 은 Phase 3B)</dd></div>
           </dl>
         </Card>
+        {user?.role === 'ADMIN' && <UserAdminCard me={user.username} />}
       </div>
     </>
+  )
+}
+
+/** 관리자: 사용자 목록과 삭제. 내 계정과 마지막 관리자는 서버가 막는다. */
+function UserAdminCard({ me }: { me: string }) {
+  const [tick, setTick] = useState(0)
+  const users = useLoad(() => api.adminUsers(), [tick])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const remove = async (u: { username: string; displayName: string }) => {
+    const ok = await askConfirm({ title: '사용자 삭제', danger: true, okText: '삭제',
+      message: `${u.displayName}(${u.username}) 계정을 지울까요? 로그인이 바로 막히고 액세스 토큰·AI 대화 기록·알림이 함께 지워집니다. 이 사람이 만든 스킬·회의록·일정은 남습니다. 되돌릴 수 없습니다.` })
+    if (!ok) return
+    setBusy(u.username); setErr(null)
+    try { await api.deleteUser(u.username); setTick((t) => t + 1) }
+    catch (e) { setErr((e as Error).message) }
+    finally { setBusy(null) }
+  }
+  return (
+    <Card title="사용자 관리 (관리자)" className="md:col-span-2">
+      <ErrorNote message={err ?? users.error} />
+      {!users.data?.length && !users.error && <Empty>사용자를 불러오는 중입니다.</Empty>}
+      <ul className="divide-y divide-white/8 text-sm">
+        {users.data?.map((u) => (
+          <li key={u.username} className="py-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate">{u.displayName} <span className="text-slate-500 text-xs">{u.username}</span></div>
+              <div className="text-[11px] text-slate-500">{u.role === 'ADMIN' ? '관리자' : '일반 사용자'}{u.calendarManager ? ' · 일정 관리자' : ''}{u.team ? ` · ${u.team}` : ''}</div>
+            </div>
+            {u.username === me ? <span className="text-[11px] text-slate-500 shrink-0">내 계정</span>
+              : <Btn small tone="danger" disabled={busy !== null} onClick={() => void remove(u)}>{busy === u.username ? '삭제 중…' : '삭제'}</Btn>}
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }
 

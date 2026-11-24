@@ -137,6 +137,8 @@ export const api = {
   chatMessages: (roomId: number, limit = 50) => request<ChatMessage[]>(`/api/chat/rooms/${roomId}/messages?limit=${limit}`),
   sendChat: (roomId: number, content: string) =>
     request<ChatMessage>(`/api/chat/rooms/${roomId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  adminUsers: () => request<{ username: string; displayName: string; team?: string; role: 'ADMIN' | 'USER'; calendarManager: boolean }[]>('/api/admin/users'),
+  deleteUser: (username: string) => request<void>(`/api/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
   auditLogs: () => request<{ id: number; actor: string; action: string; target?: string; detail?: string; createdAt: string }[]>('/api/audit-logs?limit=30'),
 }
 

@@ -51,8 +51,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(SecretKey key) {
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+    JwtDecoder jwtDecoder(SecretKey key, com.cenoffice.common.repo.UserRepository users) {
+        NimbusJwtDecoder d = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        // 토큰은 서버에 저장하지 않으므로, 관리자가 삭제한 계정의 토큰이 만료 전까지 쓰이지 않게 계정이 아직 있는지 확인한다
+        var exists = (org.springframework.security.oauth2.core.OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt>) jwt ->
+            jwt.getSubject() != null && users.existsByUsername(jwt.getSubject())
+                ? org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.success()
+                : org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.failure(new org.springframework.security.oauth2.core.OAuth2Error("invalid_token", "삭제된 계정입니다", null));
+        d.setJwtValidator(new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(org.springframework.security.oauth2.jwt.JwtValidators.createDefault(), exists));
+        return d;
     }
 
     @Bean
