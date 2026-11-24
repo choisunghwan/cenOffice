@@ -35,4 +35,16 @@ class OfficialSkillSeederTest {
             assertEquals(java.util.List.of(), reader.readMarkdown(v.skillMd.getBytes(StandardCharsets.UTF_8)).riskFlags(), name + " 에 검토가 필요한 표현이 없어야 한다");
         }
     }
+
+    /** Claude Code 로 내려받을 때 그대로 쓰이도록 앞머리에 name·description 이 있고, 켜고 끄는 방법이 적혀 있다 */
+    @Test void leanModeIsReadyForClaudeCode() throws Exception {
+        seeder.run();
+        var s = skills.findByName("cen-lean-mode").orElseThrow();
+        String md = versions.findById(s.publishedVersionId).orElseThrow().skillMd;
+        String front = md.substring(0, md.indexOf("\n---", 3));
+        assertTrue(front.contains("\nname: cen-lean-mode"));
+        assertTrue(front.contains("\ndescription: "));
+        assertEquals(md, SkillExportController.withInternalName(md, s.name, s.title), "내보낼 때 바뀌지 않는다");
+        assertTrue(md.contains("/cen-lean-mode") && md.contains("최소 구현 모드 꺼"));
+    }
 }

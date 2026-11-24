@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Order(12)
 public class OfficialSkillSeeder implements CommandLineRunner {
     public static final String OWNER = "hub-official";
-    public static final List<String> NAMES = List.of("cen-code-review", "cen-modern-web");
+    public static final List<String> NAMES = List.of("cen-code-review", "cen-modern-web", "cen-lean-mode");
 
     private final HubSkillRepository skills;
     private final HubSkillVersionRepository versions;
