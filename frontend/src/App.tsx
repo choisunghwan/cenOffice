@@ -69,6 +69,7 @@ export default function App() {
         onClick={() => { setMode('workspace'); useOffice.getState().setWorkspacePage('dashboard'); window.dispatchEvent(new Event('hub-navigation')) }}
         className="glass pointer-events-auto shrink-0 h-[42px] rounded-xl px-2.5 sm:px-4 flex items-center gap-2 cursor-pointer hover:bg-white/10 transition">
         <img src="/favicon.png" alt="" className="h-5 w-5 sm:hidden" draggable={false} />
+        <span className="font-bold text-[12px] tracking-[0.06em] whitespace-nowrap sm:hidden">CEN HUB</span>
         <img src="/itcen-logo.png" alt="" className="h-5 w-auto hidden sm:block" draggable={false} />
         <span className="w-px h-4 bg-white/20 hidden sm:block" />
         <span className="font-bold tracking-[0.2em] text-sm hidden sm:inline">CEN HUB</span>
@@ -77,7 +78,9 @@ export default function App() {
       <div className="glass pointer-events-auto shrink-0 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:top-0 h-[42px] rounded-xl p-1 flex items-center gap-1 text-xs font-semibold" role="tablist" aria-label="화면 모드">
         {([['workspace', '업무'], ['office', '3D 오피스']] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
-            className={`px-2.5 sm:px-4 py-2 rounded-lg tracking-wide whitespace-nowrap transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'} relative`}>{l}
+            aria-label={l} className={`px-2.5 sm:px-4 py-2 rounded-lg tracking-wide whitespace-nowrap transition ${mode === k ? 'bg-sky-500 text-white' : 'text-slate-300 hover:bg-white/10'} relative`}>
+            {/* 휴대폰은 폭이 좁아 로고 글자 자리를 위해 '3D 오피스'를 '3D'로 줄인다 */}
+            {k === 'office' ? <><span className="sm:hidden">3D</span><span className="hidden sm:inline">{l}</span></> : l}
             {/* 채팅은 3D 오피스 안에 있으므로, 업무 화면에 있을 때 안 읽은 채팅 수를 3D 오피스 탭에 표시한다 */}
             {k === 'office' && mode !== 'office' && chatUnread > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center" aria-label={`안 읽은 채팅 ${chatUnread}건`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}</button>
         ))}
