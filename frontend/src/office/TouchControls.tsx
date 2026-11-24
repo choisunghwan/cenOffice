@@ -2,28 +2,42 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { stick, zoomCamera } from './input'
 
 /**
- * 휴대폰·태블릿처럼 키보드가 없는 화면에서 3D 오피스를 움직이는 조이스틱과 확대·축소 버튼.
- * 원 안의 손잡이를 끌면 위=앞으로, 아래=뒤로, 옆=방향 돌리기. 많이 밀수록 빨리 걷는다.
+ * 휴대폰·태블릿처럼 키보드가 없는 화면에서 3D 오피스를 움직이는 플로팅 조이스틱과 확대·축소 버튼.
+ * 화면 왼쪽 절반 어디든 손가락을 대면 그 자리에 조이스틱이 나타나고, 끄는 방향으로 걷는다
+ * (위=앞으로, 아래=뒤로, 옆=방향 돌리기, 많이 밀수록 빠르게). 오른쪽 절반은 지금처럼 끌어서 카메라를 돌린다.
  * 값은 input.ts 의 stick 에 넣고, Player 가 키보드 입력과 같은 방식으로 읽는다.
  */
-const SIZE = 132 // 조이스틱 바깥 원 지름(px)
-const KNOB = 56 // 손잡이 지름(px)
+const SIZE = 128 // 조이스틱 바깥 원 지름(px)
+const KNOB = 54 // 손잡이 지름(px)
 const RANGE = (SIZE - KNOB) / 2 // 손잡이가 움직일 수 있는 거리
 const DEAD = 0.18 // 이보다 조금 민 것은 무시(손가락 떨림)
 
 export function TouchControls() {
-  const base = useRef<HTMLDivElement>(null)
-  const [knob, setKnob] = useState({ x: 0, y: 0 })
-  const [dragging, setDragging] = useState(false)
+  const zone = useRef<HTMLDivElement>(null)
   const active = useRef<number | null>(null)
+  // 손가락을 처음 댄 실제 지점. 방향은 늘 여기서부터 잰다(화면 가장자리라 원을 안쪽으로 옮겨 그려도 저절로 움직이지 않게)
+  const origin = useRef({ x: 0, y: 0 })
+  // 조이스틱 중심(터치 영역 기준 좌표). null 이면 손을 뗀 상태 → 왼쪽 아래에 흐린 안내용 조이스틱만 보인다
+  const [center, setCenter] = useState<{ x: number; y: number } | null>(null)
+  const [knob, setKnob] = useState({ x: 0, y: 0 })
   // 끄는 도중 패널이 열려 조이스틱이 사라져도 캐릭터가 계속 걷지 않게 멈춘다
   useEffect(() => () => { stick.x = 0; stick.z = 0 }, [])
 
-  const update = (e: ReactPointerEvent) => {
-    const r = base.current?.getBoundingClientRect()
-    if (!r) return
-    let dx = e.clientX - (r.left + r.width / 2)
-    let dy = e.clientY - (r.top + r.height / 2)
+  const local = (e: ReactPointerEvent) => {
+    const r = zone.current!.getBoundingClientRect()
+    // 조이스틱 원이 터치 영역 밖으로 잘리지 않게 중심을 안쪽으로 당긴다
+    const half = SIZE / 2
+    return {
+      x: Math.min(Math.max(e.clientX - r.left, half), r.width - half),
+      y: Math.min(Math.max(e.clientY - r.top, half), r.height - half),
+      rx: e.clientX - r.left,
+      ry: e.clientY - r.top,
+    }
+  }
+  const aim = (e: ReactPointerEvent) => {
+    const p = local(e)
+    let dx = p.rx - origin.current.x
+    let dy = p.ry - origin.current.y
     const d = Math.hypot(dx, dy)
     if (d > RANGE) { dx = (dx / d) * RANGE; dy = (dy / d) * RANGE }
     setKnob({ x: dx, y: dy })
@@ -33,36 +47,41 @@ export function TouchControls() {
     stick.z = Math.abs(nz) < DEAD ? 0 : nz
   }
   const start = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (active.current != null) return // 두 번째 손가락은 무시
     e.preventDefault()
     active.current = e.pointerId
-    setDragging(true)
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* 캡처가 안 돼도 움직임은 된다 */ }
-    update(e)
+    const p = local(e)
+    origin.current = { x: p.rx, y: p.ry }
+    setCenter({ x: p.x, y: p.y })
+    aim(e)
   }
-  const move = (e: ReactPointerEvent) => { if (active.current === e.pointerId) update(e) }
+  const move = (e: ReactPointerEvent) => { if (active.current === e.pointerId) aim(e) }
   const end = (e: ReactPointerEvent) => {
     if (active.current !== e.pointerId) return
     active.current = null
     stick.x = 0
     stick.z = 0
-    setDragging(false)
+    setCenter(null)
     setKnob({ x: 0, y: 0 })
   }
   const btn = 'glass grid place-items-center rounded-xl text-slate-100 active:bg-sky-500/40 select-none touch-none'
 
   return (
     <>
-      <div ref={base} role="application" aria-label="이동 조이스틱: 위로 밀면 앞으로, 옆으로 밀면 방향 돌리기"
-        className="glass absolute left-5 bottom-5 z-10 hidden max-sm:block pointer-coarse:block rounded-full touch-none select-none"
-        style={{ width: SIZE, height: SIZE }}
+      {/* 왼쪽 절반 터치 영역. 왼쪽 메뉴·상호작용 버튼(z-10)보다 아래에 두어 그 버튼들은 그대로 눌린다 */}
+      <div ref={zone} role="application" aria-label="이동 영역: 화면 왼쪽을 누른 채 끌면 그 방향으로 걷습니다"
+        className="absolute left-0 bottom-0 top-[68px] w-1/2 z-[5] hidden max-sm:block pointer-coarse:block touch-none select-none"
         onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}
         onContextMenu={(e) => e.preventDefault()}>
-        <span aria-hidden="true" className="absolute inset-0 text-[10px] text-slate-400 pointer-events-none">
-          <span className="absolute top-1.5 left-1/2 -translate-x-1/2">▲</span><span className="absolute bottom-1.5 left-1/2 -translate-x-1/2">▼</span>
-          <span className="absolute left-2 top-1/2 -translate-y-1/2">◀</span><span className="absolute right-2 top-1/2 -translate-y-1/2">▶</span>
-        </span>
-        <span aria-hidden="true" className="absolute rounded-full bg-sky-500/80 border border-white/40 shadow-lg pointer-events-none"
-          style={{ width: KNOB, height: KNOB, left: (SIZE - KNOB) / 2 + knob.x, top: (SIZE - KNOB) / 2 + knob.y, transition: dragging ? 'none' : 'left .12s, top .12s' }} />
+        <div aria-hidden="true" className={`absolute rounded-full pointer-events-none transition-opacity duration-150 ${center ? 'glass opacity-100' : 'border border-white/25 bg-slate-900/20 opacity-70'}`}
+          style={center
+            ? { width: SIZE, height: SIZE, left: center.x - SIZE / 2, top: center.y - SIZE / 2 }
+            : { width: SIZE, height: SIZE, left: 20, bottom: 20 }}>
+          <span className="absolute rounded-full bg-sky-500/80 border border-white/40 shadow-lg"
+            style={{ width: KNOB, height: KNOB, left: (SIZE - KNOB) / 2 + knob.x, top: (SIZE - KNOB) / 2 + knob.y }} />
+          {!center && <span className="absolute inset-x-0 -top-6 text-center text-[11px] text-white/80 [text-shadow:0_1px_3px_#000a] whitespace-nowrap">왼쪽을 눌러 이동</span>}
+        </div>
       </div>
       <div className="absolute right-4 bottom-24 z-10 hidden max-sm:flex pointer-coarse:flex flex-col gap-1.5" aria-label="확대 축소">
         <button type="button" aria-label="가까이 보기" className={`${btn} w-12 h-12 text-xl`} onClick={() => zoomCamera(-1.5)}>＋</button>
