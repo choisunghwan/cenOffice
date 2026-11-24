@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 
 /**
  * 휴대폰·태블릿 3D 오피스 조작 안내. 조작은 화면 자체로 한다:
@@ -11,7 +11,7 @@ export function TouchControls() {
   if (!show) return null
   return (
     <div role="note" onClick={() => setShow(false)}
-      className="absolute left-1/2 -translate-x-1/2 bottom-6 z-10 hidden max-sm:block pointer-coarse:block glass rounded-full px-4 py-2 text-[12px] text-slate-200 whitespace-nowrap slide-in">
+      className="absolute left-1/2 -translate-x-1/2 top-[128px] z-10 hidden max-sm:block pointer-coarse:block glass rounded-full px-4 py-2 text-[12px] text-slate-200 whitespace-nowrap slide-in">
       톡 눌러 이동 · 끌어서 둘러보기 · 두 손가락으로 확대
     </div>
   )

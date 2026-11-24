@@ -109,10 +109,11 @@ export default function App() {
       </div>
 
       {mode === 'office' && <>
-      <nav className="glass absolute left-4 max-sm:left-3 top-1/2 -translate-y-1/2 max-sm:top-[38%] rounded-2xl p-2 max-sm:p-1.5 flex flex-col gap-1 z-10">
+      {/* 휴대폰: 화면을 가리지 않게 왼쪽 아래의 작은 아이콘 줄로 둔다(오른쪽 아래는 채팅 버튼) */}
+      <nav aria-label="3D 오피스 메뉴" className="glass absolute left-4 max-sm:left-3 top-1/2 -translate-y-1/2 max-sm:top-auto max-sm:translate-y-0 max-sm:bottom-4 rounded-2xl max-sm:rounded-full p-2 max-sm:p-1 flex flex-col max-sm:flex-row gap-1 max-sm:gap-0.5 z-10">
         {menu.map((m) => (
-          <button key={m.label} onClick={m.action} className="w-16 max-sm:w-12 py-2.5 max-sm:py-2 rounded-xl hover:bg-white/10 flex flex-col items-center gap-1 text-[11px] max-sm:text-[10px] text-slate-200 transition">
-            <span className="text-xl max-sm:text-lg">{m.icon}</span>{m.label}
+          <button key={m.label} onClick={m.action} aria-label={m.label} title={m.label} className="w-16 max-sm:w-11 py-2.5 max-sm:py-0 max-sm:h-11 rounded-xl max-sm:rounded-full hover:bg-white/10 active:bg-white/15 flex flex-col items-center justify-center gap-1 text-[11px] text-slate-200 transition">
+            <span className="text-xl max-sm:text-lg" aria-hidden="true">{m.icon}</span><span className="max-sm:sr-only">{m.label}</span>
           </button>
         ))}
       </nav>
