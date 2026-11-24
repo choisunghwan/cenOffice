@@ -68,10 +68,12 @@ public class SkillService {
 
     private final Map<String, Deque<Instant>> registerLog = new java.util.concurrent.ConcurrentHashMap<>();
 
+    private final SkillOwnership ownership;
     public SkillService(HubSkillRepository skills, HubSkillVersionRepository versions, HubSkillTagRepository tags, HubSkillReviewRepository reviews,
                         HubApprovalHistoryRepository history, HubCategoryRepository categories, HubUsageEventRepository usage,
                         HubExecutionRepository executions, UserRepository users, AuditService audit, SkillPackageReader reader,
-                        RuntimeRegistry runtime, ObjectMapper mapper, EntityManager em) {
+                        RuntimeRegistry runtime, ObjectMapper mapper, EntityManager em, SkillOwnership ownership) {
+        this.ownership = ownership;
         this.skills = skills;
         this.versions = versions;
         this.tags = tags;
@@ -199,7 +201,7 @@ public class SkillService {
         HubSkill s = skill(skillId);
         HubSkillVersion v = version(skillId, versionId);
         if (!v.status.equals("PENDING_REVIEW")) throw new ApiException(HttpStatus.CONFLICT, "검토 대기 상태가 아닙니다: " + v.status);
-        if (s.owner.equals(admin)) throw new ApiException(HttpStatus.FORBIDDEN, "본인이 등록한 Skill 은 다른 관리자가 승인해야 합니다");
+        if (ownership.owns(s.owner, admin)) throw new ApiException(HttpStatus.FORBIDDEN, "본인이 등록한 Skill 은 다른 관리자가 승인해야 합니다");
         v.status = "APPROVED";
         versions.save(v);
         s.publishedVersionId = v.id;
@@ -277,14 +279,14 @@ public class SkillService {
         StringBuilder j = new StringBuilder("select s from HubSkill s where s.status <> 'ARCHIVED'");
         Map<String, Object> p = new HashMap<>();
         if (!admin) {
-            j.append(" and ((s.status = 'APPROVED' and s.publishedVersionId is not null and (s.visibility = 'PUBLIC' or (s.visibility = 'TEAM' and s.team = :team))) or s.owner = :me)");
+            j.append(" and ((s.status = 'APPROVED' and s.publishedVersionId is not null and (s.visibility = 'PUBLIC' or (s.visibility = 'TEAM' and s.team = :team))) or s.owner in :meOwners)");
             p.put("team", team == null ? "" : team);
-            p.put("me", me);
+            p.put("meOwners", ownership.ownersOf(me));
         }
-        if (q.mine()) { j.append(" and s.owner = :mine"); p.put("mine", me); }
+        if (q.mine()) { j.append(" and s.owner in :mine"); p.put("mine", ownership.ownersOf(me)); }
         if (notBlank(q.status())) { j.append(" and s.status = :st"); p.put("st", q.status().toUpperCase(Locale.ROOT)); }
         if (notBlank(q.category())) { j.append(" and s.category = :cat"); p.put("cat", q.category()); }
-        if (notBlank(q.owner())) { j.append(" and s.owner = :own"); p.put("own", q.owner()); }
+        if (notBlank(q.owner())) { j.append(" and s.owner in :own"); p.put("own", ownership.ownersOf(q.owner())); }
         if (notBlank(q.tag())) { j.append(" and exists (select 1 from HubSkillTag t where t.skillId = s.id and lower(t.tag) = :tag)"); p.put("tag", q.tag().toLowerCase(Locale.ROOT).trim()); }
         if (notBlank(q.text())) {
             j.append(" and (lower(s.name) like :q escape '!' or lower(s.description) like :q escape '!' or exists (select 1 from HubSkillTag t2 where t2.skillId = s.id and lower(t2.tag) like :q escape '!'))");
@@ -308,7 +310,7 @@ public class SkillService {
     @Transactional(readOnly = true)
     public SkillDetail detail(Long id, Long versionId, String me, boolean admin) {
         HubSkill s = visible(id, me, admin);
-        boolean owner = s.owner.equals(me) || admin;
+        boolean owner = ownership.owns(s.owner, me) || admin;
         List<HubSkillVersion> all = versions.findBySkillIdOrderByIdDesc(id);
         // 일반 사용자에게는 공개(승인) 버전만 보인다. 제작자/관리자는 모든 버전.
         List<HubSkillVersion> visible = owner ? all : all.stream().filter(v -> v.status.equals("APPROVED")).toList();
@@ -317,20 +319,20 @@ public class SkillService {
         else if (s.publishedVersionId != null) cur = visible.stream().filter(v -> v.id.equals(s.publishedVersionId)).findFirst().orElse(null);
         if (cur == null && !visible.isEmpty()) cur = visible.get(0);
         return new SkillDetail(summaries(List.of(s)).get(0), cur == null ? null : content(cur, s), visible.stream().map(v -> versionView(v, s)).toList(),
-                owner, admin && !s.owner.equals(me), runtimeInfo(s));
+                owner, admin && !ownership.owns(s.owner, me), runtimeInfo(s));
     }
 
     @Transactional(readOnly = true)
     public List<VersionView> versions(Long id, String me, boolean admin) {
         HubSkill s = visible(id, me, admin);
-        boolean owner = s.owner.equals(me) || admin;
+        boolean owner = ownership.owns(s.owner, me) || admin;
         return versions.findBySkillIdOrderByIdDesc(id).stream().filter(v -> owner || v.status.equals("APPROVED")).map(v -> versionView(v, s)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<HistoryView> history(Long id, String me, boolean admin) {
         HubSkill s = visible(id, me, admin);
-        if (!(s.owner.equals(me) || admin)) throw new ApiException(HttpStatus.FORBIDDEN, "제작자 또는 관리자만 승인 이력을 볼 수 있습니다");
+        if (!(ownership.owns(s.owner, me) || admin)) throw new ApiException(HttpStatus.FORBIDDEN, "제작자 또는 관리자만 승인 이력을 볼 수 있습니다");
         return history.findByTargetTypeAndTargetIdOrderByIdDesc("SKILL", id).stream().map(h -> new HistoryView(h.id, h.action, h.actor, h.comment, h.versionId, h.occurredAt)).toList();
     }
 
@@ -343,7 +345,7 @@ public class SkillService {
             if (s == null || "ARCHIVED".equals(s.status)) continue;
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("skillId", s.id); m.put("versionId", v.id); m.put("name", s.name); m.put("icon", s.icon); m.put("version", v.version);
-            m.put("owner", s.owner); m.put("ownerName", displayName(s.owner)); m.put("submittedAt", v.createdAt);
+            m.put("owner", ownership.effective(s.owner)); m.put("ownerName", displayName(ownership.effective(s.owner))); m.put("submittedAt", v.createdAt);
             m.put("riskFlags", flags(v)); m.put("packageKind", v.packageKind); m.put("sample", s.sample);
             out.add(m);
         }
@@ -354,7 +356,7 @@ public class SkillService {
 
     public Download download(Long skillId, Long versionId, String me, boolean admin) {
         HubSkill s = visible(skillId, me, admin);
-        boolean owner = s.owner.equals(me) || admin;
+        boolean owner = ownership.owns(s.owner, me) || admin;
         HubSkillVersion v = versionId != null ? version(skillId, versionId) : versions.findById(Objects.requireNonNullElse(s.publishedVersionId, -1L)).orElse(null);
         if (v == null) throw new ApiException(HttpStatus.NOT_FOUND, "다운로드할 공개 버전이 없습니다");
         if (!owner && !v.status.equals("APPROVED")) throw new ApiException(HttpStatus.NOT_FOUND, "버전을 찾을 수 없습니다");
@@ -375,7 +377,7 @@ public class SkillService {
 
     public ReviewView review(Long skillId, String me, boolean admin, Integer rating, String comment) {
         HubSkill s = visible(skillId, me, admin);
-        if (s.owner.equals(me)) throw new ApiException(HttpStatus.FORBIDDEN, "본인이 만든 Skill 은 평가할 수 없습니다");
+        if (ownership.owns(s.owner, me)) throw new ApiException(HttpStatus.FORBIDDEN, "본인이 만든 Skill 은 평가할 수 없습니다");
         if (!"APPROVED".equals(s.status) || s.publishedVersionId == null) throw new ApiException(HttpStatus.CONFLICT, "승인된 Skill 만 평가할 수 있습니다");
         if (rating == null || rating < 1 || rating > 5) throw new ApiException(HttpStatus.BAD_REQUEST, "평점은 1~5 입니다");
         String c = comment == null ? null : comment.replaceAll("[\\p{Cntrl}&&[^\\n]]", "").trim();
@@ -403,7 +405,7 @@ public class SkillService {
 
     /** 열람 권한: 관리자/제작자 또는 (승인·공개된 Skill 이고 공개 범위가 허용) */
     public boolean canView(HubSkill s, String me, boolean admin) {
-        if (admin || s.owner.equals(me)) return true;
+        if (admin || ownership.owns(s.owner, me)) return true;
         if (!"APPROVED".equals(s.status) || s.publishedVersionId == null) return false;
         if (s.visibility.equals("PUBLIC")) return true;
         String team = teamOf(me);
@@ -413,7 +415,7 @@ public class SkillService {
     public HubSkill visible(Long id, String me, boolean admin) {
         HubSkill s = skill(id);
         // 접근할 수 없는 Skill 은 존재 여부를 숨긴다
-        if (!canView(s, me, admin) || ("ARCHIVED".equals(s.status) && !(admin || s.owner.equals(me)))) throw new ApiException(HttpStatus.NOT_FOUND, "Skill 을 찾을 수 없습니다");
+        if (!canView(s, me, admin) || ("ARCHIVED".equals(s.status) && !(admin || ownership.owns(s.owner, me)))) throw new ApiException(HttpStatus.NOT_FOUND, "Skill 을 찾을 수 없습니다");
         return s;
     }
 
@@ -425,7 +427,7 @@ public class SkillService {
     }
 
     private void requireEdit(HubSkill s, String actor, boolean admin) {
-        if (!(admin || s.owner.equals(actor))) throw new ApiException(HttpStatus.FORBIDDEN, "제작자 또는 관리자만 수정할 수 있습니다");
+        if (!(admin || ownership.owns(s.owner, actor))) throw new ApiException(HttpStatus.FORBIDDEN, "제작자 또는 관리자만 수정할 수 있습니다");
     }
 
     private void recompute(HubSkill s) {
@@ -450,7 +452,7 @@ public class SkillService {
     void recordEvent(HubSkill s, Long versionId, String actor, String type) {
         HubUsageEvent e = new HubUsageEvent();
         e.skillId = s.id; e.versionId = versionId; e.actor = actor; e.type = type;
-        e.counted = !s.sample && !s.owner.equals(actor); // 샘플/제작자 본인 사용은 집계 제외
+        e.counted = !s.sample && !ownership.owns(s.owner, actor); // 샘플/제작자 본인 사용은 집계 제외
         e.occurredAt = Instant.now();
         usage.save(e);
     }
@@ -566,7 +568,7 @@ public class SkillService {
             double[] r = rate.getOrDefault(s.id, new double[]{0, 0});
             String exec = s.publishedVersionId == null ? "REGISTRY_ONLY" : BuiltinSkillSeeder.trusted(s) ? runtimeInfo(s).state() : state;
             out.add(new SkillSummary(s.id, s.name, s.description, s.category, catNames.getOrDefault(s.category, s.category), s.icon, s.visibility, s.team, s.status,
-                    s.owner, names.computeIfAbsent(s.owner, this::displayName), vlabel.get(s.id), tagMap.getOrDefault(s.id, List.of()).stream().sorted().toList(),
+                    ownership.effective(s.owner), names.computeIfAbsent(ownership.effective(s.owner), this::displayName), vlabel.get(s.id), tagMap.getOrDefault(s.id, List.of()).stream().sorted().toList(),
                     st[0], st[1], Math.round(r[0] * 10) / 10.0, (long) r[1], s.sample, s.updatedAt, exec, s.title));
         }
         return out;

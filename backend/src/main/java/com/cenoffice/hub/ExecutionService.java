@@ -56,8 +56,10 @@ public class ExecutionService {
     private final AuditService audit;
     private final ExecutorService exec = Executors.newVirtualThreadPerTaskExecutor();
 
+    private final SkillOwnership ownership;
     public ExecutionService(HubExecutionRepository executions, HubUsageEventRepository usage, HubSkillVersionRepository versions, HubSkillRepository skills,
-                            SkillService skillService, AgentService agentService, RuntimeRegistry runtime, AuditService audit) {
+                            SkillService skillService, AgentService agentService, RuntimeRegistry runtime, AuditService audit, SkillOwnership ownership) {
+        this.ownership = ownership;
         this.executions = executions;
         this.usage = usage;
         this.versions = versions;
@@ -113,7 +115,7 @@ public class ExecutionService {
             targetSkills.add(s);
             targetVersions.add(versions.findById(s.publishedVersionId).orElseThrow());
             targetName = s.name; targetType = "SKILL";
-            counted = !rt.simulated() && !s.sample && !s.owner.equals(user);
+            counted = !rt.simulated() && !s.sample && !ownership.owns(s.owner, user);
         } else {
             HubAgent a = agentService.visible(r.agentId(), user, admin);
             if (!"APPROVED".equals(a.status)) throw new ApiException(HttpStatus.CONFLICT, "승인된 Agent 만 실행할 수 있습니다");
@@ -241,7 +243,7 @@ public class ExecutionService {
     private void event(HubSkill s, Long versionId, HubExecution e, String type) {
         HubUsageEvent u = new HubUsageEvent();
         u.skillId = s.id; u.versionId = versionId; u.agentId = e.agentId; u.actor = e.requester; u.type = type; u.executionId = e.id;
-        u.counted = !e.simulated && !s.sample && !s.owner.equals(e.requester);
+        u.counted = !e.simulated && !s.sample && !ownership.owns(s.owner, e.requester);
         u.occurredAt = Instant.now();
         try { usage.save(u); } catch (Exception dup) { log.debug("중복 사용 이벤트 무시: {} {}", e.id, type); }
     }

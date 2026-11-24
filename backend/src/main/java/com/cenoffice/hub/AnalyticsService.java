@@ -40,8 +40,10 @@ public class AnalyticsService {
     private final SkillService skillService;
     private final AgentService agentService;
 
+    private final SkillOwnership ownership;
     public AnalyticsService(EntityManager em, HubSkillRepository skills, HubAgentRepository agents, HubSkillReviewRepository reviews,
-                            HubSkillVersionRepository versions, SkillService skillService, AgentService agentService) {
+                            HubSkillVersionRepository versions, SkillService skillService, AgentService agentService, SkillOwnership ownership) {
+        this.ownership = ownership;
         this.em = em;
         this.skills = skills;
         this.agents = agents;
@@ -119,7 +121,7 @@ public class AnalyticsService {
     /** 제작자별 통계: 본인 또는 관리자만. 사용자 개인 식별 정보(누가 썼는지)는 포함하지 않는다. */
     public CreatorStats creatorStats(String creator, String me, boolean admin) {
         if (!(admin || creator.equals(me))) throw new ApiException(HttpStatus.FORBIDDEN, "본인 또는 관리자만 제작자 통계를 볼 수 있습니다");
-        List<HubSkill> mine = skills.findByOwnerOrderByUpdatedAtDesc(creator).stream().filter(s -> !s.sample && !"ARCHIVED".equals(s.status)).toList();
+        List<HubSkill> mine = ownership.ownersOf(creator).stream().flatMap(o -> skills.findByOwnerOrderByUpdatedAtDesc(o).stream()).filter(s -> !s.sample && !"ARCHIVED".equals(s.status)).toList();
         List<HubAgent> myAgents = agents.findByOwnerOrderByUpdatedAtDesc(creator).stream().filter(a -> !a.sample && !"ARCHIVED".equals(a.status)).toList();
         Set<Long> ids = mine.stream().map(s -> s.id).collect(Collectors.toSet());
         List<Ev> evs = events(ids);

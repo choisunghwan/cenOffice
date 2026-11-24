@@ -59,5 +59,8 @@ services:
         sync: false
       - key: HUB_RUNTIME
         sync: false
+      # 기본 스킬(내장·기본 AI)의 제작자로 볼 계정 아이디. 그 계정의 '내 스킬'에 나오고 수정·통계가 된다
+      - key: HUB_SKILL_OWNER
+        sync: false
       - key: EXT_ALLOWED_ORIGINS
         sync: false
