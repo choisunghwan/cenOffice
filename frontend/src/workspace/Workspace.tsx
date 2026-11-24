@@ -3,7 +3,7 @@ import { Btn } from './kit'
 import { ComingSoonPage, MonitoringPage, OfficeManagementPage, SettingsPage } from './Pages'
 import { HubPage } from '../hub/HubPage'
 import { ChatHistory } from '../home/ChatHistory'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useUi } from '../common/uiStore'
 const MeetingsPage = lazy(() => import('../meeting/MeetingsPage').then(m => ({ default: m.MeetingsPage })))
 
@@ -31,6 +31,8 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
   const setPage = useOffice((s) => s.setWorkspacePage)
   const collapsed = useUi((s) => s.navCollapsed)
   const toggleNav = () => useUi.getState().setNavCollapsed(!collapsed)
+  // 좁은 화면에는 사이드바가 없으므로 대화 기록을 서랍으로 연다
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   // 스킬 관련 화면(내 스킬·스킬 만들기·공개 승인)은 사이드바의 '스킬' 아래에 있는 것으로 본다
   const isOn = (key: string) => (key === 'home' ? page === 'home' || page.startsWith('hub-') : page === key)
@@ -85,10 +87,23 @@ export function Workspace({ onLogin }: { onLogin: () => void }) {
       <nav aria-label="업무 메뉴" data-coach="menu" className="lg:hidden border-b border-white/8 px-3 py-2 absolute top-0 inset-x-0 bg-[#0d1626] z-10 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[...MENU, ...MORE].map((m) => (
           <button key={m.key} data-coach={`menu-${m.key}`} onClick={() => { setPage(m.key); window.dispatchEvent(new Event('hub-navigation')) }} aria-current={isOn(m.key) ? 'page' : undefined}
-            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${isOn(m.key) ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition ${isOn(m.key) ? 'bg-sky-500/15 text-white font-semibold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>{m.label}</button>
         ))}
+        {user && <button onClick={() => setHistoryOpen(true)} aria-expanded={historyOpen} aria-haspopup="dialog"
+          className="shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition text-slate-400 hover:bg-white/5 hover:text-slate-200">대화 기록</button>}
       </nav>
-      <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden lg:pt-0 pt-14' : 'overflow-y-auto p-6 lg:pt-6 pt-16'}`} onKeyDown={(e) => e.stopPropagation()}>
+      {user && historyOpen && (
+        <div className="lg:hidden fixed inset-x-0 bottom-0 top-[72px] z-[60] flex" role="dialog" aria-modal="true" aria-label="대화 기록" onKeyDown={(e) => { if (e.key === 'Escape') setHistoryOpen(false) }}>
+          <aside className="mobile-history w-[84vw] max-w-[320px] h-full bg-[#0d1626] border-r border-white/8 p-3 pt-4 flex flex-col"
+            onClick={(e) => { if ((e.target as HTMLElement).closest('.chat-item, .chat-new')) setHistoryOpen(false) }}>
+            <div className="flex items-center justify-between mb-1 px-1"><b className="text-sm">대화 기록</b>
+              <button onClick={() => setHistoryOpen(false)} aria-label="대화 기록 닫기" className="w-10 h-10 grid place-items-center rounded-lg text-slate-400 hover:bg-white/5">✕</button></div>
+            <ChatHistory collapsed={false} />
+          </aside>
+          <button className="flex-1 bg-black/50" aria-label="대화 기록 닫기" onClick={() => setHistoryOpen(false)} />
+        </div>
+      )}
+      <main className={`flex-1 ${user && page === 'dashboard' ? 'overflow-hidden lg:pt-0 pt-14' : 'overflow-y-auto px-4 pb-6 sm:px-6 pt-16 lg:pt-6'}`} onKeyDown={(e) => e.stopPropagation()}>
         {user ? <div className={user && page === 'dashboard' ? 'h-full' : 'max-w-[1200px] mx-auto'}>{body()}</div> : (
           <div className="h-full grid place-items-center">
             <div className="text-center space-y-3">

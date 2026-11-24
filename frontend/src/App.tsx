@@ -9,6 +9,7 @@ import { AiPanel, InfoPanel, LightPanel } from './office/Panels'
 import { AcPanel, MeetingPanel, ServerPanel } from './office/DevicePanels'
 import { LoginModal } from './common/LoginModal'
 import { ChatDock } from './office/ChatDock'
+import { TouchControls } from './office/TouchControls'
 import { Workspace } from './workspace/Workspace'
 import { useAppearance } from './workspace/useAppearance'
 import { NotificationBell } from './meeting/NotificationBell'
@@ -85,7 +86,7 @@ export default function App() {
         </details>
         {user ? (
           <span className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-sky-500 grid place-items-center text-[11px] font-bold text-slate-900">{user.displayName.slice(0, 1)}</span>
+            <span className="w-6 h-6 rounded-full hidden sm:grid bg-gradient-to-br from-emerald-400 to-sky-500 place-items-center text-[11px] font-bold text-slate-900">{user.displayName.slice(0, 1)}</span>
             <span className="hidden md:inline">{user.displayName}</span>
             <NotificationBell />
             <button onClick={logout} aria-label="로그아웃" title="로그아웃" className="text-slate-400 hover:text-white underline-offset-2 hover:underline">
@@ -108,6 +109,7 @@ export default function App() {
         ))}
       </nav>
 
+      {panel === 'none' && <TouchControls />}
       {panel === 'light' && <LightPanel />}
       {panel === 'ai' && <AiPanel />}
       {panel === 'info' && <InfoPanel />}
@@ -131,14 +133,15 @@ export default function App() {
       )}
 
       {mode === 'office' && (
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10 pointer-events-none">
+      <div className="absolute bottom-4 max-sm:bottom-auto max-sm:top-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10 pointer-events-none">
+        {/* 키보드가 없는 화면에서도 누를 수 있게 상호작용 안내 자체를 버튼으로 둔다 */}
         {nearby && panel === 'none' && (
-          <div className="glass slide-in rounded-full px-5 py-2 text-sm flex items-center gap-2.5">
+          <button type="button" onClick={() => open(nearby.id)} className="glass slide-in pointer-events-auto whitespace-nowrap rounded-full px-5 py-2 max-sm:py-3 text-sm flex items-center gap-2.5 hover:bg-white/10">
             <kbd className="px-2 py-0.5 rounded bg-sky-500 text-white text-xs font-bold">E</kbd>
             <span>{nearby.label} 상호작용</span>
-          </div>
+          </button>
         )}
-        <div className="glass rounded-full px-4 py-1.5 text-[11px] text-slate-400 flex gap-4 flex-wrap justify-center">
+        <div className="glass rounded-full px-4 py-1.5 text-[11px] text-slate-400 flex gap-4 flex-wrap justify-center max-sm:hidden pointer-coarse:hidden">
           <span><b className="text-slate-200">WASD</b> 이동</span>
           <span><b className="text-slate-200">드래그</b> 카메라</span>
           <span><b className="text-slate-200">휠</b> 줌</span>

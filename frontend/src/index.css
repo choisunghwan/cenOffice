@@ -1,6 +1,8 @@
 ﻿@import "tailwindcss";
 
 html, body, #root { height: 100%; margin: 0; background: #0b1226; overflow: hidden; }
+/* 화면 밖으로 삐져나간 요소에 포커스가 가도 화면 전체가 옆으로 밀리지 않게 한다 */
+#root { overflow: clip; }
 body { font-family: "Pretendard", "Segoe UI", "Malgun Gothic", system-ui, sans-serif; color: #e6ecff; }
 .glass { background: rgba(20, 30, 48, 0.78); backdrop-filter: blur(16px) saturate(1.2); border: 1px solid rgba(160, 185, 230, 0.16); box-shadow: 0 8px 28px rgba(8, 14, 28, 0.35); }
 @keyframes slideIn { from { transform: translateX(24px); opacity: 0 } to { transform: none; opacity: 1 } }
@@ -249,3 +251,26 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .export-chip:not(:disabled):hover { background: rgba(127, 140, 156, .14); }
 .export-chip:disabled { opacity: .55; cursor: not-allowed; }
 .export-chip:focus-visible { outline: 2px solid #83b8eb; outline-offset: 2px; }
+
+/* 휴대폰 폭: 도구 화면 선택 카드를 2열로 줄이고 설명은 숨겨 첫 화면이 카드로 가득 차지 않게 한다 */
+@media (max-width: 640px) {
+  .hub-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .hub-switch button { gap: 10px; padding: 10px 12px; border-radius: 12px; }
+  .hub-switch-icon { width: 32px; height: 32px; border-radius: 10px; font-size: 16px; }
+  .hub-switch b { font-size: 13.5px; }
+  .hub-switch small { display: none; }
+}
+/* 터치 화면에는 마우스 올림(hover)이 없으므로 대화 삭제 버튼을 늘 보이게 하고 누르기 쉽게 키운다 */
+@media (hover: none) {
+  .chat-del { opacity: .6; width: 40px; height: 40px; }
+  .chat-item { padding-block: 11px; }
+}
+/* 휴대폰 폭: 알림 창이 상단 막대(흐림 효과 박스) 기준으로 잡혀 한쪽으로 쏠리므로, 흐림을 빼고 화면 기준으로 양옆 12px에 맞춘다 */
+@media (max-width: 640px) {
+  [data-coach="topbar-right"] { backdrop-filter: none; background: rgba(20, 30, 48, 0.94); }
+  .notif-wrap .notif-panel { left: 12px; right: 12px; top: 68px; width: auto; max-height: 70dvh; }
+  .notif-wrap .notif-bell { padding: 8px 6px; }
+}
+
+/* 업무 화면 안에서 띄운 창(일정 만들기·회의록 확인 등)이 상단 막대 아래에 깔리지 않게, 창이 열린 동안만 업무 영역을 위로 올린다 */
+.hub-shell:has(.cal-modal, .minutes-dialog-bg) { z-index: 30; }

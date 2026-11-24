@@ -40,7 +40,7 @@ export function NameTag({ name, sub, ai, online = true, bubble, self, tagKey }: 
 
   return (
     <group ref={anchor} position={[0, 1.65, 0]}>
-      <Html center distanceFactor={8} zIndexRange={[30, 0]} style={{ pointerEvents: 'none' }}>
+      <Html center distanceFactor={8} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div ref={box} className="flex flex-col items-center gap-1 select-none" style={{ transition: 'opacity .2s' }}>
           {bubble && (
             <div className="relative max-w-[220px] px-3 py-1.5 rounded-xl bg-white text-slate-900 text-[12px] leading-snug shadow-lg break-words text-center">
