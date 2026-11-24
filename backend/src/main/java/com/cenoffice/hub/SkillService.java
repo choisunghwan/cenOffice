@@ -493,7 +493,7 @@ public class SkillService {
     }
 
     String displayName(String username) {
-        if (BuiltinSkillSeeder.OWNER.equals(username)) return BuiltinSkillSeeder.AUTHOR_NAME; // 내장 스킬의 제작자 표시
+        if (BuiltinSkillSeeder.OWNER.equals(username) || OfficialSkillSeeder.OWNER.equals(username)) return BuiltinSkillSeeder.AUTHOR_NAME; // 내장·기본 AI 스킬의 제작자 표시
         return users.findByUsername(username).map(UserAccount::getDisplayName).orElse(username);
     }
 

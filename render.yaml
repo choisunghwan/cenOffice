@@ -54,5 +54,10 @@ services:
       # 회의 AI(센) 음성 답변: true 로 켜면 회의 질문이 LLM 과 음성 합성(Gemini)으로 전송됩니다
       - key: MEETING_AI_ENABLED
         sync: false
+      # 직원이 만든 스킬·기본 AI 스킬 실행: HUB_AI_ENGINE=true, HUB_RUNTIME=llm (스킬 입력이 LLM 으로 전송됨)
+      - key: HUB_AI_ENGINE
+        sync: false
+      - key: HUB_RUNTIME
+        sync: false
       - key: EXT_ALLOWED_ORIGINS
         sync: false
