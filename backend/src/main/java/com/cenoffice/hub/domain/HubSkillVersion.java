@@ -23,6 +23,11 @@ public class HubSkillVersion {
     public String sha256;
     @Column(length = 2000)
     public String riskFlags;
+    /** 스킬 검증 결과(승인 요청 때 자동 점검): PASS / FIX / REJECT. null 이면 아직 점검 전 */
+    public String checkVerdict;
+    @Column(length = 20000)
+    public String checkReport;
+    public Instant checkedAt;
     public String createdBy;
     public Instant createdAt;
 

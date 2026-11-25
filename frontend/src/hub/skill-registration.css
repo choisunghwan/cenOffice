@@ -78,3 +78,9 @@
 [data-workspace-theme="light"] .sft-row:hover{background:#f1f5fa}
 [data-workspace-theme="light"] .sft-row.on{background:#e3eefb;color:#1b3f6b}
 [data-workspace-theme="light"] .sft-text{color:#24364c}
+
+/* 승인 대기열: 스킬 검증 보고서 */
+.review-check summary{cursor:pointer;font-size:12px;color:#94a3b8;padding:2px 0}
+.review-check[open] summary{margin-bottom:6px}
+.review-check-body{font-size:12.5px;line-height:1.7;padding:10px 12px;border:1px solid #ffffff14;border-radius:10px;margin-bottom:8px}
+[data-workspace-theme="light"] .review-check-body{border-color:#dce4ee}

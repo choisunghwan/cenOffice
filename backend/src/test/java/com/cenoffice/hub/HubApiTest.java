@@ -225,6 +225,23 @@ class HubApiTest {
         mvc.perform(get(fileUrl).param("path", "ref/guide.md").header("Authorization", "Bearer " + account("다른팀").token())).andExpect(status().isNotFound());
 
         call(post("/api/hub/skills"), a, json.writeValueAsString(java.util.Map.of("skillMd", skillMd(n1, null, null, null)))).andExpect(status().isConflict());
+
+        // 승인 요청한 버전은 스킬 검증이 자동으로 점검하고, 관리자 승인 대기열에 판정과 보고서가 보인다
+        String ad = admin().token();
+        JsonNode item = null;
+        for (int i = 0; i < 60 && item == null; i++) {
+            for (JsonNode q : read(mvc.perform(get("/api/hub/review-queue").header("Authorization", "Bearer " + ad)).andExpect(status().isOk())))
+                if (q.path("name").asText().equals(n2) && q.has("checkVerdict")) item = q;
+            if (item == null) Thread.sleep(100);
+        }
+        assertNotNull(item, "검증 결과가 대기열에 붙어야 한다");
+        assertTrue(java.util.Set.of("PASS", "FIX", "REJECT").contains(item.path("checkVerdict").asText()));
+        assertTrue(item.path("checkReport").asText().contains("자동 점검"));
+        JsonNode again = read(mvc.perform(post("/api/hub/skills/" + item.path("skillId").asLong() + "/versions/" + item.path("versionId").asLong() + "/check")
+                .header("Authorization", "Bearer " + ad)).andExpect(status().isOk()));
+        assertTrue(again.path("report").asText().contains("판정"));
+        mvc.perform(post("/api/hub/skills/" + item.path("skillId").asLong() + "/versions/" + item.path("versionId").asLong() + "/check")
+                .header("Authorization", "Bearer " + a.token())).andExpect(status().isForbidden());
     }
 
     @Test

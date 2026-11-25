@@ -61,6 +61,9 @@ public class SkillService {
     private final HubExecutionRepository executions;
     private final UserRepository users;
     private final AuditService audit;
+    /** 승인 요청(검토 대기)된 버전. 스킬 검증(SkillCheckService)이 커밋 뒤에 받아 점검한다 */
+    public record VersionSubmitted(Long versionId) {}
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.context.ApplicationEventPublisher events;
     private final SkillPackageReader reader;
     private final RuntimeRegistry runtime;
     private final ObjectMapper mapper;
@@ -178,7 +181,9 @@ public class SkillService {
         v.packageKind = p.packageKind(); v.packageData = p.packageData(); v.sha256 = p.sha256();
         v.riskFlags = p.riskFlags().isEmpty() ? null : limit(String.join(" | ", p.riskFlags()), 2000);
         v.createdBy = actor; v.createdAt = Instant.now();
-        return versions.save(v);
+        v = versions.save(v);
+        if ("PENDING_REVIEW".equals(status)) events.publishEvent(new VersionSubmitted(v.id));
+        return v;
     }
 
     private String nextLabel(Long skillId) {
@@ -200,7 +205,9 @@ public class SkillService {
         HubSkillVersion v = version(skillId, versionId);
         if (!(v.status.equals("DRAFT") || v.status.equals("REJECTED"))) throw new ApiException(HttpStatus.CONFLICT, "제출할 수 없는 상태입니다: " + v.status);
         v.status = "PENDING_REVIEW";
+        v.checkVerdict = null; v.checkReport = null; v.checkedAt = null; // 다시 제출하면 다시 검증한다
         versions.save(v);
+        events.publishEvent(new VersionSubmitted(v.id));
         hist("SKILL", skillId, versionId, "SUBMITTED", actor, null);
         touch(s, actor);
         recompute(s);
@@ -358,6 +365,9 @@ public class SkillService {
             m.put("skillId", s.id); m.put("versionId", v.id); m.put("name", s.name); m.put("icon", s.icon); m.put("version", v.version);
             m.put("owner", ownership.effective(s.owner)); m.put("ownerName", displayName(ownership.effective(s.owner))); m.put("submittedAt", v.createdAt);
             m.put("riskFlags", flags(v)); m.put("packageKind", v.packageKind); m.put("sample", s.sample);
+            m.put("title", s.title);
+            // 스킬 검증 결과(없으면 아직 점검 중)
+            if (v.checkVerdict != null) { m.put("checkVerdict", v.checkVerdict); m.put("checkReport", v.checkReport); m.put("checkedAt", v.checkedAt); }
             out.add(m);
         }
         return out;

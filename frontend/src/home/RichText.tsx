@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+﻿import type { ReactNode } from 'react'
 
 /**
  * AI 답변을 보기 좋게 그린다: 빈 줄 = 문단, "- "·"• "·"* " = 글머리 목록, "1. "·"1) " = 번호 목록,
@@ -9,6 +9,14 @@ export function RichText({ text, className }: { text: string; className?: string
   const lines = text.replace(/\r\n?/g, '\n').split('\n')
   let para: string[] = []
   let list: { ordered: boolean; items: string[] } | null = null
+  let table: string[][] | null = null
+  const flushTable = () => {
+    if (!table) return
+    const [head, ...rows] = table
+    blocks.push(<div key={blocks.length} className="rt-table"><table><thead><tr>{head.map((c, i) => <th key={i}>{inline(c)}</th>)}</tr></thead>
+      <tbody>{rows.map((r, i) => <tr key={i}>{head.map((_, j) => <td key={j}>{inline(r[j] ?? '')}</td>)}</tr>)}</tbody></table></div>)
+    table = null
+  }
   const flushPara = () => { if (para.length) { blocks.push(<p key={blocks.length}>{inline(para.join('\n'))}</p>); para = [] } }
   const flushList = () => {
     if (!list) return
@@ -18,6 +26,14 @@ export function RichText({ text, className }: { text: string; className?: string
   }
   for (const raw of lines) {
     const line = raw.trimEnd()
+    // | 칸 | 칸 | 표: 구분 줄(|---|)은 건너뛴다
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      flushPara(); flushList()
+      if (/^\s*\|[\s:|-]+\|\s*$/.test(line)) continue
+      ;(table ??= []).push(line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()))
+      continue
+    }
+    flushTable()
     const bullet = /^\s*(?:[-*•·])\s+(.*)$/.exec(line)
     const num = /^\s*\d{1,2}[.)]\s+(.*)$/.exec(line)
     const head = /^\s*#{1,4}\s+(.*)$/.exec(line)
@@ -35,7 +51,7 @@ export function RichText({ text, className }: { text: string; className?: string
     flushList()
     para.push(line)
   }
-  flushPara(); flushList()
+  flushPara(); flushList(); flushTable()
   return <div className={`rt ${className ?? ''}`}>{blocks}</div>
 }
 

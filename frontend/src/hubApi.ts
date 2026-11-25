@@ -56,6 +56,9 @@ export interface HubCreatorStats {
 export interface HubQueueItem {
   skillId: number; versionId: number; name: string; icon?: string; version: string; owner: string; ownerName: string; submittedAt: string
   riskFlags: string[]; packageKind: string; sample: boolean
+  title?: string | null
+  /** 스킬 검증 결과. 없으면 아직 점검 중 */
+  checkVerdict?: 'PASS' | 'FIX' | 'REJECT'; checkReport?: string; checkedAt?: string
 }
 export interface HubMe { username: string; displayName: string; team: string; role: 'ADMIN' | 'USER'; canRegister: boolean; canApprove: boolean }
 
@@ -135,6 +138,8 @@ export const hub = {
   reviews: (id: number) => req<HubReview[]>(`/api/hub/skills/${id}/reviews`),
   review: (id: number, rating: number, comment?: string) => req<HubReview>(`/api/hub/skills/${id}/reviews`, { method: 'POST', body: JSON.stringify({ rating, comment }) }),
   queue: () => req<HubQueueItem[]>('/api/hub/review-queue'),
+  /** 관리자: 스킬 검증 다시 실행 */
+  recheck: (skillId: number, versionId: number) => req<{ verdict: string; report: string }>(`/api/hub/skills/${skillId}/versions/${versionId}/check`, { method: 'POST' }),
   agentQueue: () => req<HubAgentSummary[]>('/api/hub/agents/review-queue'),
   /** 인증 헤더가 필요하므로 blob 으로 받아 저장한다 */
   /** 스킬 패키지 안의 파일 하나(파일 트리). 텍스트는 글자로, 이미지는 화면에 띄울 주소로 준다 */

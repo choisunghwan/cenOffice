@@ -284,3 +284,7 @@
 .ha-export summary::before{content:"▸ "}
 .ha-export[open] summary::before{content:"▾ "}
 .ha-export[open]{display:block;width:100%}
+.rt-table{overflow-x:auto}
+.rt table{border-collapse:collapse;font-size:12.5px;min-width:100%}
+.rt th,.rt td{border:1px solid var(--c-border,#ffffff22);padding:5px 8px;text-align:left;vertical-align:top}
+.rt th{font-weight:650;background:rgba(127,140,156,.12)}

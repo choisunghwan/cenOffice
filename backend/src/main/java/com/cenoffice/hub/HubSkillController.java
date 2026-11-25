@@ -29,9 +29,10 @@ public class HubSkillController {
 
     private final SkillService skills;
     private final SkillCreatorService creator;
+    private final SkillCheckService checker;
 
-    public HubSkillController(SkillService skills, SkillCreatorService creator) {
-        this.skills = skills; this.creator = creator;
+    public HubSkillController(SkillService skills, SkillCreatorService creator, SkillCheckService checker) {
+        this.skills = skills; this.creator = creator; this.checker = checker;
     }
 
     /** 스킬 만들기 도우미: 대화를 보고 질문을 이어 가거나 SKILL.md 초안을 만든다(저장하지 않음, 등록은 /skills) */
@@ -123,6 +124,13 @@ public class HubSkillController {
 
     @GetMapping("/skills/{id}/history")
     public List<HistoryView> history(@PathVariable Long id, Authentication a) { return skills.history(id, a.getName(), admin(a)); }
+
+    /** 관리자: 스킬 검증을 지금 다시 실행한다(규칙 점검 + AI 검토). 결과는 버전에 저장되고 승인 대기열에 보인다 */
+    @PostMapping("/skills/{id}/versions/{vid}/check") @PreAuthorize(ADMIN)
+    public SkillCheckService.Result check(@PathVariable Long id, @PathVariable Long vid) {
+        skills.version(id, vid);
+        return checker.checkNow(vid);
+    }
 
     @GetMapping("/review-queue") @PreAuthorize(ADMIN)
     public List<Map<String, Object>> reviewQueue() { return skills.reviewQueue(); }
