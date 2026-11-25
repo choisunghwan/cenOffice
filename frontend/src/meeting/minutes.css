@@ -62,3 +62,11 @@
 .export-tabs button.on{color:#2768a5;border-bottom-color:#2768a5;font-weight:700}
 .export-body>.minutes-muted{margin:0 0 10px}
 .minutes-export .tf-box{margin-top:0;padding:0;border:0;background:transparent}
+
+.minutes-project-editor { display: grid; gap: 12px; margin-top: 14px; border: 1px solid #94a3b855; border-radius: 8px; padding: 12px; }
+.minutes-project-editor label { display: grid; gap: 4px; max-width: 28rem; }
+.minutes-project-editor input, .minutes-project-editor select, .minutes-card > label > select {
+  background: var(--workspace-surface, transparent); color: inherit; border: 1px solid #94a3b888;
+  border-radius: 6px; padding: 6px 8px;
+}
+.minutes-project-editor option, .minutes-card > label > select option { color: #17243a; background: #fff; }

@@ -20,6 +20,7 @@ public class HubSkill {
     public String team;
     public String status;
     public String owner;
+    public String originProjectId;
     public Long publishedVersionId;
     public boolean sample;
     public String createdBy;

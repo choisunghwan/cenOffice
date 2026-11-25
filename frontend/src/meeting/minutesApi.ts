@@ -5,7 +5,7 @@ export interface ActionItem { id?: number | null; content: string; assigneeUsern
 export interface Minutes {
   meetingId: string; title: string; status: 'DRAFT' | 'CONFIRMED'; summary: string; decisions: string[]; issues: string[]; actionItems: ActionItem[]
   extraNotes?: string | null; source: string; generatedBy: string; generatedAt: string; confirmedBy?: string | null; confirmedAt?: string | null
-  canEdit: boolean; members: MemberRef[]; markdown: string
+  canEdit: boolean; members: MemberRef[]; markdown: string; projectId?: string; skillVersionUsed?: string
 }
 /** 기한이 달력으로 고른 날짜(yyyy-mm-dd)면 그 값, 아니면 null (AI 가 적은 "금요일까지" 같은 글은 날짜가 아님) */
 export const isoDate = (s?: string | null): string | null => {
@@ -41,7 +41,23 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return response.status === 204 ? (undefined as T) : response.json()
 }
 
+export interface MeetingProject {
+  id: string
+  name: string
+  owner: string
+  members: string[]
+  skillId?: number
+  versionId?: number
+}
+export interface ProjectSettings { projectId?: string; projects: MeetingProject[] }
+export type ProjectInput = Pick<MeetingProject, 'name' | 'members'> & { skillId?: number; versionId?: number }
+
 export const minutesApi = {
+  projects: () => call<MeetingProject[]>('GET', '/meeting-projects'),
+  projectSettings: (id: string) => call<ProjectSettings>('GET', '/meetings/' + id + '/minutes/project'),
+  assignProject: (id: string, projectId: string | null) => call<ProjectSettings>('PUT', '/meetings/' + id + '/minutes/project', { projectId }),
+  saveProject: (id: string | undefined, input: ProjectInput) =>
+    call<MeetingProject>(id ? 'PUT' : 'POST', '/meeting-projects' + (id ? '/' + id : ''), input),
   get: (id: string) => call<Minutes>('GET', `/meetings/${id}/minutes`),
   generate: (id: string, notes: string) => call<Minutes>('POST', `/meetings/${id}/minutes/generate`, { notes }),
   save: (id: string, m: { summary: string; decisions: string[]; issues: string[]; actionItems: ActionItem[] }) => call<Minutes>('PUT', `/meetings/${id}/minutes`, m),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useOffice } from '../store'
 import { MinutesFormFill } from './MinutesFormFill'
+import { MeetingProjectSettings } from './MeetingProjectSettings'
 import { transcriptApi, type Segment } from './transcriptApi'
 import { minutesApi, NotFound, isoDate, formatDue, type ActionItem, type Minutes } from './minutesApi'
 import './minutes.css'
@@ -54,6 +55,10 @@ export function MeetingMinutes({ meetingId, title, host, onBack }: { meetingId: 
       {minutes && <span className={`minutes-badge ${minutes.status === 'CONFIRMED' ? 'confirmed' : 'draft'}`}>{minutes.status === 'CONFIRMED' ? '확정됨' : '초안 · 검토 중'}</span>}</div>
     {error && <div className="meeting-alert" role="alert">{error}</div>}
     {notice && <div className="meeting-notice" role="status">{notice}</div>}
+
+    {loaded && isHost && user && minutes?.status !== 'CONFIRMED' &&
+      <MeetingProjectSettings key={meetingId} meetingId={meetingId} username={user.username} disabled={!!busy} />}
+    {minutes?.skillVersionUsed && <p className="minutes-muted">회의록 스킬 · {minutes.skillVersionUsed}</p>}
 
     {!loaded && <p role="status" className="minutes-muted">불러오는 중…</p>}
 

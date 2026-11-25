@@ -34,6 +34,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl font-bold">{s.name}</h2>
             <StatusBadge status={s.status} />
+            {s.originProjectName && <Badge tone="info">제작 · {s.originProjectName}</Badge>}
             {s.sample && <Badge tone="warn">샘플 (KPI 제외)</Badge>}
             {s.visibility === 'TEAM' && <Badge tone="idle">팀 공개 · {s.team}</Badge>}
           </div>

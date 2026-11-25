@@ -22,10 +22,11 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 @SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:minutestest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
     "app.seed.admin-password=test-admin-pw-1234", "app.seed.user-password=test-user-pw-1234",
-    "app.jwt.secret=test-secret-test-secret-test-secret-123456", "app.llm.provider=mock", "livekit.api-key=", "livekit.api-secret="})
+    "app.jwt.secret=test-secret-test-secret-test-secret-123456", "app.llm.provider=mock", "app.hub.ai-engine=true", "livekit.api-key=", "livekit.api-secret="})
 @AutoConfigureMockMvc
 class MinutesApiTest {
     @Autowired MockMvc mvc;
+    @org.springframework.boot.test.mock.mockito.SpyBean com.cenoffice.common.llm.LlmProvider llm;
     @Autowired ObjectMapper json;
     @Autowired org.springframework.jdbc.core.JdbcTemplate db;
     String host, guest;
@@ -60,6 +61,70 @@ class MinutesApiTest {
         req(post("/api/meetings/" + id + "/messages"), host, Map.of("content", "배포 일정은 아직 미정이라 확인 필요합니다")).andExpect(status().isNoContent());
         req(post("/api/meetings/" + id + "/end"), host, Map.of()).andExpect(status().isNoContent());
         return id;
+    }
+
+    @Test void projectIsVisibleOnlyToMembersAndCannotBeAssignedByAnAttendee() throws Exception {
+        var project = read(req(post("/api/meeting-projects"), host,
+            Map.of("name", "회의록 " + UUID.randomUUID(), "members", List.of())).andExpect(status().isCreated()));
+        String projectId = project.path("id").asText();
+        assertFalse(projectId.isBlank());
+        var guestProjects = read(req(get("/api/meeting-projects"), guest, null).andExpect(status().isOk()));
+        for (JsonNode item : guestProjects) assertNotEquals(projectId, item.path("id").asText());
+        String meeting = endedMeetingWithChat();
+        var url = "/api/meetings/" + meeting + "/minutes/project";
+        req(put(url), guest, Map.of("projectId", projectId)).andExpect(status().isForbidden());
+        req(put(url), host, Map.of("projectId", projectId)).andExpect(status().isOk());
+        var draft = read(req(post("/api/meetings/" + meeting + "/minutes/generate"), host, Map.of())
+            .andExpect(status().isOk()));
+        assertEquals("rule-based", draft.path("source").asText());
+        assertEquals(projectId, draft.path("projectId").asText());
+    }
+
+    @Test void projectUsesApprovedPinnedSkillAndKeepsMinutesStructure() throws Exception {
+        var key = "meeting-" + UUID.randomUUID();
+        var md = "---\nname: " + key + "\ndescription: 회의 결정 사항을 정리합니다\nversion: 1.0.0\n---\n# 고객 협의\n합의 내용을 먼저 정리하세요.";
+        var skill = read(req(post("/api/hub/skills"), guest, Map.of("skillMd", md, "submit", true))
+            .andExpect(status().isCreated()));
+        long skillId = skill.path("summary").path("id").asLong();
+        long versionId = skill.path("current").path("meta").path("id").asLong();
+        var body = Map.of("name", "고객 협의 " + UUID.randomUUID(), "members", List.of(), "skillId", skillId, "versionId", versionId);
+        req(post("/api/meeting-projects"), host, body).andExpect(status().isNotFound());
+        req(post("/api/hub/skills/" + skillId + "/versions/" + versionId + "/approve"), host, Map.of())
+            .andExpect(status().isOk());
+        var project = read(req(post("/api/meeting-projects"), host, body).andExpect(status().isCreated()));
+        var meeting = endedMeetingWithChat();
+        req(put("/api/meetings/" + meeting + "/minutes/project"), host, Map.of("projectId", project.path("id").asText()))
+            .andExpect(status().isOk());
+
+        var generate = "/api/meetings/" + meeting + "/minutes/generate";
+        req(post(generate), host, Map.of()).andExpect(status().isConflict());
+        org.mockito.Mockito.doReturn(true).when(llm).isReal();
+        org.mockito.Mockito.doReturn("""
+            {"summary":"고객과 범위를 합의했습니다","decisions":["범위 확정"],"issues":[],
+             "actionItems":[{"content":"정리본 공유","assignee":"","due":"다음주"}]}
+            """).when(llm).generateJson(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+        var draft = read(req(post(generate), host, Map.of()).andExpect(status().isOk()));
+        assertEquals(key + "@1.0.0", draft.path("skillVersionUsed").asText());
+        assertEquals("다음주", draft.path("actionItems").path(0).path("dueText").asText());
+        org.mockito.Mockito.verify(llm).generateJson(
+            org.mockito.ArgumentMatchers.contains("합의 내용을 먼저 정리하세요."),
+            org.mockito.ArgumentMatchers.contains("로그인 화면 개선안"));
+    }
+
+    @Test void skillKeepsItsOriginBadgeWhenAnotherProjectUsesIt() throws Exception {
+        String name = "제작 프로젝트 " + UUID.randomUUID();
+        var origin = read(req(post("/api/meeting-projects"), guest, Map.of("name", name)).andExpect(status().isCreated()));
+        var md = "---\nname: badge-" + UUID.randomUUID() + "\ndescription: 회의 정리 스킬입니다\n---\n# 회의 정리";
+        var register = Map.of("originProjectId", origin.path("id").asText(), "skillMd", md, "submit", true);
+        req(post("/api/hub/skills"), host, register).andExpect(status().isNotFound());
+        var skill = read(req(post("/api/hub/skills"), guest, register).andExpect(status().isCreated()));
+        long id = skill.path("summary").path("id").asLong();
+        long version = skill.path("current").path("meta").path("id").asLong();
+        req(post("/api/hub/skills/" + id + "/versions/" + version + "/approve"), host, Map.of()).andExpect(status().isOk());
+        req(post("/api/meeting-projects"), host, Map.of("name", "사용 프로젝트", "skillId", id, "versionId", version))
+            .andExpect(status().isCreated());
+        var readBack = read(req(get("/api/hub/skills/" + id), host, null).andExpect(status().isOk()));
+        assertEquals(name, readBack.path("summary").path("originProjectName").asText());
     }
 
     @Test void onlyHostCanGenerateAndOnlyAfterTheMeetingEnded() throws Exception {
@@ -144,7 +209,7 @@ class MinutesApiTest {
     }
 
     // ── AI 응답 해석(신뢰하지 않는 출력) ──
-    final MinutesService svc = new MinutesService(null, null, new ObjectMapper(), null, null);
+    final MinutesService svc = new MinutesService(null, null, new ObjectMapper(), null, null, null, false);
     final List<MinutesService.MemberRef> members = List.of(new MinutesService.MemberRef("kim", "김대리"), new MinutesService.MemberRef("park", "박과장"));
 
     @Test void aiReplyIsParsedFromFencedJsonAndAssigneesAreMappedToMembers() {
