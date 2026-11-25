@@ -58,10 +58,16 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
                 p = reader.readMarkdown(in.readAllBytes());
             }
             var existing = skills.findByName(name);
-            if (existing.isPresent()) { upgrade(existing.get(), p); continue; }
+            if (existing.isPresent()) {
+                // 예전에 화면 이름(title) 없이 설치된 내장 스킬은 SKILL.md 제목으로 채운다(CenNavi·목록이 title 을 쓴다)
+                var cur = existing.get();
+                if (trusted(cur) && (cur.title == null || cur.title.isBlank())) { cur.title = titleOf(p); skills.save(cur); }
+                upgrade(cur, p);
+                continue;
+            }
             var now = Instant.now();
             var s = new HubSkill();
-            s.name = name; s.description = p.meta().description(); s.category = p.meta().category(); s.icon = p.meta().icon();
+            s.name = name; s.title = titleOf(p); s.description = p.meta().description(); s.category = p.meta().category(); s.icon = p.meta().icon();
             s.visibility = "PUBLIC"; s.status = "APPROVED"; s.owner = OWNER; s.sample = false;
             s.createdBy = OWNER; s.updatedBy = OWNER; s.createdAt = now; s.updatedAt = now;
             s = skills.save(s);
@@ -77,6 +83,13 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
      * 번들된 SKILL.md 의 version 이 DB 에 없는 새 버전이면 그 버전을 추가하고 공개 버전으로 바꾼다.
      * 내장 소유자(hub-builtin)의 스킬만 대상이며, 같은 이름을 직원이 쓰고 있으면 건드리지 않는다.
      */
+    /** 화면 이름: 앞머리 title, 없으면 SKILL.md 첫 제목(# …) */
+    static String titleOf(SkillPackageReader.Parsed p) {
+        if (p.meta().title() != null && !p.meta().title().isBlank()) return p.meta().title().strip();
+        for (String line : p.skillMd().split("\\R")) if (line.startsWith("# ") && line.length() > 2) return line.substring(2).strip();
+        return null;
+    }
+
     private void upgrade(HubSkill s, SkillPackageReader.Parsed p) {
         if (!trusted(s)) return;
         String ver = p.meta().version();
