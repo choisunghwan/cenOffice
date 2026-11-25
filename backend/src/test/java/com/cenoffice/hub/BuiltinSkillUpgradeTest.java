@@ -38,4 +38,16 @@ class BuiltinSkillUpgradeTest {
         assertNotEquals(current.id, pub.id);
         assertTrue(versions.findBySkillIdAndVersion(after.id, "0.9.0").isPresent(), "이전 버전 기록은 남긴다");
     }
+
+    /** 빼기로 한 내장 스킬(제안서 작성 도우미)은 이미 설치된 서버에서도 시작할 때 보관 처리된다 */
+    @Test
+    void retiredBuiltinIsArchivedOnStartup() throws Exception {
+        var s = new com.cenoffice.hub.domain.HubSkill();
+        s.name = "cen-proposal-writer"; s.description = "옛 내장 스킬"; s.category = "doc"; s.visibility = "PUBLIC"; s.status = "APPROVED";
+        s.owner = BuiltinSkillSeeder.OWNER; s.sample = false; s.createdBy = s.owner; s.updatedBy = s.owner;
+        s.createdAt = java.time.Instant.now(); s.updatedAt = s.createdAt;
+        skills.save(s);
+        seeder.run();
+        assertEquals("ARCHIVED", skills.findByName("cen-proposal-writer").orElseThrow().status);
+    }
 }

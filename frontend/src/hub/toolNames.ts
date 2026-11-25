@@ -1,6 +1,5 @@
 const NAMES: Record<string, string> = {
   'cen-fp-estimator': 'FP 산정 도우미',
-  'cen-proposal-writer': '제안서 작성 도우미',
   'cen-log-analyzer': '오류 로그 분석',
   'cen-sql-reviewer': 'SQL 점검',
   'cen-meeting-minutes': '회의록 정리',

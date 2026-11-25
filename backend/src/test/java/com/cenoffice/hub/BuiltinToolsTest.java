@@ -43,13 +43,10 @@ class BuiltinToolsTest {
         assertTrue(result.output().contains("확인 필요"));
         assertTrue(result.output().contains("FP 합계는 산출하지 않았습니다"));
     }
-    @Test void proposalQuotesRealSourceAndDoesNotInventCustomer() throws Exception {
+    @Test void retiredProposalWriterIsNoLongerABuiltin() {
+        assertFalse(com.cenoffice.hub.BuiltinSkillSeeder.NAMES.contains("cen-proposal-writer"));
         var runtime = new BuiltinRuntimeAdapter();
-        var id = runtime.submit(new RuntimeRequest("2", "SKILL", "cen-proposal-writer", List.of(), "고객정보 통합\n이력 조회", "u"));
-        var out = runtime.poll(id).output();
-        assertTrue(out.contains("고객정보 통합"));
-        assertTrue(out.contains("자료 근거"));
-        assertTrue(out.contains("규칙 기반"));
+        assertThrows(Exception.class, () -> runtime.submit(new RuntimeRequest("2", "SKILL", "cen-proposal-writer", List.of(), "고객정보 통합", "u")));
     }
     @Test void rejectsUnsupportedDocumentsAndInvalidUtf8() {
         var reader = new BusinessDocumentReader();

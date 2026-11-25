@@ -38,7 +38,7 @@ class SystemSkillOwnerTest {
     @Test void configuredAccountOwnsSystemSkills() throws Exception {
         String user = login("user", "test-user-pw-1234"), admin = login("admin", "test-admin-pw-1234");
         JsonNode mine = fetch(get("/api/hub/skills?mine=true&size=100"), user).path("items");
-        assertTrue(mine.size() >= 11, "내장 8 + 기본 AI 3: " + mine.size());
+        assertEquals(BuiltinSkillSeeder.NAMES.size() + OfficialSkillSeeder.NAMES.size(), mine.size(), "내장 + 기본 AI 전부");
         for (JsonNode s : mine) assertEquals("user", s.path("owner").asText());
         assertNotEquals("최성환", mine.get(0).path("ownerName").asText(), "고정 글자 대신 계정의 표시 이름");
 

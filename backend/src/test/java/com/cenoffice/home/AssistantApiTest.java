@@ -408,7 +408,7 @@ class AssistantApiTest {
     @Test
     void slashMenuListsSkillsWithSkillCreatorFirst() throws Exception {
         JsonNode list = read(req(get("/api/assistant/skills"), user, null).andExpect(status().isOk()));
-        assertTrue(list.size() >= 8, "내장 스킬 8개");
+        assertEquals(com.cenoffice.hub.BuiltinSkillSeeder.NAMES.size(), list.size(), "내장 스킬 전부(AI 엔진 꺼짐)");
         assertEquals("skill-creator", list.get(0).path("name").asText());
         assertEquals("스킬 만들기 도우미", list.get(0).path("title").asText());
         long id = list.get(0).path("skillId").asLong();

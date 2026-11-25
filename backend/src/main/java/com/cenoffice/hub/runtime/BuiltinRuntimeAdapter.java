@@ -15,7 +15,6 @@ public class BuiltinRuntimeAdapter implements AgentRuntimeAdapter {
     public String submit(RuntimeRequest request) throws RuntimeFailure {
         String output = switch (request.targetName()) {
             case "cen-fp-estimator" -> fp(request.input());
-            case "cen-proposal-writer" -> proposal(request.input());
             case "cen-log-analyzer" -> BuiltinTextTools.logAnalysis(request.input());
             case "cen-sql-reviewer" -> BuiltinTextTools.sqlReview(request.input());
             case "cen-meeting-minutes" -> BuiltinTextTools.meetingMinutes(request.input());
@@ -48,14 +47,6 @@ public class BuiltinRuntimeAdapter implements AgentRuntimeAdapter {
             out.append("| ").append(row).append(" | ").append(type).append(" | ").append(reason).append(" |\n");
         }
         out.append("\n## 추가 확인\n- ILF/EIF는 논리적 데이터 그룹 및 시스템 경계 검토 후 별도 식별해야 합니다.\n- DET/FTR/RET와 복잡도가 확정되지 않아 FP 합계는 산출하지 않았습니다.\n- 헤더·중복 행·복합 기능은 사람이 검토해 제외하거나 분리하세요.\n");
-        appendRequest(out, input);
-        return out.toString();
-    }
-    private String proposal(String input) {
-        var rows = lines(input.split("\\[추가 요청\\]", 2)[0]);
-        StringBuilder out = new StringBuilder("# 제안서 구성 초안\n\n규칙 기반 자료 정리 결과입니다. LLM 생성 문서가 아니며 제출 전 검토·보완이 필요합니다.\n\n## 1. 사업 이해\n아래 제공 자료를 기준으로 제안 범위를 확인합니다. 고객명·예산·일정·실적은 임의로 만들지 않았습니다.\n\n## 2. 요구사항 대응 초안\n| 자료 근거 | 제안서 반영 방향 |\n|---|---|\n");
-        for (String row : rows) out.append("| ").append(row).append(" | 해당 요구사항의 수행 방안, 검증 기준 및 산출물 구체화 필요 |\n");
-        out.append("\n## 3. 수행 계획\n1. 착수: 요구사항과 업무 범위 확정\n2. 분석·설계: 기능별 대응 방안 및 검증 기준 작성\n3. 구현·검증: 산출물 검토 및 인수 기준 확인\n\n## 4. 작성 전 확인 사항\n- 고객명, 사업 목적, 예산 및 일정\n- 실제 수행 조직, 보유 역량 및 증빙 자료\n- 대상 시스템, 연계 범위 및 보안 조건\n\n## 5. 산출물 목록 초안\n요구사항 대응표, 수행 계획, 검증 계획 (계약 범위에 맞춰 확인 필요)\n");
         appendRequest(out, input);
         return out.toString();
     }

@@ -19,9 +19,9 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
     public static final String OWNER = "hub-builtin";
     /** 화면의 제작자 칸에 보이는 이름(내장 스킬은 계정이 없는 시스템 소유자라 따로 지정) */
     public static final String AUTHOR_NAME = "최성환";
-    public static final List<String> NAMES = List.of("cen-fp-estimator", "cen-proposal-writer", "cen-log-analyzer", "cen-sql-reviewer", "cen-meeting-minutes", "cen-weekly-report", "cen-test-case-writer", "skill-creator");
+    public static final List<String> NAMES = List.of("cen-fp-estimator", "cen-log-analyzer", "cen-sql-reviewer", "cen-meeting-minutes", "cen-weekly-report", "cen-test-case-writer", "skill-creator");
     /** 파일 업로드(문서 입력)로 쓰는 스킬. 나머지는 텍스트 입력 스킬 */
-    public static final List<String> DOCUMENT_TOOLS = List.of("cen-fp-estimator", "cen-proposal-writer");
+    public static final List<String> DOCUMENT_TOOLS = List.of("cen-fp-estimator");
     private final HubSkillRepository skills;
     private final HubSkillVersionRepository versions;
     private final SkillPackageReader reader;
@@ -35,12 +35,21 @@ public class BuiltinSkillSeeder implements CommandLineRunner {
             return in == null ? fallback : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
         } catch (java.io.IOException e) { return fallback; }
     }
+    /** 쓸모가 없어 빼기로 한 내장 스킬. 이미 설치된 서버에서는 시작할 때 보관(ARCHIVED) 처리해 목록·검색·실행에서 뺀다(기록은 남긴다) */
+    public static final List<String> RETIRED = List.of("cen-proposal-writer");
     /** 대화로 진행하는 내장 스킬(한 번 실행해서 끝나지 않는다). 홈 입력창과 스킬 만들기 화면이 대화로 연다 */
     public static final String CREATOR = "skill-creator";
     public static boolean trusted(HubSkill s) { return trusted(s.owner, s.name); }
     public static boolean trusted(String owner, String name) { return OWNER.equals(owner) && NAMES.contains(name); }
     @Override @Transactional
     public void run(String... args) throws Exception {
+        for (String name : RETIRED) {
+            skills.findByName(name).filter(s -> OWNER.equals(s.owner) && !"ARCHIVED".equals(s.status)).ifPresent(s -> {
+                s.status = "ARCHIVED"; s.updatedBy = OWNER; s.updatedAt = Instant.now();
+                skills.save(s);
+                audit.log(OWNER, "HUB_BUILTIN_RETIRED", "hub-skill:" + s.id, name);
+            });
+        }
         for (String name : NAMES) {
             var path = "hub-builtins/" + name + "/SKILL.md";
             SkillPackageReader.Parsed p;
