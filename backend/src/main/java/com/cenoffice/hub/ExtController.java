@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/ext")
 public class ExtController {
-    public record ToolView(String name, String description) {}
+    /** title 은 사람이 읽는 이름(한글 등). CenNavi 가 명령 이름으로 보여 준다. 없으면 null. */
+    public record ToolView(String name, String title, String description) {}
     public record RunRequest(String tool, String input, String host) {}
 
     private final PersonalTokenService tokens;
@@ -36,7 +37,7 @@ public class ExtController {
     public List<ToolView> tools(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth,
                                 @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origin) {
         var who = who(auth, origin);
-        return catalog.exposed(who).stream().map(s -> new ToolView(s.name(), s.description())).toList();
+        return catalog.exposed(who).stream().map(s -> new ToolView(s.name(), s.title() == null || s.title().isBlank() ? null : s.title().strip(), s.description())).toList();
     }
 
     @PostMapping("/executions") @ResponseStatus(HttpStatus.ACCEPTED)

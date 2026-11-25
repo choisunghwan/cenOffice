@@ -71,7 +71,7 @@ class ExtApiTest {
         String navi = token(a, "NAVI");
         JsonNode tools = json.readTree(mvc.perform(get("/api/ext/tools").header("Authorization", "Bearer " + navi).header("Origin", EXT_ORIGIN)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
         boolean found = false;
-        for (JsonNode t : tools) if (t.get("name").asText().equals("cen-log-analyzer")) found = true;
+        for (JsonNode t : tools) if (t.get("name").asText().equals("cen-log-analyzer")) { found = true; assertTrue(t.has("title")); }
         assertTrue(found);
 
         String input = "java.lang.IllegalStateException: boom " + UUID.randomUUID() + "\n\tat com.foo.Bar.run(Bar.java:42)";
