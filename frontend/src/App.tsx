@@ -13,6 +13,7 @@ import { useMultiplayer } from './multiplayer'
 import { Workspace } from './workspace/Workspace'
 import { useAppearance } from './workspace/useAppearance'
 import { NotificationBell } from './meeting/NotificationBell'
+import { MobileQr } from './common/MobileQr'
 
 
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
       </div>
 
       <div data-coach="topbar-right" className="glass pointer-events-auto min-w-0 h-[42px] rounded-xl px-2 sm:px-4 flex items-center gap-1.5 sm:gap-3 text-xs whitespace-nowrap">
+        <MobileQr />
         {mode === 'workspace' && <button className="appearance-toggle" onClick={toggleAppearance} aria-label={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'} title={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}><span aria-hidden="true">{appearance === 'light' ? '☾' : '☀'}</span></button>}
         {user ? (
           <span className="flex items-center gap-2">
