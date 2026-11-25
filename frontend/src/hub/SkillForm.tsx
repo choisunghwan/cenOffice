@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { minutesApi, type MeetingProject } from '../meeting/minutesApi'
 import { askConfirm } from '../common/confirm'
 import { templateApi } from './templateApi'
 import { hub, type HubCategory } from '../hubApi'
@@ -92,6 +93,13 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
   const [category, setCategory] = useState('')
   const [tags, setTags] = useState('')
   const [visibility, setVisibility] = useState('PUBLIC')
+  const [projects, setProjects] = useState<MeetingProject[]>([])
+  const [originProjectId, setOriginProjectId] = useState('')
+  useEffect(() => {
+    let active = true
+    minutesApi.projects().then(items => { if (active) setProjects(items) }).catch(() => {})
+    return () => { active = false }
+  }, [])
   const [form, setForm] = useState<File | null>(null) // 결과물 양식(선택)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -101,7 +109,7 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
     setBusy(true)
     setErr(null)
     try {
-      const common = { category: category || undefined, visibility, submit }
+      const common = { category: category || undefined, visibility, submit, originProjectId: originProjectId || undefined }
       const d = mode === 'upload'
         ? await hub.upload(file!, { ...common, tags })
         : await hub.registerMd({ skillMd: md, ...common, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })
@@ -146,6 +154,10 @@ export function SkillForm({ categories, onDone }: { categories: HubCategory[]; o
           {form && <button type="button" className="form-upload-clear" onClick={(e) => { e.preventDefault(); setForm(null) }}>양식 빼기</button>}
         </label>
         <div className="skill-register-sharing"><Field label="공개 범위"><Select value={visibility} onChange={(e) => setVisibility(e.target.value)}><option value="PUBLIC">전사 공개 (승인 후)</option><option value="TEAM">우리 팀만 (승인 후)</option></Select></Field><p>관리자 검토가 끝나면 선택한 범위에 공개됩니다.</p></div>
+        {projects.length > 0 && <div className="skill-register-sharing"><Field label="제작 프로젝트"><Select value={originProjectId} onChange={e => setOriginProjectId(e.target.value)}>
+          <option value="">제작 프로젝트 없음</option>
+          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </Select></Field><p>제작 프로젝트 이름은 스킬 배지에 표시됩니다. 사용 권한은 위의 공개 범위가 정합니다.</p></div>}
         <details className="skill-register-options"><summary>추가 설정 <span>카테고리 · 태그</span></summary><div className="grid gap-4 md:grid-cols-2 mt-5">
           <Field label="카테고리">
             <Select value={category} onChange={(e) => setCategory(e.target.value)}><option value="">자동</option>{categories.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}</Select>

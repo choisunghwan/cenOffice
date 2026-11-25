@@ -71,14 +71,15 @@ public class HubSkillController {
     @PostMapping("/skills") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize(WRITE)
     public SkillDetail create(@RequestBody RegisterRequest r, Authentication a) {
         var p = skills.parseMarkdown(r.skillMd(), a.getName());
-        return skills.register(a.getName(), p, r.category(), r.tags(), r.visibility(), Boolean.TRUE.equals(r.submit()));
+        return skills.register(a.getName(), p, r.category(), r.tags(), r.visibility(), Boolean.TRUE.equals(r.submit()), r.originProjectId());
     }
 
     @PostMapping(value = "/skills/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) @ResponseStatus(HttpStatus.CREATED) @PreAuthorize(WRITE)
     public SkillDetail upload(@RequestParam("file") MultipartFile file, @RequestParam(required = false) String category, @RequestParam(required = false) String tags,
-                              @RequestParam(required = false) String visibility, @RequestParam(defaultValue = "false") boolean submit, Authentication a) throws IOException {
+                              @RequestParam(required = false) String visibility, @RequestParam(defaultValue = "false") boolean submit,
+                              @RequestParam(required = false) String originProjectId, Authentication a) throws IOException {
         var p = skills.parseUpload(file.getOriginalFilename(), file.getBytes(), a.getName());
-        return skills.register(a.getName(), p, category, csv(tags), visibility, submit);
+        return skills.register(a.getName(), p, category, csv(tags), visibility, submit, originProjectId);
     }
 
     @PutMapping("/skills/{id}") @PreAuthorize(WRITE)

@@ -15,7 +15,7 @@ public final class HubDtos {
     public record SkillSummary(Long id, String name, String description, String category, String categoryName, String icon, String visibility,
                                String team, String status, String owner, String ownerName, String version, List<String> tags,
                                long executions, long succeeded, double ratingAvg, long ratingCount, boolean sample, Instant updatedAt,
-                               String executionState, String title) {}
+                               String executionState, String title, String originProjectName) {}
 
     public record VersionView(Long id, String version, String status, String createdBy, Instant createdAt, String sha256, String packageKind,
                               List<String> riskFlags, boolean published) {}
@@ -32,7 +32,7 @@ public final class HubDtos {
 
     public record RuntimeInfo(String state, String kind, boolean simulated, String description) {}
 
-    public record RegisterRequest(String skillMd, String category, List<String> tags, String visibility, Boolean submit) {}
+    public record RegisterRequest(String skillMd, String category, List<String> tags, String visibility, Boolean submit, String originProjectId) {}
 
     public record MetaUpdate(String category, List<String> tags, String icon, String visibility) {}
 

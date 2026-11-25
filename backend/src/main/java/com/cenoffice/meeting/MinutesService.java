@@ -13,6 +13,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class MinutesService {
     public record ActionItem(Long id, String content, String assigneeUsername, String assigneeName, String assigneeText, String dueText, boolean done) {}
     public record Minutes(String meetingId, String title, String status, String summary, List<String> decisions, List<String> issues, List<ActionItem> actionItems,
                           String extraNotes, String source, String generatedBy, Instant generatedAt, String confirmedBy, Instant confirmedAt, boolean canEdit,
-                          List<MemberRef> members, String markdown) {}
+                          List<MemberRef> members, String markdown, String projectId, String skillVersionUsed) {}
     public record MemberRef(String username, String displayName) {}
     public record Draft(String summary, List<String> decisions, List<String> issues, List<ItemDraft> actionItems) {}
     public record ItemDraft(String content, String assigneeUsername, String assigneeText, String dueText) {}
@@ -58,9 +59,13 @@ public class MinutesService {
     private final ObjectMapper json;
     private final AuditService audit;
     private final NotificationService notifications;
+    private final MeetingProjectService projects;
+    private final boolean skillAiEnabled;
 
-    public MinutesService(JdbcTemplate db, LlmProvider llm, ObjectMapper json, AuditService audit, NotificationService notifications) {
+    public MinutesService(JdbcTemplate db, LlmProvider llm, ObjectMapper json, AuditService audit, NotificationService notifications,
+                          MeetingProjectService projects, @Value("${app.hub.ai-engine:false}") boolean skillAiEnabled) {
         this.db = db; this.llm = llm; this.json = json; this.audit = audit; this.notifications = notifications;
+        this.projects = projects; this.skillAiEnabled = skillAiEnabled;
     }
 
     // ───────────────────────── 조회 ─────────────────────────
@@ -81,6 +86,7 @@ public class MinutesService {
 
     public Minutes generate(String meetingId, String actor, String extraNotes) {
         requireMember(meetingId, actor);
+        db.queryForObject("select id from collaboration_meetings where id=? for update", String.class, meetingId);
         var m = meeting(meetingId);
         if (!m.host().equals(actor)) throw new ApiException(HttpStatus.FORBIDDEN, "회의를 만든 사람만 회의록을 만들 수 있습니다");
         if (!"ENDED".equals(m.state())) throw new ApiException(HttpStatus.CONFLICT, "회의가 종료된 뒤에 회의록을 만들 수 있습니다");
@@ -99,11 +105,20 @@ public class MinutesService {
         List<String> chat = chatLines(meetingId);
         if (chat.isEmpty() && notes.isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, "정리할 회의 대화나 메모가 없습니다. 아래 '추가 메모'에 내용을 적어 주세요");
 
+        String projectId = projects.assignedProject(meetingId);
+        var skill = projects.draftSkill(projectId, actor);
+        if (skill != null && (!skillAiEnabled || !llm.isReal())) {
+            throw new ApiException(HttpStatus.CONFLICT, "프로젝트 회의록 스킬을 실행하려면 HUB AI 모델 연결이 필요합니다");
+        }
         Draft draft;
         String source;
         if (llm.isReal()) {
             try {
-                String reply = llm.generateJson(SYSTEM, buildInput(m, members, chat, notes));
+                String guidance = skill == null ? SYSTEM : SYSTEM + """
+                        아래는 승인된 프로젝트 회의록 작성 지침입니다. 요약 관점과 강조 항목에만 적용하세요.
+                        위의 사실 확인, 참석자 제한, JSON 출력 형식은 그대로 유지하세요.
+                        """ + skill.instructions();
+                String reply = llm.generateJson(guidance, buildInput(m, members, chat, notes));
                 draft = parse(reply, members);
                 source = llm.name() + "/" + llm.model();
             } catch (LlmProvider.LlmException e) {
@@ -118,7 +133,9 @@ public class MinutesService {
             source = "rule-based";
         }
         save(meetingId, actor, draft, notes, source, prev == null ? 1 : (int) prev[2] + 1, prev != null);
-        audit.log(actor, "MEETING_MINUTES_GENERATED", "meeting:" + meetingId, source);
+        String skillUsed = skill == null ? null : skill.label();
+        db.update("update meeting_minutes set project_id=?, skill_version_used=? where meeting_id=?", projectId, skillUsed, meetingId);
+        audit.log(actor, "MEETING_MINUTES_GENERATED", "meeting:" + meetingId, source + (skillUsed == null ? "" : " / " + skillUsed));
         return get(meetingId, actor);
     }
 
@@ -380,7 +397,7 @@ public class MinutesService {
             Instant confirmedAt = r.getTimestamp("confirmed_at") == null ? null : r.getTimestamp("confirmed_at").toInstant();
             var minutes = new Minutes(meetingId, m.title(), status, r.getString("summary"), fromJson(r.getString("decisions")), fromJson(r.getString("issues")), items,
                 r.getString("extra_notes"), r.getString("source"), r.getString("generated_by"), r.getTimestamp("generated_at").toInstant(), r.getString("confirmed_by"), confirmedAt,
-                "DRAFT".equals(status) && m.host().equals(actor), members, null);
+                "DRAFT".equals(status) && m.host().equals(actor), members, null, r.getString("project_id"), r.getString("skill_version_used"));
             return withMarkdown(minutes, m);
         }, meetingId).stream().findFirst();
     }
@@ -402,7 +419,7 @@ public class MinutesService {
         md.append("\n## 이슈 · 확인 필요\n");
         if (x.issues().isEmpty()) md.append("- 없음\n"); else x.issues().forEach(d -> md.append("- ").append(d.replace("\n", " ")).append('\n'));
         return new Minutes(x.meetingId(), x.title(), x.status(), x.summary(), x.decisions(), x.issues(), x.actionItems(), x.extraNotes(), x.source(), x.generatedBy(), x.generatedAt(),
-            x.confirmedBy(), x.confirmedAt(), x.canEdit(), x.members(), md.toString());
+            x.confirmedBy(), x.confirmedAt(), x.canEdit(), x.members(), md.toString(), x.projectId(), x.skillVersionUsed());
     }
 
     private static String nameOf(List<MemberRef> members, String username) {

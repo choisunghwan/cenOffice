@@ -115,6 +115,16 @@ public class SkillService {
     private void rejected(String actor, String reason) { audit.log(actor, "HUB_UPLOAD_REJECTED", null, reason); }
 
     public SkillDetail register(String owner, Parsed p, String category, List<String> extraTags, String visibility, boolean submit) {
+        return register(owner, p, category, extraTags, visibility, submit, null);
+    }
+
+    public SkillDetail register(String owner, Parsed p, String category, List<String> extraTags, String visibility,
+                                boolean submit, String originProjectId) {
+        if (originProjectId != null && em.createNativeQuery(
+                "select project_id from meeting_project_members where project_id=:project and username=:owner")
+                .setParameter("project", originProjectId).setParameter("owner", owner).getResultList().isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "참여 중인 제작 프로젝트를 찾을 수 없습니다");
+        }
         throttleRegister(owner);
         String name = p.meta().name();
         if (skills.findByName(name).isPresent()) throw new ApiException(HttpStatus.CONFLICT, "이미 같은 이름의 Skill 이 있습니다: " + name);
@@ -129,6 +139,7 @@ public class SkillService {
         s.name = name; s.title = p.meta().title(); s.description = p.meta().description(); s.category = cat;
         s.icon = p.meta().icon() != null ? p.meta().icon() : "🧩";
         s.visibility = vis; s.team = team; s.status = "DRAFT"; s.owner = owner; s.sample = false;
+        s.originProjectId = originProjectId;
         s.createdBy = owner; s.createdAt = now; s.updatedBy = owner; s.updatedAt = now;
         s = skills.save(s);
         saveTags(s.id, mergeTags(p.meta().tags(), extraTags));
@@ -600,6 +611,15 @@ public class SkillService {
             if (s == null) continue;
             if (Objects.equals(s.publishedVersionId, v.id) || (s.publishedVersionId == null)) vlabel.put(s.id, v.version);
         }
+        Map<String, String> projectNames = new HashMap<>();
+        List<String> projectIds = list.stream().map(s -> s.originProjectId).filter(Objects::nonNull).distinct().toList();
+        if (!projectIds.isEmpty()) {
+            for (Object row : em.createNativeQuery("select id, name from meeting_projects where id in (:ids)")
+                    .setParameter("ids", projectIds).getResultList()) {
+                Object[] values = (Object[]) row;
+                projectNames.put((String) values[0], (String) values[1]);
+            }
+        }
         String state = runtimeInfo().state();
         List<SkillSummary> out = new ArrayList<>();
         for (HubSkill s : list) {
@@ -608,7 +628,7 @@ public class SkillService {
             String exec = s.publishedVersionId == null ? "REGISTRY_ONLY" : BuiltinSkillSeeder.trusted(s) ? runtimeInfo(s).state() : state;
             out.add(new SkillSummary(s.id, s.name, s.description, s.category, catNames.getOrDefault(s.category, s.category), s.icon, s.visibility, s.team, s.status,
                     ownership.effective(s.owner), names.computeIfAbsent(ownership.effective(s.owner), this::displayName), vlabel.get(s.id), tagMap.getOrDefault(s.id, List.of()).stream().sorted().toList(),
-                    st[0], st[1], Math.round(r[0] * 10) / 10.0, (long) r[1], s.sample, s.updatedAt, exec, s.title));
+                    st[0], st[1], Math.round(r[0] * 10) / 10.0, (long) r[1], s.sample, s.updatedAt, exec, s.title, projectNames.get(s.originProjectId)));
         }
         return out;
     }
