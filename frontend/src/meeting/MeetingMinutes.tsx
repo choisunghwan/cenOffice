@@ -78,10 +78,10 @@ export function MeetingMinutes({ meetingId, title, host, onBack }: { meetingId: 
     </div> : <div className="minutes-card"><p>아직 회의록이 없습니다. 회의를 만든 사람이 회의록을 만들면 여기에 표시됩니다.</p></div>)}
 
     {minutes && <>
-      <div className="minutes-warn" role="note">{minutes.source === 'rule-based'
-        ? '규칙 기반 초안입니다. 문장의 의미를 이해한 요약이 아니라 결정·할 일 표현을 골라 놓은 것이므로 반드시 검토하세요.'
-        : `AI(${minutes.source})가 만든 초안입니다. 사실, 담당자, 기한이 맞는지 확인하세요. AI 는 대화에 없는 내용을 잘못 넣을 수 있습니다.`}
-        {minutes.status === 'CONFIRMED' && ` · ${new Date(minutes.confirmedAt ?? '').toLocaleString('ko-KR')} 확정`}</div>
+      {minutes.source === 'rule-based' && minutes.status === 'DRAFT' &&
+        <div className="minutes-warn" role="note">규칙 기반 초안입니다. 문장의 의미를 이해한 요약이 아니라 결정·할 일 표현을 골라 놓은 것이므로 반드시 검토하세요.</div>}
+      {minutes.status === 'CONFIRMED' && minutes.confirmedAt &&
+        <p className="minutes-muted">{new Date(minutes.confirmedAt).toLocaleString('ko-KR')} 확정</p>}
 
       <div className="minutes-card"><h3>요약</h3>
         {editing ? <textarea aria-label="요약" value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={2000} /> : <p>{minutes.summary}</p>}</div>
