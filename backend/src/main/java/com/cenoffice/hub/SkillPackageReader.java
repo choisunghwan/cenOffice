@@ -105,6 +105,26 @@ public class SkillPackageReader {
 
     private record Central(String name, long compSize, long size, boolean symlink, boolean encrypted, boolean dir) {}
 
+    /**
+     * 실행할 때 SKILL.md 와 함께 넘길 패키지 안의 참고 텍스트(references·templates·examples 등).
+     * 경로는 SKILL.md 가 있는 폴더 기준. 등록 때 이미 검사한 패키지만 들어오므로 여기서는 읽기만 한다.
+     */
+    public static java.util.LinkedHashMap<String, String> textFiles(byte[] zip) {
+        var out = new java.util.LinkedHashMap<String, String>();
+        if (zip == null) return out;
+        var all = new java.util.TreeMap<String, byte[]>();
+        try (var zin = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zip))) {
+            for (var e = zin.getNextEntry(); e != null; e = zin.getNextEntry()) if (!e.isDirectory()) all.put(e.getName(), zin.readNBytes((int) MAX_TOTAL_BYTES));
+        } catch (IOException e) { return out; }
+        String root = all.keySet().stream().filter(n -> n.equals("SKILL.md") || n.matches("[^/]+/SKILL\\.md")).findFirst().map(n -> n.substring(0, n.length() - "SKILL.md".length())).orElse("");
+        for (var e : all.entrySet()) {
+            String rel = e.getKey().startsWith(root) ? e.getKey().substring(root.length()) : e.getKey();
+            if (rel.equals("SKILL.md") || !TEXT_EXT.contains(ext(rel))) continue;
+            out.put(rel, new String(e.getValue(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return out;
+    }
+
     public Parsed readZip(byte[] zip) throws InvalidSkillException {
         if (zip.length > MAX_ZIP_BYTES) throw new InvalidSkillException("ZIP 파일이 너무 큽니다 (최대 " + MAX_ZIP_BYTES / 1024 / 1024 + "MB)");
         rejectNestedOrExecutable("ZIP", zip, true);

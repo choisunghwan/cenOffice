@@ -57,6 +57,22 @@ public class ExecutionService {
     private final ExecutorService exec = Executors.newVirtualThreadPerTaskExecutor();
 
     private final SkillOwnership ownership;
+
+    /** 실행 지침에 넣을 패키지 참고 파일의 최대 글자 수(SKILL.md 제외) */
+    static final int MAX_PACKAGE_TEXT = 60_000;
+
+    /** ZIP 패키지면 SKILL.md 뒤에 references·templates·examples 같은 참고 파일을 이어 붙인다(SKILL.md 가 이 파일들을 가리키므로) */
+    static String withPackageFiles(HubSkillVersion v) {
+        if (!"ZIP".equals(v.packageKind) || v.packageData == null) return v.skillMd;
+        StringBuilder sb = new StringBuilder(v.skillMd);
+        int used = 0;
+        for (var f : SkillPackageReader.textFiles(v.packageData).entrySet()) {
+            String block = "\n\n---\n# 참고 파일: " + f.getKey() + "\n\n" + f.getValue().strip() + "\n";
+            if (used + block.length() > MAX_PACKAGE_TEXT) { sb.append("\n\n(참고 파일이 많아 일부를 생략했습니다)\n"); break; }
+            sb.append(block); used += block.length();
+        }
+        return sb.toString();
+    }
     public ExecutionService(HubExecutionRepository executions, HubUsageEventRepository usage, HubSkillVersionRepository versions, HubSkillRepository skills,
                             SkillService skillService, AgentService agentService, RuntimeRegistry runtime, AuditService audit, SkillOwnership ownership) {
         this.ownership = ownership;
@@ -151,7 +167,7 @@ public class ExecutionService {
         audit.log(user, "HUB_EXECUTION_REQUESTED", "hub-exec:" + e.id, targetType + " " + targetName + " [" + rt.kind() + (rt.simulated() ? ", 시뮬레이션" : "") + ", " + origin.source() + (origin.host() == null ? "" : " " + origin.host()) + "]");
 
         List<String> instructions = new ArrayList<>();
-        for (int i = 0; i < targetVersions.size(); i++) instructions.add(BuiltinSkillSeeder.trusted(targetSkills.get(i)) ? BuiltinSkillSeeder.bundledMd(targetSkills.get(i).name, targetVersions.get(i).skillMd) : targetVersions.get(i).skillMd);
+        for (int i = 0; i < targetVersions.size(); i++) instructions.add(BuiltinSkillSeeder.trusted(targetSkills.get(i)) ? BuiltinSkillSeeder.bundledMd(targetSkills.get(i).name, targetVersions.get(i).skillMd) : withPackageFiles(targetVersions.get(i)));
         RuntimeRequest req = new RuntimeRequest(e.id, targetType, targetName, instructions, input, user);
         exec.submit(() -> run(e.id, req, rt, targetSkills, targetVersions));
         return view(e);

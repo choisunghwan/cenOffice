@@ -34,12 +34,8 @@ public class OfficialSkillSeeder implements CommandLineRunner {
     @Override @Transactional
     public void run(String... args) throws Exception {
         for (String name : NAMES) {
-            var path = "hub-official/" + name + "/SKILL.md";
-            SkillPackageReader.Parsed p;
-            try (var in = getClass().getClassLoader().getResourceAsStream(path)) {
-                if (in == null) throw new IllegalStateException("기본 AI 스킬 파일 누락: " + path);
-                p = reader.readMarkdown(in.readAllBytes());
-            }
+            // 스킬 폴더(SKILL.md + references·templates·examples)를 ZIP 패키지로 묶어 직원 업로드와 같은 검사를 거친다
+            SkillPackageReader.Parsed p = reader.readZip(bundle(name));
             var existing = skills.findByName(name).orElse(null);
             if (existing != null && !OWNER.equals(existing.owner)) continue; // 직원이 먼저 쓴 이름이면 그대로 둔다
             if (existing != null && versions.findBySkillIdAndVersion(existing.id, p.meta().version()).isPresent()) continue;
@@ -55,9 +51,37 @@ public class OfficialSkillSeeder implements CommandLineRunner {
             s = skills.save(s);
             var v = new HubSkillVersion();
             v.skillId = s.id; v.version = p.meta().version(); v.status = "APPROVED"; v.frontmatter = "{}"; v.skillMd = p.skillMd();
-            v.fileList = p.fileListJson(); v.packageKind = "MD"; v.packageData = p.packageData(); v.sha256 = p.sha256(); v.createdBy = OWNER; v.createdAt = now;
+            v.fileList = p.fileListJson(); v.packageKind = p.packageKind(); v.packageData = p.packageData(); v.sha256 = p.sha256(); v.createdBy = OWNER; v.createdAt = now;
             v = versions.save(v); s.publishedVersionId = v.id; skills.save(s);
             audit.log(OWNER, existing == null ? "HUB_OFFICIAL_INSTALLED" : "HUB_OFFICIAL_UPGRADED", "hub-skill:" + s.id, name + " v" + v.version);
         }
+    }
+
+    /** resources/hub-official/{name}/ 아래 파일을 '{name}/상대경로' 로 묶은 ZIP. 시각을 고정해 매번 같은 바이트가 나온다 */
+    static byte[] bundle(String name) throws java.io.IOException {
+        var resolver = new org.springframework.core.io.support.PathMatchingResourcePatternResolver(OfficialSkillSeeder.class.getClassLoader());
+        String base = "hub-official/" + name + "/";
+        var files = new java.util.TreeMap<String, byte[]>();
+        for (var r : resolver.getResources("classpath*:" + base + "**/*")) {
+            if (!r.isReadable()) continue;
+            String url = r.getURL().toString();
+            int i = url.lastIndexOf(base);
+            if (i < 0) continue;
+            String rel = url.substring(i + base.length());
+            if (rel.isEmpty() || rel.endsWith("/")) continue;
+            try (var in = r.getInputStream()) { files.put(rel, in.readAllBytes()); }
+        }
+        if (!files.containsKey("SKILL.md")) throw new IllegalStateException("기본 AI 스킬 파일 누락: " + base + "SKILL.md");
+        var out = new java.io.ByteArrayOutputStream();
+        try (var zip = new java.util.zip.ZipOutputStream(out)) {
+            for (var e : files.entrySet()) {
+                var entry = new java.util.zip.ZipEntry(name + "/" + e.getKey());
+                entry.setTime(0L);
+                zip.putNextEntry(entry);
+                zip.write(e.getValue());
+                zip.closeEntry();
+            }
+        }
+        return out.toByteArray();
     }
 }

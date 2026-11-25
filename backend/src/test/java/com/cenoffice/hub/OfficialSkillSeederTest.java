@@ -32,7 +32,19 @@ class OfficialSkillSeederTest {
             assertFalse(BuiltinSkillSeeder.trusted(s), "규칙 내장 스킬이 아니라 AI 로 실행된다");
             var v = versions.findById(s.publishedVersionId).orElseThrow();
             assertEquals(1, versions.findAll().stream().filter(x -> x.skillId.equals(s.id)).count(), "두 번 돌려도 버전이 하나");
-            assertEquals(java.util.List.of(), reader.readMarkdown(v.skillMd.getBytes(StandardCharsets.UTF_8)).riskFlags(), name + " 에 검토가 필요한 표현이 없어야 한다");
+            assertArrayEquals(OfficialSkillSeeder.bundle(name), OfficialSkillSeeder.bundle(name), "묶을 때마다 같은 바이트");
+            assertEquals("ZIP", v.packageKind, name + " 은 여러 파일로 나뉜 패키지");
+            assertEquals(java.util.List.of(), reader.readZip(v.packageData).riskFlags(), name + " 에 검토가 필요한 표현이 없어야 한다");
+            var files = SkillPackageReader.textFiles(v.packageData);
+            assertTrue(files.size() >= 3, name + " 참고 파일: " + files.keySet());
+            assertTrue(files.keySet().stream().allMatch(f -> f.startsWith("references/") || f.startsWith("templates/") || f.startsWith("examples/")), files.keySet().toString());
+            // 실행할 때 SKILL.md 뒤에 참고 파일이 함께 넘어간다
+            String ins = ExecutionService.withPackageFiles(v);
+            assertTrue(ins.startsWith(v.skillMd));
+            for (String f : files.keySet()) assertTrue(ins.contains("# 참고 파일: " + f), f);
+            // SKILL.md 가 가리키는 파일은 모두 패키지에 있다
+            var refs = java.util.regex.Pattern.compile("`((?:references|templates|examples)/[^`]+)`").matcher(v.skillMd);
+            while (refs.find()) if (!refs.group(1).endsWith("/")) assertTrue(files.containsKey(refs.group(1)), name + " 의 SKILL.md 가 없는 파일을 가리킴: " + refs.group(1));
         }
     }
 
