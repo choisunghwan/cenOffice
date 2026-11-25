@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { API_URL } from '../api'
 import { startTour, startTourOnce } from '../common/coach'
 import { hub } from '../hubApi'
@@ -45,10 +45,7 @@ export function ConnectPage() {
   }
   const tok = secret ?? '<1단계에서 만든 토큰>'
   const pick = (t: 'claude' | 'codex' | 'navi') => { if ((t === 'navi') !== (tool === 'navi')) setSecret(null); setTool(t) } // CenNavi 토큰과 AI 스킬 토큰은 종류가 달라 섞어 쓰지 않는다
-  const command = tool === 'navi'
-    ? `서버 주소: ${API_URL}
-토큰: ${tok}`
-    : tool === 'claude'
+  const command = tool === 'claude'
     ? `claude mcp add --scope user --transport http cen-ai-hub ${MCP_URL} --header "Authorization: Bearer ${tok}"`
     : `[mcp_servers.cen-ai-hub]\nurl = "${MCP_URL}"\nbearer_token_env_var = "CEN_AI_HUB_TOKEN"\n# 환경변수 CEN_AI_HUB_TOKEN 에 만든 토큰을 넣어 두세요`
   const active = tokens.data?.filter((t) => !t.revoked && !t.expired).length ?? 0
@@ -68,7 +65,10 @@ export function ConnectPage() {
           <Btn disabled={!name.trim()} onClick={() => void create()}>토큰 만들기</Btn>
         </div>
         <ErrorNote message={tokErr} />
-        {secret && <p role="status" className="mt-3 text-sm rounded-lg border border-amber-400/60 bg-amber-50/60 p-3">토큰을 만들었어요. 아래 2단계 명령에 이미 들어 있습니다. <b>이 화면을 벗어나면 다시 볼 수 없으니</b> 지금 복사하세요.</p>}
+        {secret && <div role="status" className="mt-3 text-sm rounded-lg border border-amber-400/60 bg-amber-50/60 p-3 space-y-2">
+          <p>토큰을 만들었어요. 아래 2단계에 이미 들어 있습니다. <b>이 화면을 벗어나면 다시 볼 수 없으니</b> 지금 복사하세요.</p>
+          <Cmd label="토큰" text={secret} />
+        </div>}
       </Card></div>
 
       <div data-coach="connect-cmd"><Card title="2단계. 명령 복사해서 붙여 넣기">
@@ -77,7 +77,10 @@ export function ConnectPage() {
           <Btn small tone={tool === 'codex' ? 'primary' : 'ghost'} onClick={() => pick('codex')}>Codex</Btn>
           <Btn small tone={tool === 'navi' ? 'primary' : 'ghost'} onClick={() => pick('navi')}>CenNavi</Btn>
         </div>
-        <Cmd text={command} disabled={!secret} />
+        {tool === 'navi'
+          // CenNavi 는 서버 주소와 토큰을 각각 다른 칸에 넣으므로 값만 따로 복사한다
+          ? <div className="space-y-2"><Cmd label="서버 주소" text={API_URL} /><Cmd label="토큰" text={tok} disabled={!secret} /></div>
+          : <Cmd text={command} disabled={!secret} />}
         <p className="text-xs text-slate-400 mt-2">{tool === 'navi' ? 'CenNavi 확장 설정의 ‘CEN HUB 연결’에 서버 주소와 토큰을 붙여 넣으세요. 이 토큰은 CenNavi에서 스킬을 실행하는 데만 쓰이며 Claude Code 연결에는 쓸 수 없습니다.' : tool === 'claude' ? '터미널(PowerShell)에 붙여 넣고 Enter. 끝나면 Claude Code(VS Code 는 창 새로 고침)를 새로 시작하세요. 어느 폴더에서 열어도 보이도록 내 계정 전체에 등록합니다.' : '~/.codex/config.toml 파일에 붙여 넣고 Codex 를 새로 시작하세요.'} 토큰을 만들기 전에는 복사 버튼이 꺼져 있습니다.</p>
       </Card></div>
 
