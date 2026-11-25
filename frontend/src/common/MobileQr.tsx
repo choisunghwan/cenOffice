@@ -2,19 +2,26 @@
 import { createPortal } from 'react-dom'
 import QRCode from 'qrcode'
 
+/** 지금 사이트 주소의 QR 코드(흰 바탕). 상단 바의 QR 창과 로그인 화면이 함께 쓴다 */
+export function SiteQr({ className = 'qr-img' }: { className?: string }) {
+  const [img, setImg] = useState<string | null>(null)
+  const url = typeof window === 'undefined' ? '' : window.location.origin
+  useEffect(() => {
+    let alive = true
+    QRCode.toDataURL(url, { width: 640, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0b1b3a', light: '#ffffff' } }).then((d) => alive && setImg(d)).catch(() => alive && setImg(null))
+    return () => { alive = false }
+  }, [url])
+  return <div className={className}>{img ? <img src={img} alt={`${url} 로 가는 QR 코드`} /> : <span>QR 코드를 만드는 중…</span>}</div>
+}
+
 /**
  * 휴대폰으로 열기: 지금 사이트 주소를 QR 코드로 보여 준다(발표·시연 때 청중이 바로 스캔).
  * PC 상단 바에만 버튼을 두고, 휴대폰·태블릿에서는 숨긴다.
  */
 export function MobileQr() {
   const [open, setOpen] = useState(false)
-  const [img, setImg] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const url = typeof window === 'undefined' ? '' : window.location.origin
-  useEffect(() => {
-    if (!open || img) return
-    QRCode.toDataURL(url, { width: 640, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0b1b3a', light: '#ffffff' } }).then(setImg).catch(() => setImg(null))
-  }, [open, img, url])
   useEffect(() => {
     if (!open) return
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
@@ -34,7 +41,7 @@ export function MobileQr() {
           <div role="dialog" aria-modal="true" aria-labelledby="qr-title" className="qr-card" onClick={(e) => e.stopPropagation()}>
             <h2 id="qr-title">휴대폰으로 열기</h2>
             <p>휴대폰 카메라로 QR 코드를 비추면 CEN HUB 가 바로 열립니다.</p>
-            <div className="qr-img">{img ? <img src={img} alt={`${url} 로 가는 QR 코드`} /> : <span>QR 코드를 만드는 중…</span>}</div>
+            <SiteQr />
             <div className="qr-url"><code>{url}</code><button type="button" onClick={copy}>{copied ? '복사됨' : '주소 복사'}</button></div>
             <button type="button" className="qr-close" onClick={() => setOpen(false)}>닫기</button>
           </div>

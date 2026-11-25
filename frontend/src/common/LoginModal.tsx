@@ -1,3 +1,4 @@
+﻿import { SiteQr } from './MobileQr'
 import { useState } from 'react'
 import { useOffice } from '../store'
 import { Notice } from '../office/DeviceKit'
@@ -48,6 +49,7 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="absolute inset-0 z-30 grid place-items-center bg-[#0d1626]/70 backdrop-blur-sm" onKeyDown={(e) => e.stopPropagation()}>
+      <div className="flex items-stretch gap-4">
       <form onSubmit={submit} className="glass slide-in w-[min(380px,calc(100vw-2rem))] rounded-2xl p-6 space-y-4">
         <div className="text-center space-y-1">
           <img src="/itcen-logo.png" alt="ITCEN" className="h-6 mx-auto" draggable={false} />
@@ -73,6 +75,13 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
           백엔드 없이 로컬 모드로 둘러보기
         </button>
       </form>
+      {/* PC 로그인 화면: 휴대폰으로 바로 열 수 있게 QR 을 옆에 둔다(휴대폰에서는 숨김) */}
+      <aside className="glass slide-in hidden lg:flex pointer-coarse:hidden w-[220px] rounded-2xl p-5 flex-col items-center justify-center text-center gap-3" aria-label="휴대폰으로 열기">
+        <p className="font-semibold text-sm">휴대폰으로 열기</p>
+        <SiteQr className="login-qr" />
+        <p className="text-[11px] text-slate-400 leading-relaxed">휴대폰 카메라로 비추면<br />CEN HUB 가 바로 열립니다.</p>
+      </aside>
+      </div>
     </div>
   )
 }
