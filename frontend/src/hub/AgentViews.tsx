@@ -1,9 +1,9 @@
-import { askText } from '../common/confirm'
+﻿import { askText } from '../common/confirm'
 import { ToolIntroduction } from './ToolIntroduction'
 import { useState } from 'react'
 import { hub } from '../hubApi'
 import { Badge, Btn, Card, Empty, ErrorNote, Input, Select, Textarea, errMsg, fmtTime, useLoad } from '../workspace/kit'
-import { Field, RuntimeBanner, StatusBadge } from './shared'
+import { Field, StatusBadge } from './shared'
 import { RunTab } from './SkillDetailView'
 
 export function AgentDetailView({ id, onBack, onChanged, startWithRun = false }: { startWithRun?: boolean; id: number; onBack: () => void; onChanged: () => void }) {
@@ -35,12 +35,12 @@ export function AgentDetailView({ id, onBack, onChanged, startWithRun = false }:
           </>}
         </div>
       </div>
-      <RuntimeBanner runtime={runtime} /></details>
+      </details>
       <ErrorNote message={err ?? d.error} />
       <div className="flex gap-1 my-4 border-b border-white/10">
         {([['info', '소개'], ['run', '사용하기']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-sm -mb-px border-b-2 ${tab === k ? 'border-sky-400 text-white' : 'border-transparent text-slate-400'}`}>{l}</button>)}
       </div>
-      {tab === 'run' ? <RunTab target={{ agentId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={a.status === 'APPROVED'} runtime={runtime} /> : (
+      {tab === 'run' ? <RunTab target={{ agentId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={a.status === 'APPROVED'} /> : (
         <><ToolIntroduction name={a.name} description={a.description} owner={a.ownerName} category="업무 자동화" usage={a.duties} ready={runtime.state === 'RUNTIME_AVAILABLE' && a.status === 'APPROVED'} simulated={runtime.simulated} onUse={() => setTab('run')} /><details className="hub-advanced"><summary>연결된 스킬과 구성 정보</summary><div className="grid gap-4 lg:grid-cols-2 mt-4">
           <Card title={`연결된 업무 지침 (${skills.length})`}>
             {skills.length === 0 && <Empty>연결된 업무 지침 이 없습니다.</Empty>}

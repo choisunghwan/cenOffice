@@ -1,6 +1,5 @@
-import type { ReactNode } from 'react'
-import type { HubAgentSummary, HubRuntime, HubSkillSummary } from '../hubApi'
-import { theme } from '../theme'
+﻿import type { ReactNode } from 'react'
+import type { HubAgentSummary, HubSkillSummary } from '../hubApi'
 import { Badge } from '../workspace/kit'
 import { ToolPreview } from './ToolPreview'
 import { useToolFavorites } from './useToolFavorites'
@@ -36,17 +35,6 @@ export function Stars({ avg, count }: { avg: number; count: number }) {
 }
 
 /** 런타임 연동 상태 안내 — 연동이 없으면 "실행 연동 준비 중"을 명확히 표시한다 */
-export function RuntimeBanner({ runtime }: { runtime?: HubRuntime }) {
-  if (!runtime) return null
-  const ready = runtime.state === 'RUNTIME_AVAILABLE'
-  const c = ready ? (runtime.simulated ? theme.status.warn : theme.status.ok) : theme.status.warn
-  return (
-    <div className="rounded-xl px-3 py-2 text-xs flex items-start gap-2" style={{ background: `${c}1f`, color: c }}>
-      <span className="font-semibold shrink-0">{ready ? (runtime.simulated ? '시뮬레이션 런타임' : '실행 가능') : '실행 연동 준비 중'}</span>
-      <span className="opacity-90">{runtime.description}</span>
-    </div>
-  )
-}
 
 export function SkillCard({ s, onClick, onUse }: { s: HubSkillSummary; onClick: () => void; onUse?: () => void }) {
   return <ToolCard id={s.id} kind="skill" name={s.name} title={s.title} description={s.description} category={s.categoryName} state={s.executionState} status={s.status} sample={s.sample} onClick={onClick} onUse={onUse} />

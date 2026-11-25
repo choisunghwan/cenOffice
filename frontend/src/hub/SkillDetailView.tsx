@@ -8,7 +8,7 @@ import { ToolIntroduction } from './ToolIntroduction'
 import { useEffect, useState } from 'react'
 import { hub, sourceLabel, type HubExecution } from '../hubApi'
 import { Badge, Btn, Card, Empty, ErrorNote, Input, Select, Stat, Textarea, errMsg, fmtTime, useLoad } from '../workspace/kit'
-import { ACTION_KO, Bars, RuntimeBanner, StatusBadge } from './shared'
+import { ACTION_KO, Bars, StatusBadge } from './shared'
 
 type Tab = 'overview' | 'md' | 'versions' | 'stats' | 'reviews' | 'run'
 
@@ -46,7 +46,6 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
           {canEdit && s.status !== 'ARCHIVED' && <Btn tone="ghost" onClick={() => { void askConfirm({ title: '보관할까요?', message: '이 업무 지침을 보관(비공개) 처리합니다. 보관하면 동료들이 더 이상 찾을 수 없습니다.', okText: '보관', danger: true }).then((ok) => { if (ok) void act(() => hub.archive(id), onBack) }) }}>보관</Btn>}
         </div>
       </div>
-      <RuntimeBanner runtime={runtime} />
       <ErrorNote message={err ?? d.error} />
 
       <div className="flex gap-1 my-4 border-b border-white/10 flex-wrap">
@@ -71,7 +70,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       )}
       {tab === 'stats' && <StatsTab id={id} />}
       {tab === 'reviews' && <ReviewsTab id={id} onChanged={d.reload} />}
-      {tab === 'run' && (runtime.kind === 'builtin-local' && s.status === 'APPROVED' && TEXT_TOOLS[s.name] ? <TextTool key={id} skillId={id} name={s.name} /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' ? <BusinessTools key={id} skillId={id} kind={s.name === 'cen-fp-estimator' ? 'fp' : 'proposal'} /> : <RunTab target={{ skillId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={s.status === 'APPROVED'} runtime={runtime} />)}
+      {tab === 'run' && (runtime.kind === 'builtin-local' && s.status === 'APPROVED' && TEXT_TOOLS[s.name] ? <TextTool key={id} skillId={id} name={s.name} /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' ? <BusinessTools key={id} skillId={id} kind={s.name === 'cen-fp-estimator' ? 'fp' : 'proposal'} /> : <RunTab target={{ skillId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={s.status === 'APPROVED'} />)}
     </div>
   )
 }
@@ -188,7 +187,7 @@ function ReviewsTab({ id, onChanged }: { id: number; onChanged: () => void }) {
 }
 
 /** 실행 패널: 런타임이 없으면 요청을 보내지 않고 안내만 표시한다 */
-export function RunTab({ target, runtimeReady, approved, runtime }: { target: { skillId?: number; agentId?: number }; runtimeReady: boolean; approved: boolean; runtime: import('../hubApi').HubRuntime }) {
+export function RunTab({ target, runtimeReady, approved }: { target: { skillId?: number; agentId?: number }; runtimeReady: boolean; approved: boolean }) {
   const [input, setInput] = useState('')
   const [exec, setExec] = useState<HubExecution | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -200,14 +199,13 @@ export function RunTab({ target, runtimeReady, approved, runtime }: { target: { 
     return () => clearInterval(t)
   }, [exec])
 
-  if (!runtimeReady) return <Card><RuntimeBanner runtime={runtime} /><p className="text-sm text-slate-400 mt-3">실행 런타임이 연결되면 이 화면에서 바로 실행할 수 있습니다. 지금은 등록·검색·다운로드·평가만 가능합니다.</p></Card>
+  if (!runtimeReady) return <Card><p className="text-sm text-slate-400">지금은 이 스킬을 실행할 수 없습니다. 관리자에게 문의해 주세요.</p></Card>
   if (!approved) return <Card><Empty>승인된 항목만 실행할 수 있습니다.</Empty></Card>
   const run = async () => {
     try { setExec(await hub.execute({ ...target, input })); setErr(null) } catch (x) { setErr(errMsg(x)) }
   }
   return (
     <div className="space-y-4">
-      <RuntimeBanner runtime={runtime} />
       <Card title="실행">
         <Textarea rows={4} value={input} onChange={(e) => setInput(e.target.value)} maxLength={4000} placeholder="입력(요청 내용)을 적어 주세요. 개인정보·비밀번호는 입력하지 마세요." />
         <div className="flex gap-2 mt-2"><Btn disabled={!input.trim()} onClick={run}>실행</Btn>

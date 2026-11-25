@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useOffice } from '../store'
 import { hub } from '../hubApi'
 import { Btn, Card, Empty, ErrorNote, Input, Select, useLoad } from '../workspace/kit'
@@ -9,7 +9,7 @@ import { Pager } from './Pager'
 import { ReviewQueue } from './ReviewQueue'
 import { SkillDetailView } from './SkillDetailView'
 import { SkillForm } from './SkillForm'
-import { AgentCard, RuntimeBanner, SkillCard } from './shared'
+import { AgentCard, SkillCard } from './shared'
 import { useToolFavorites } from './useToolFavorites'
 import { toolName } from './toolNames'
 
@@ -30,7 +30,6 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
   }, [])
   const [regKind, setRegKind] = useState<'skill' | 'agent'>('skill')
   const categories = useLoad(() => hub.categories(), [])
-  const runtime = useLoad(() => hub.runtime(), [])
   const [tick, setTick] = useState(0)
   const bump = () => setTick((t) => t + 1)
 
@@ -72,7 +71,6 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
       )}
       {!view && tab === 'connect' && <ConnectPage />}
       {!view && tab === 'review' && admin && <ReviewQueue key={tick} onOpenSkill={(id) => open({ kind: 'skill', id })} onOpenAgent={(id) => open({ kind: 'agent', id })} onChanged={bump} />}
-      <details className="hub-advanced mt-8"><summary>서비스 연결 정보</summary><div className="mt-3"><RuntimeBanner runtime={runtime.data ?? undefined} /></div></details>
     </>
   )
 }

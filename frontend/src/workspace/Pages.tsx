@@ -92,7 +92,6 @@ export function OfficeManagementPage() {
 
 export function SettingsPage() {
   const user = useOffice((s) => s.user)
-  const conn = useOffice((s) => s.conn)
   const logout = useOffice((s) => s.logout)
   return (
     <>
@@ -105,12 +104,6 @@ export function SettingsPage() {
             <div className="flex justify-between"><dt className="text-slate-400">권한</dt><dd>{user?.role === 'ADMIN' ? '관리자' : '일반 사용자'}</dd></div>
           </dl>
           <div className="mt-4 flex gap-2 flex-wrap"><Btn tone="ghost" onClick={() => startTour()}>사용법 다시 보기</Btn><Btn tone="ghost" onClick={logout}>로그아웃</Btn></div>
-        </Card>
-        <Card title="연결 / 환경">
-          <dl className="text-sm space-y-2">
-            <div className="flex justify-between"><dt className="text-slate-400">백엔드</dt><dd>{conn === 'online' ? '연결됨' : conn}</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-400">장비 어댑터</dt><dd>Mock (MQTT/HTTP 는 Phase 4)</dd></div>
-          </dl>
         </Card>
         {user?.role === 'ADMIN' && <UserAdminCard me={user.username} />}
       </div>

@@ -1,9 +1,7 @@
 ﻿import { ConfirmHost } from './common/confirm'
 import { CoachHost } from './common/coach'
 import { useEffect, useState } from 'react'
-import { useOffice, type Conn } from './store'
-import { theme } from './theme'
-import { AI_STATUS_COLOR, AI_STATUS_LABEL } from './office/AiStaff'
+import { useOffice } from './store'
 import { Scene } from './office/Scene'
 import { AiPanel, InfoPanel, LightPanel } from './office/Panels'
 import { AcPanel, MeetingPanel, ServerPanel } from './office/DevicePanels'
@@ -16,13 +14,6 @@ import { Workspace } from './workspace/Workspace'
 import { useAppearance } from './workspace/useAppearance'
 import { NotificationBell } from './meeting/NotificationBell'
 
-const CONN: Record<Conn, { label: string; color: string; pulse?: boolean }> = {
-  online: { label: '백엔드 연결됨', color: theme.status.ok },
-  connecting: { label: '연결 중…', color: theme.status.working, pulse: true },
-  offline: { label: '연결 끊김 · 재연결 중', color: theme.status.error, pulse: true },
-  local: { label: '로컬 모드 (백엔드 미연결)', color: theme.status.warn },
-  replaced: { label: '다른 곳에서 접속하여 연결 종료', color: theme.status.error },
-}
 
 export default function App() {
   const { appearance, toggleAppearance } = useAppearance()
@@ -46,9 +37,7 @@ export default function App() {
   useEffect(() => {
     if (authChecked && !user && !asked) { setLoginOpen(true); setAsked(true) }
   }, [authChecked, user, asked])
-  const c = CONN[conn]
   const lightKnown = conn === 'online' && light ? light.state.power : lightOn
-  const aiStatus = useOffice((s) => s.aiStatus)
 
   const menu = [
     { icon: '🏢', label: '공간', action: () => useOffice.getState().close() },
@@ -88,10 +77,6 @@ export default function App() {
 
       <div data-coach="topbar-right" className="glass pointer-events-auto min-w-0 h-[42px] rounded-xl px-2 sm:px-4 flex items-center gap-1.5 sm:gap-3 text-xs whitespace-nowrap">
         {mode === 'workspace' && <button className="appearance-toggle" onClick={toggleAppearance} aria-label={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'} title={appearance === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}><span aria-hidden="true">{appearance === 'light' ? '☾' : '☀'}</span></button>}
-        <details className="hidden lg:block">
-          <summary className="cursor-pointer list-none" title={c.label}><span style={{ color: c.color }}>●</span><span className="sr-only">연결 상태</span></summary>
-          <div className="fixed right-4 top-16 rounded-xl bg-slate-900 border border-white/10 p-4 space-y-2 shadow-xl"><p>{c.label}</p><p>조명 {lightKnown ? 'ON' : 'OFF'}</p><p style={{ color: AI_STATUS_COLOR[aiStatus] }}>AI {AI_STATUS_LABEL[aiStatus]}</p></div>
-        </details>
         {user ? (
           <span className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-full hidden sm:grid bg-gradient-to-br from-emerald-400 to-sky-500 place-items-center text-[11px] font-bold text-slate-900">{user.displayName.slice(0, 1)}</span>
