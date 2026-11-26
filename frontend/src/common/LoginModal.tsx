@@ -12,7 +12,6 @@ const INPUT = 'w-full bg-slate-900/70 border border-white/10 rounded-lg px-3 py-
 export function LoginModal({ onClose }: { onClose: () => void }) {
   const login = useOffice((s) => s.login)
   const signup = useOffice((s) => s.signup)
-  const continueLocal = useOffice((s) => s.continueLocal)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [remember, setRemember] = useState(() => savedId() !== null) // 아이디 저장(비밀번호는 저장하지 않는다)
   const [username, setUsername] = useState(() => savedId() ?? 'user')
@@ -68,9 +67,6 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
         </button>
         <button type="button" onClick={() => switchMode(isSignup ? 'login' : 'signup')} className="w-full text-xs text-sky-300 hover:text-sky-200">
           {isSignup ? '이미 계정이 있나요? 로그인' : '처음이신가요? 회원가입'}
-        </button>
-        <button type="button" onClick={() => { continueLocal(); onClose() }} className="w-full text-xs text-slate-400 hover:text-slate-200">
-          백엔드 없이 로컬 모드로 둘러보기
         </button>
         {/* 휴대폰·좁은 화면은 옆 QR 칸 대신 링크로 QR 창을 연다 */}
         <div className="lg:hidden pointer-coarse:block"><MobileQr variant="link" /></div>
