@@ -1,4 +1,4 @@
-﻿import { SiteQr } from './MobileQr'
+﻿import { MobileQr, SiteQr } from './MobileQr'
 import { useState } from 'react'
 import { useOffice } from '../store'
 import { Notice } from '../office/DeviceKit'
@@ -74,6 +74,8 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={() => { continueLocal(); onClose() }} className="w-full text-xs text-slate-400 hover:text-slate-200">
           백엔드 없이 로컬 모드로 둘러보기
         </button>
+        {/* 휴대폰·좁은 화면은 옆 QR 칸 대신 링크로 QR 창을 연다 */}
+        <div className="lg:hidden pointer-coarse:block"><MobileQr variant="link" /></div>
       </form>
       {/* PC 로그인 화면: 휴대폰으로 바로 열 수 있게 QR 을 옆에 둔다(휴대폰에서는 숨김) */}
       <aside className="glass slide-in hidden lg:flex pointer-coarse:hidden w-[220px] rounded-2xl p-5 flex-col items-center justify-center text-center gap-3" aria-label="휴대폰으로 열기">
