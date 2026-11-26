@@ -76,6 +76,8 @@ app:
     enabled: ${MAIL_ENABLED:true}
     from: ${MAIL_FROM:}                               # 비우면 SMTP 계정(MAIL_USERNAME) 주소 사용
     base-url: ${APP_BASE_URL:http://localhost:5180}   # 메일 안의 링크가 가리킬 CEN HUB 주소
+  demo:
+    accounts: ${DEMO_ACCOUNTS:demo}               # 체험용 공용 계정(쉼표 구분). 여러 명이 같이 쓰므로 사용자당 속도 제한·중복 차단을 푼다. 비우면 없음
   hub:
     seed-samples: ${HUB_SEED_SAMPLES:false}      # true: 동작하지 않는 예시 스킬(샘플)을 등록한다. 기본은 등록하지 않음
     ai-engine: ${HUB_AI_ENGINE:false}          # true: 승인된 Skill 을 LLM(app.llm.*)으로 실행. 입력이 해당 LLM 서비스로 전송됨

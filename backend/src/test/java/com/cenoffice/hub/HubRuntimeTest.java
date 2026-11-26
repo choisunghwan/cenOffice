@@ -130,6 +130,17 @@ class HubRuntimeTest {
     }
 
     @Test
+    void demoAccountIsSharedSoNoDuplicateOrPerUserRateLimit() throws Exception {
+        Acct owner = account(), admin = admin();
+        long skill = approvedSkill(owner, admin);
+        if (users.findByUsername("demo").isEmpty()) users.save(new UserAccount("demo", encoder.encode("pw-demo"), "체험", Role.USER));
+        Acct demoA = new Acct("demo", login("demo", "pw-demo")), demoB = new Acct("demo", login("demo", "pw-demo")); // 같은 계정, 두 기기
+        execute(demoA, skill, "같은 예시 입력");
+        execute(demoB, skill, "같은 예시 입력"); // 여러 사람이 같은 예시를 붙여 넣어도 막지 않는다
+        for (int i = 0; i < 12; i++) execute(i % 2 == 0 ? demoA : demoB, skill, "체험 " + i); // 일반 계정 한도(분당 10회)를 넘어도 된다
+    }
+
+    @Test
     void duplicateRateLimitAndTargetValidation() throws Exception {
         Acct owner = account(), user = account(), admin = admin();
         long skill = approvedSkill(owner, admin);

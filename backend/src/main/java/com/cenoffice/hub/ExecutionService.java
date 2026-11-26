@@ -58,6 +58,13 @@ public class ExecutionService {
 
     private final SkillOwnership ownership;
 
+    /** 체험용 공용 계정은 여러 사람이 같이 쓰므로 사용자당 제한을 넉넉하게 푼다(없으면 예외 없음) */
+    private com.cenoffice.common.security.DemoAccounts demo;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setDemoAccounts(com.cenoffice.common.security.DemoAccounts demo) { this.demo = demo; }
+    private boolean isDemo(String user) { return demo != null && demo.isDemo(user); }
+    private int limitFor(String user, int normal) { return demo == null ? normal : demo.limit(user, normal); }
+
     /** 실행 지침에 넣을 패키지 참고 파일의 최대 글자 수(SKILL.md 제외) */
     static final int MAX_PACKAGE_TEXT = 60_000;
 
@@ -152,8 +159,8 @@ public class ExecutionService {
         boolean dup = r.skillId() != null
                 ? executions.existsByRequesterAndSkillIdAndAgentIdIsNullAndInputHashAndRequestedAtAfter(user, r.skillId(), hash, now.minus(DUP_WINDOW))
                 : executions.existsByRequesterAndAgentIdAndInputHashAndRequestedAtAfter(user, r.agentId(), hash, now.minus(DUP_WINDOW));
-        if (dup) throw new ApiException(HttpStatus.CONFLICT, "같은 요청이 방금 접수되었습니다. 잠시 후 다시 시도하세요");
-        if (executions.countByRequesterAndRequestedAtAfter(user, now.minusSeconds(60)) >= RATE_PER_MINUTE)
+        if (dup && !isDemo(user)) throw new ApiException(HttpStatus.CONFLICT, "같은 요청이 방금 접수되었습니다. 잠시 후 다시 시도하세요");
+        if (executions.countByRequesterAndRequestedAtAfter(user, now.minusSeconds(60)) >= limitFor(user, RATE_PER_MINUTE))
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "실행 요청이 너무 많습니다. 잠시 후 다시 시도하세요");
 
         HubExecution e = new HubExecution();

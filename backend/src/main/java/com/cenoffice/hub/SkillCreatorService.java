@@ -59,6 +59,12 @@ public class SkillCreatorService {
     private final ObjectMapper json;
     private final Map<String, Deque<Instant>> recent = new ConcurrentHashMap<>();
 
+    /** 체험용 공용 계정은 여러 사람이 같이 쓰므로 사용자당 제한을 넉넉하게 푼다(없으면 예외 없음) */
+    private com.cenoffice.common.security.DemoAccounts demo;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setDemoAccounts(com.cenoffice.common.security.DemoAccounts demo) { this.demo = demo; }
+    private int limitFor(String user, int normal) { return demo == null ? normal : demo.limit(user, normal); }
+
     public SkillCreatorService(LlmProvider llm, SkillPackageReader reader, SkillService skills, ObjectMapper json) {
         this.llm = llm; this.reader = reader; this.skills = skills; this.json = json;
     }
@@ -108,7 +114,7 @@ public class SkillCreatorService {
         synchronized (q) {
             Instant cutoff = Instant.now().minusSeconds(60);
             while (!q.isEmpty() && q.peekFirst().isBefore(cutoff)) q.pollFirst();
-            if (q.size() >= PER_MINUTE) throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 보내 주세요.");
+            if (q.size() >= limitFor(me, PER_MINUTE)) throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 보내 주세요.");
             q.addLast(Instant.now());
         }
     }
