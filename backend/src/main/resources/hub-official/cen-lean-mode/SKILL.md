@@ -2,7 +2,7 @@
 name: cen-lean-mode
 title: 최소 구현 모드
 description: 코딩할 때 켜 두는 모드. 코드를 쓰기 전에 "정말 필요한가, 이미 있는 것으로 되는가"를 먼저 따져 가장 작은 변경만 하게 합니다. Claude Code 에서 /cen-lean-mode 로 켜고 "최소 구현 모드 꺼"로 끕니다.
-version: 1.1.0
+version: 1.1.1
 category: dev
 tags: [코딩, 단순화, YAGNI]
 icon: 🪶

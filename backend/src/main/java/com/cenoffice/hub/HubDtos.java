@@ -21,7 +21,7 @@ public final class HubDtos {
                               List<String> riskFlags, boolean published) {}
 
     public record VersionContent(VersionView meta, String skillMd, Map<String, Object> frontmatter, List<Map<String, Object>> files,
-                                 String usage, String example) {}
+                                 String usage, String example, String exampleInput) {}
 
     public record SkillDetail(SkillSummary summary, VersionContent current, List<VersionView> versions, boolean canEdit, boolean canApprove,
                               RuntimeInfo runtime) {}

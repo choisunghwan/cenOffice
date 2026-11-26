@@ -15,6 +15,8 @@ export interface HubVersion {
 }
 export interface HubVersionContent {
   meta: HubVersion; skillMd: string; frontmatter: Record<string, unknown>; files: { path: string; size: number }[]; usage?: string; example?: string
+  /** 예시의 '입력' 부분(사용하기 화면의 '예시 입력 넣기') */
+  exampleInput?: string
 }
 export interface HubRuntime { state: 'RUNTIME_NOT_CONFIGURED' | 'RUNTIME_AVAILABLE'; kind: string; simulated: boolean; description: string }
 export interface HubSkillDetail {

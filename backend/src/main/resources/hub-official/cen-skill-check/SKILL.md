@@ -2,7 +2,7 @@
 name: cen-skill-check
 title: 스킬 검증
 description: 새로 등록하는 스킬(SKILL.md와 첨부 파일)을 점검해 공개해도 되는지 판단합니다. 승인 요청 때 자동으로 실행되고, 관리자는 이 결과를 보고 승인합니다.
-version: 1.0.0
+version: 1.0.1
 category: plan
 tags: [검증, 승인, 품질]
 icon: ✅

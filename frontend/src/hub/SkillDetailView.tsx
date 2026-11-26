@@ -71,7 +71,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       )}
       {tab === 'stats' && <StatsTab id={id} />}
       {tab === 'reviews' && <ReviewsTab id={id} onChanged={d.reload} />}
-      {tab === 'run' && (runtime.kind === 'builtin-local' && s.status === 'APPROVED' && TEXT_TOOLS[s.name] ? <TextTool key={id} skillId={id} name={s.name} /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' ? <BusinessTools key={id} skillId={id} kind={s.name === 'cen-fp-estimator' ? 'fp' : 'proposal'} /> : <RunTab target={{ skillId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={s.status === 'APPROVED'} />)}
+      {tab === 'run' && (runtime.kind === 'builtin-local' && s.status === 'APPROVED' && TEXT_TOOLS[s.name] ? <TextTool key={id} skillId={id} name={s.name} /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' ? <BusinessTools key={id} skillId={id} kind={s.name === 'cen-fp-estimator' ? 'fp' : 'proposal'} /> : <RunTab target={{ skillId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={s.status === 'APPROVED'} sample={current?.exampleInput} />)}
     </div>
   )
 }
@@ -188,7 +188,7 @@ function ReviewsTab({ id, onChanged }: { id: number; onChanged: () => void }) {
 }
 
 /** 실행 패널: 런타임이 없으면 요청을 보내지 않고 안내만 표시한다 */
-export function RunTab({ target, runtimeReady, approved }: { target: { skillId?: number; agentId?: number }; runtimeReady: boolean; approved: boolean }) {
+export function RunTab({ target, runtimeReady, approved, sample }: { target: { skillId?: number; agentId?: number }; runtimeReady: boolean; approved: boolean; sample?: string }) {
   const [input, setInput] = useState('')
   const [exec, setExec] = useState<HubExecution | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -209,7 +209,7 @@ export function RunTab({ target, runtimeReady, approved }: { target: { skillId?:
     <div className="space-y-4">
       <Card title="실행">
         <Textarea rows={4} value={input} onChange={(e) => setInput(e.target.value)} maxLength={4000} placeholder="입력(요청 내용)을 적어 주세요. 개인정보·비밀번호는 입력하지 마세요." />
-        <div className="flex gap-2 mt-2"><Btn disabled={!input.trim()} onClick={run}>실행</Btn>
+        <div className="flex gap-2 mt-2"><Btn disabled={!input.trim()} onClick={run}>실행</Btn>{sample && <Btn tone="ghost" onClick={() => { setInput(sample); setExec(null) }}>예시 입력 넣기</Btn>}
           {exec && exec.status === 'RUNNING' && <Btn tone="ghost" onClick={() => hub.cancelExecution(exec.id).then(setExec).catch((x) => setErr(errMsg(x)))}>취소</Btn>}</div>
         <ErrorNote message={err} />
         {exec && (

@@ -42,6 +42,9 @@ class OfficialSkillSeederTest {
             String ins = ExecutionService.withPackageFiles(v);
             assertTrue(ins.startsWith(v.skillMd));
             for (String f : files.keySet()) assertTrue(ins.contains("# 참고 파일: " + f), f);
+            // 사용하기 화면의 '예시 입력 넣기': examples/ 의 '## 입력' 부분을 꺼낸다
+            String ex = files.entrySet().stream().filter(f -> f.getKey().startsWith("examples/")).map(java.util.Map.Entry::getValue).findFirst().orElse(null);
+            assertNotNull(SkillService.exampleInput(ex), name + " 의 예시 입력");
             // SKILL.md 가 가리키는 파일은 모두 패키지에 있다
             var refs = java.util.regex.Pattern.compile("`((?:references|templates|examples)/[^`]+)`").matcher(v.skillMd);
             while (refs.find()) if (!refs.group(1).endsWith("/")) assertTrue(files.containsKey(refs.group(1)), name + " 의 SKILL.md 가 없는 파일을 가리킴: " + refs.group(1));
@@ -58,5 +61,11 @@ class OfficialSkillSeederTest {
         assertTrue(front.contains("\ndescription: "));
         assertEquals(md, SkillExportController.withInternalName(md, s.name, s.title), "내보낼 때 바뀌지 않는다");
         assertTrue(md.contains("/cen-lean-mode") && md.contains("최소 구현 모드 꺼"));
+    }
+
+    @Test void exampleInputIsTakenFromTheInputSection() {
+        assertEquals("SELECT 1;", SkillService.exampleInput("# 예시\n## 입력\n```sql\nSELECT 1;\n```\n## 결과\n표"));
+        assertEquals("로그 붙여 넣기", SkillService.exampleInput("입력: 로그 붙여 넣기\n결과: 표"));
+        assertNull(SkillService.exampleInput("결과만 있음"));
     }
 }

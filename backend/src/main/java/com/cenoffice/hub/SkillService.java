@@ -582,7 +582,27 @@ public class SkillService {
             if (v.frontmatter != null) fm = mapper.readValue(v.frontmatter, new TypeReference<Map<String, Object>>() {});
             if (v.fileList != null) files = mapper.readValue(v.fileList, new TypeReference<List<Map<String, Object>>>() {});
         } catch (Exception ignored) { /* 표시용 데이터 — 파싱 실패 시 비움 */ }
-        return new VersionContent(versionView(v, s), v.skillMd, fm, files, section(v.skillMd, "사용 방법|사용법|usage|how to use"), section(v.skillMd, "실행 예시|예시|example|examples"));
+        String example = section(v.skillMd, "실행 예시|예시|example|examples");
+        // 여러 파일로 나눈 스킬은 예시가 examples/ 폴더에 있다: SKILL.md 에 예시가 없으면 첫 예시 파일을 쓴다
+        if (example == null && "ZIP".equals(v.packageKind)) {
+            for (var f : SkillPackageReader.textFiles(v.packageData).entrySet())
+                if (f.getKey().startsWith("examples/")) { example = f.getValue().strip().replaceFirst("^#\\s+[^\\n]*\\n+", ""); break; }
+            if (example != null && example.length() > 4000) example = example.substring(0, 4000);
+        }
+        return new VersionContent(versionView(v, s), v.skillMd, fm, files, section(v.skillMd, "사용 방법|사용법|usage|how to use|언제 쓰나요|언제 사용"), example, exampleInput(example));
+    }
+
+    /** 예시에서 '입력' 부분만 꺼낸다(사용하기 화면의 '예시 입력 넣기'). '## 입력' 섹션 또는 '입력: …' 한 줄. 코드 블록 표시는 벗긴다 */
+    static String exampleInput(String example) {
+        if (example == null) return null;
+        String in = section(example, "입력|input");
+        if (in == null) {
+            Matcher m = Pattern.compile("(?m)^\\s*(?:입력|input)\\s*[:：]\\s*(.+)$", Pattern.CASE_INSENSITIVE).matcher(example);
+            if (m.find()) in = m.group(1).strip();
+        }
+        if (in == null || in.isBlank()) return null;
+        in = in.replaceAll("(?m)^```[\\w-]*\\s*$\\n?", "").strip();
+        return in.isEmpty() ? null : in;
     }
 
     /** SKILL.md 본문에서 제목(#~###)이 일치하는 섹션을 뽑는다. 없으면 null. */
