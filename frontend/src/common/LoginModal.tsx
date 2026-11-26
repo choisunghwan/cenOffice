@@ -54,9 +54,7 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
         <div className="text-center space-y-1">
           <img src="/itcen-logo.png" alt="ITCEN" className="h-6 mx-auto" draggable={false} />
           <h1 className="font-bold tracking-[0.2em] text-sm pt-1">CEN HUB</h1>
-          <p className="text-xs text-slate-400">
-            {isSignup ? '사번으로 가입하면 바로 사용할 수 있습니다.' : '로그인하면 장비 제어·회의실 예약·서버 모니터링을 사용할 수 있습니다.'}
-          </p>
+          {isSignup && <p className="text-xs text-slate-400">사번으로 가입하면 바로 사용할 수 있습니다.</p>}
         </div>
         <input autoFocus={!savedId()} value={username} onChange={(e) => setUsername(e.target.value)} placeholder={isSignup ? '사번 (영문·숫자 3~32자)' : '아이디'} autoComplete="username" className={INPUT} />
         {isSignup && <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="이름" maxLength={100} autoComplete="name" className={INPUT} />}
