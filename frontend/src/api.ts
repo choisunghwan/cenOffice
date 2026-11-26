@@ -1,4 +1,4 @@
-// 백엔드 주소. 빌드 때 VITE_API_URL 을 주지 않은 운영 빌드는 화면과 같은 주소(백엔드가 화면도 함께 제공하는 Render 배포)를 쓴다.
+﻿// 백엔드 주소. 빌드 때 VITE_API_URL 을 주지 않은 운영 빌드는 화면과 같은 주소(백엔드가 화면도 함께 제공하는 Render 배포)를 쓴다.
 export const API_URL: string = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? window.location.origin : 'http://localhost:8080')
 const WS_URL = API_URL.replace(/^http/, 'ws') + '/ws'
 const TOKEN_KEY = 'cen.token'
@@ -45,6 +45,8 @@ export interface UserView {
   displayName: string
   role: 'ADMIN' | 'USER'
   team?: string
+  /** 방문자(체험) 계정: 스킬 등록·관리 기능을 쓸 수 없다 */
+  guest?: boolean
 }
 export interface MeetingRoom {
   id: number
@@ -119,6 +121,9 @@ export const api = {
   signup: (b: { username: string; displayName: string; email: string; password: string }) =>
     request<{ token: string; user: UserView }>('/api/auth/signup', { method: 'POST', body: JSON.stringify(b) }),
   me: () => request<UserView>('/api/auth/me'),
+  /** 바로 체험하기: 저장해 둔 방문자 계정이 있으면 이어 쓰고 없으면 새로 만든다 */
+  guest: (prev?: { username: string; key: string }) =>
+    request<{ login: { token: string; user: UserView }; key: string }>('/api/auth/guest', { method: 'POST', body: JSON.stringify(prev ?? {}) }),
   devices: () => request<DeviceView[]>('/api/devices'),
   sendCommand: (deviceId: number, body: CommandBody) =>
     request<CommandView>(`/api/devices/${deviceId}/commands`, { method: 'POST', body: JSON.stringify(body) }),
@@ -137,7 +142,8 @@ export const api = {
   chatMessages: (roomId: number, limit = 50) => request<ChatMessage[]>(`/api/chat/rooms/${roomId}/messages?limit=${limit}`),
   sendChat: (roomId: number, content: string) =>
     request<ChatMessage>(`/api/chat/rooms/${roomId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
-  adminUsers: () => request<{ username: string; displayName: string; team?: string; role: 'ADMIN' | 'USER'; calendarManager: boolean }[]>('/api/admin/users'),
+  adminUsers: () => request<{ username: string; displayName: string; team?: string; role: 'ADMIN' | 'USER'; calendarManager: boolean; guest?: boolean }[]>('/api/admin/users'),
+  deleteGuests: () => request<{ deleted: number }>('/api/admin/guests', { method: 'DELETE' }),
   deleteUser: (username: string) => request<void>(`/api/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
   auditLogs: () => request<{ id: number; actor: string; action: string; target?: string; detail?: string; createdAt: string }[]>('/api/audit-logs?limit=30'),
 }

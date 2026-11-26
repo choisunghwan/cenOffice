@@ -14,7 +14,7 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
   const signup = useOffice((s) => s.signup)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [remember, setRemember] = useState(() => savedId() !== null) // 아이디 저장(비밀번호는 저장하지 않는다)
-  const [username, setUsername] = useState(() => savedId() ?? 'user')
+  const [username, setUsername] = useState(() => savedId() ?? '')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -25,9 +25,14 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
 
   const switchMode = (m: 'login' | 'signup') => {
     setMode(m); setErr(null); setPassword(''); setPassword2('')
-    setUsername(m === 'login' ? (savedId() ?? 'user') : '')
+    setUsername(m === 'login' ? (savedId() ?? '') : '')
   }
 
+  const guest = useOffice((s) => s.guest)
+  const tryGuest = async () => {
+    setErr(null); setBusy(true)
+    try { await guest(); onClose() } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
+  }
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr(null)
@@ -55,6 +60,13 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
           <h1 className="font-bold tracking-[0.2em] text-sm pt-1">CEN HUB</h1>
           {isSignup && <p className="text-xs text-slate-400">사번으로 가입하면 바로 사용할 수 있습니다.</p>}
         </div>
+        {/* 가입 없이 바로 들어가기(사람마다 방문자 계정). 발표·시연 때 QR 로 들어온 사람도 한 번에 들어온다 */}
+        {!isSignup && <>
+          <button type="button" disabled={busy} onClick={() => void tryGuest()} className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-[15px] disabled:opacity-50">
+            바로 체험하기 <span className="font-normal text-xs opacity-90">· 가입 없이</span>
+          </button>
+          <div className="flex items-center gap-3 text-[11px] text-slate-500"><span className="h-px flex-1 bg-white/10" />또는 계정으로 로그인<span className="h-px flex-1 bg-white/10" /></div>
+        </>}
         <input autoFocus={!savedId()} value={username} onChange={(e) => setUsername(e.target.value)} placeholder={isSignup ? '사번 (영문·숫자 3~32자)' : '아이디'} autoComplete="username" className={INPUT} />
         {isSignup && <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="이름" maxLength={100} autoComplete="name" className={INPUT} />}
         {isSignup && <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일 (회의록·할 일 알림을 받을 주소)" maxLength={254} autoComplete="email" className={INPUT} />}

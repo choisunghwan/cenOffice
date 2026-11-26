@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 /** 로그인·자체 가입·내 정보. 컨트롤러는 요청 검증과 IP 전달만 하고, 규칙은 모두 여기서 처리한다. */
 @Service
 public class AuthService {
-    public record UserView(String username, String displayName, String role, String team) {}
+    public record UserView(String username, String displayName, String role, String team, boolean guest) {}
     public record LoginResponse(String token, Instant expiresAt, UserView user) {}
 
     private static final java.util.regex.Pattern USERNAME = java.util.regex.Pattern.compile("^[A-Za-z0-9._\\-]{3,32}$");
@@ -93,13 +93,13 @@ public class AuthService {
         return view(u);
     }
 
-    private UserView view(UserAccount u) { return new UserView(u.getUsername(), u.getDisplayName(), u.getRole().name(), u.getTeam()); }
+    private UserView view(UserAccount u) { return new UserView(u.getUsername(), u.getDisplayName(), u.getRole().name(), u.getTeam(), u.isGuest()); }
 
-    private LoginResponse issue(UserAccount u) {
+    LoginResponse issue(UserAccount u) {
         Instant now = Instant.now();
         Instant exp = now.plus(props.jwt().ttlMinutes(), ChronoUnit.MINUTES);
         JwtClaimsSet claims = JwtClaimsSet.builder().subject(u.getUsername()).issuedAt(now).expiresAt(exp)
-                .claim("role", u.getRole().name()).claim("name", u.getDisplayName()).build();
+                .claim("role", u.getRole().name()).claim("name", u.getDisplayName()).claim("guest", u.isGuest()).build();
         String token = jwt.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
         return new LoginResponse(token, exp, view(u));
     }

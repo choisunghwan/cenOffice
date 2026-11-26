@@ -126,16 +126,24 @@ function UserAdminCard({ me }: { me: string }) {
     catch (e) { setErr((e as Error).message) }
     finally { setBusy(null) }
   }
+  const guestCount = users.data?.filter((u) => u.guest).length ?? 0
+  const removeGuests = async () => {
+    const ok = await askConfirm({ title: '방문자 계정 삭제', danger: true, okText: '모두 삭제', message: `‘바로 체험하기’로 만들어진 방문자 계정 ${guestCount}개를 모두 지울까요? 방문자가 남긴 대화 기록·알림도 함께 지워집니다.` })
+    if (!ok) return
+    setBusy('guests'); setErr(null)
+    try { await api.deleteGuests(); setTick((t) => t + 1) } catch (e) { setErr((e as Error).message) } finally { setBusy(null) }
+  }
   return (
-    <Card title="사용자 관리 (관리자)" className="md:col-span-2">
+    <Card title="사용자 관리 (관리자)" className="md:col-span-2" action={guestCount > 0 ? <Btn small tone="danger" disabled={busy !== null} onClick={() => void removeGuests()}>방문자 {guestCount}명 모두 삭제</Btn> : undefined}>
       <ErrorNote message={err ?? users.error} />
+      <p className="text-[11px] text-slate-500 mb-2">방문자 계정(바로 체험하기)은 3일 뒤 자동으로 지워집니다.</p>
       {!users.data?.length && !users.error && <Empty>사용자를 불러오는 중입니다.</Empty>}
       <ul className="divide-y divide-white/8 text-sm">
         {users.data?.map((u) => (
           <li key={u.username} className="py-2.5 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="truncate">{u.displayName} <span className="text-slate-500 text-xs">{u.username}</span></div>
-              <div className="text-[11px] text-slate-500">{u.role === 'ADMIN' ? '관리자' : '일반 사용자'}{u.calendarManager ? ' · 일정 관리자' : ''}{u.team ? ` · ${u.team}` : ''}</div>
+              <div className="text-[11px] text-slate-500">{u.guest ? '방문자(체험)' : u.role === 'ADMIN' ? '관리자' : '일반 사용자'}{u.calendarManager ? ' · 일정 관리자' : ''}{u.team ? ` · ${u.team}` : ''}</div>
             </div>
             {u.username === me ? <span className="text-[11px] text-slate-500 shrink-0">내 계정</span>
               : <Btn small tone="danger" disabled={busy !== null} onClick={() => void remove(u)}>{busy === u.username ? '삭제 중…' : '삭제'}</Btn>}

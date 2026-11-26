@@ -53,12 +53,16 @@ interface OfficeState {
   bootstrap: () => Promise<void>
   login: (username: string, password: string) => Promise<void>
   signup: (b: { username: string; displayName: string; email: string; password: string }) => Promise<void>
+  /** 가입 없이 방문자 계정으로 들어간다(같은 기기는 같은 방문자 계정을 이어 쓴다) */
+  guest: () => Promise<void>
   logout: () => void
   continueLocal: () => void
   /** 장비 제어. 온라인이면 명령을 백엔드에 보내고 "장비가 확인한 결과"를 기다린다. */
   control: (code: string, body: CommandBody) => Promise<ControlResult>
 }
 
+/** 방문자 계정 열쇠를 기기에 저장해 두는 자리 */
+const GUEST_KEY = 'cen.guest'
 let msgSeq = 1
 let disconnect: (() => void) | null = null
 const waiters = new Map<string, (s: CommandStatus) => void>()
@@ -189,6 +193,16 @@ export const useOffice = create<OfficeState>((set, get) => {
       tokenStore.set(res.token)
       set({ user: res.user })
       await goOnline(res.token)
+    },
+
+    guest: async () => {
+      let prev: { username: string; key: string } | undefined
+      try { const raw = localStorage.getItem(GUEST_KEY); if (raw) prev = JSON.parse(raw) } catch { /* 저장소를 못 쓰면 새로 만든다 */ }
+      const res = await api.guest(prev)
+      try { localStorage.setItem(GUEST_KEY, JSON.stringify({ username: res.login.user.username, key: res.key })) } catch { /* 다음에 새 방문자 계정이 된다 */ }
+      tokenStore.set(res.login.token)
+      set({ user: res.login.user })
+      await goOnline(res.login.token)
     },
 
     logout: () => {

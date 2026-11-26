@@ -33,15 +33,17 @@ export function HubPage({ initialTab = 'browse' }: { initialTab?: Tab }) {
   const [tick, setTick] = useState(0)
   const bump = () => setTick((t) => t + 1)
 
+  const guest = useOffice((s) => !!s.user?.guest)
   const open = (v: View) => setView(v)
   const goTab = (page: string) => { setView(null); setPage(page); window.dispatchEvent(new Event('hub-navigation')) }
-  const TABS: { tab: Tab; page: string; icon: string; title: string; desc: string }[] = [
+  const TABS = ([
     { tab: 'browse', page: 'home', icon: '✧', title: '모든 스킬', desc: '승인된 AI 스킬을 찾고 바로 써 보세요' },
     { tab: 'mine', page: 'hub-mine', icon: '▤', title: '내 스킬', desc: '내가 만든 스킬과 동료의 피드백' },
     { tab: 'register', page: 'hub-register', icon: '＋', title: '스킬 만들기', desc: '업무 노하우를 스킬로 등록하고 나누기' },
     { tab: 'connect', page: 'hub-connect', icon: '⇄', title: 'AI에 연결', desc: 'Claude Code에서 우리 스킬 쓰기' },
     ...(admin ? [{ tab: 'review' as Tab, page: 'hub-review', icon: '✓', title: '공개 승인', desc: '등록된 스킬을 검토하고 공개' }] : []),
-  ]
+  ] as { tab: Tab; page: string; icon: string; title: string; desc: string }[]).filter((t) => !guest || t.tab === 'browse') // 방문자는 둘러보기·실행만
+
 
   return (
     <>

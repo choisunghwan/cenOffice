@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 /** 관리자가 일정 관리자(팀장 등)를 지정하는 기능. */
 @Service
 public class CalendarManagerService {
-    public record UserRow(String username, String displayName, String team, String role, boolean calendarManager) {}
+    public record UserRow(String username, String displayName, String team, String role, boolean calendarManager, boolean guest) {}
 
     private final UserRepository users;
     private final AuditService audit;
@@ -32,6 +32,6 @@ public class CalendarManagerService {
     }
 
     private static UserRow row(UserAccount u) {
-        return new UserRow(u.getUsername(), u.getDisplayName(), u.getTeam(), u.getRole().name(), u.isCalendarManager());
+        return new UserRow(u.getUsername(), u.getDisplayName(), u.getTeam(), u.getRole().name(), u.isCalendarManager(), u.isGuest());
     }
 }

@@ -130,7 +130,7 @@ public class CalendarService {
     /** 일정을 만들 때 참석자로 고를 수 있는 사용자 목록 */
     @Transactional(readOnly = true)
     public List<Person> directory() {
-        return db.query("select username, display_name from users order by display_name, username", (r, i) -> new Person(r.getString(1), r.getString(2)));
+        return db.query("select username, display_name from users where guest is null or guest = false order by display_name, username", (r, i) -> new Person(r.getString(1), r.getString(2)));
     }
 
     // ───────────────────────── 등록·수정·삭제 ─────────────────────────

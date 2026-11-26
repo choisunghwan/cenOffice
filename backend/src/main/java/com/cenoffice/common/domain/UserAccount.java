@@ -24,6 +24,9 @@ public class UserAccount {
     private Boolean emailNotify;
     /** 전체(공통) 일정을 등록·수정할 수 있는 일정 관리자(팀장 등). null 이면 아님(기존 계정 호환). 관리자는 이 값과 무관하게 가능. */
     private Boolean calendarManager;
+    /** 방문자(체험) 계정. null 이면 일반 계정(기존 계정 호환) */
+    private Boolean guest;
+    private java.time.Instant createdAt;
 
     protected UserAccount() {}
 
@@ -45,6 +48,9 @@ public class UserAccount {
     public boolean isCalendarManager() { return calendarManager != null && calendarManager; }
     public void setCalendarManager(boolean calendarManager) { this.calendarManager = calendarManager; }
 
+    public boolean isGuest() { return guest != null && guest; }
+    public void markGuest() { this.guest = true; this.createdAt = java.time.Instant.now(); }
+    public java.time.Instant getCreatedAt() { return createdAt; }
     public void changePasswordHash(String hash) { this.passwordHash = hash; }
 
     public Long getId() { return id; }

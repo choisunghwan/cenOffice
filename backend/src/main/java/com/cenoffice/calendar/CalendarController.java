@@ -16,9 +16,10 @@ public class CalendarController {
     private final CalendarService calendar;
     private final CalendarManagerService managers;
     private final com.cenoffice.common.api.UserAdminService userAdmin;
+    private final com.cenoffice.common.api.GuestService guests;
 
-    public CalendarController(CalendarService calendar, CalendarManagerService managers, com.cenoffice.common.api.UserAdminService userAdmin) {
-        this.calendar = calendar; this.managers = managers; this.userAdmin = userAdmin;
+    public CalendarController(CalendarService calendar, CalendarManagerService managers, com.cenoffice.common.api.UserAdminService userAdmin, com.cenoffice.common.api.GuestService guests) {
+        this.calendar = calendar; this.managers = managers; this.userAdmin = userAdmin; this.guests = guests;
     }
 
     private static boolean admin(Authentication a) { return a.getAuthorities().stream().anyMatch(g -> g.getAuthority().equals("ROLE_ADMIN")); }
@@ -45,6 +46,10 @@ public class CalendarController {
 
     @GetMapping("/api/admin/users") @PreAuthorize("hasRole('ADMIN')")
     public List<CalendarManagerService.UserRow> userList() { return managers.userList(); }
+
+    /** 관리자: 방문자(체험) 계정을 모두 지운다 */
+    @DeleteMapping("/api/admin/guests") @PreAuthorize("hasRole('ADMIN')")
+    public java.util.Map<String, Integer> deleteGuests(Authentication a) { return java.util.Map.of("deleted", guests.removeAll(a.getName())); }
 
     @DeleteMapping("/api/admin/users/{username}") @PreAuthorize("hasRole('ADMIN')") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable String username, Authentication a) { userAdmin.delete(a.getName(), username); }

@@ -81,7 +81,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/ws/**").permitAll() // /ws 는 핸드셰이크 인터셉터가 토큰을 검증
+                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/guest", "/ws/**").permitAll() // /ws 는 핸드셰이크 인터셉터가 토큰을 검증
                         .requestMatchers("/mcp", "/api/ext/**").permitAll() // 컨트롤러가 개인 액세스 토큰(cen_pat_)을 직접 검증
                         // 화면 파일(index.html, /assets 등): 백엔드가 화면도 함께 제공하는 배포(Render)용. API·MCP·WS 는 위 규칙을 그대로 따른다
                         .requestMatchers(r -> "GET".equals(r.getMethod()) && !isApiPath(r.getRequestURI())).permitAll()
