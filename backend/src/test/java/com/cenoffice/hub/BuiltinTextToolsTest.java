@@ -58,18 +58,4 @@ class BuiltinTextToolsTest {
         assertTrue(out.contains("금요일까지"));
     }
 
-    @Test void weeklyReportClassifiesAndAveragesProgress() throws Exception {
-        String out = run("cen-weekly-report", "[완료]\n- A 배포\n[진행]\n- B 개발 40%\n- C 개발 80%\n[이슈]\n- 지연");
-        assertTrue(out.contains("60%"));
-        assertTrue(out.contains("A 배포"));
-        assertTrue(out.contains("이슈 1건"));
-    }
-
-    @Test void testCaseWriterUsesRequirementKeywordsAndEscapesPipes() throws Exception {
-        String out = run("cen-test-case-writer", "사용자는 게시글을 등록 | 삭제할 수 있다");
-        assertTrue(out.contains("TC-001"));
-        assertTrue(out.contains("필수 항목을 비우고 저장"));
-        assertTrue(out.contains("삭제"));
-        assertFalse(out.contains("등록 | 삭제"));
-    }
 }

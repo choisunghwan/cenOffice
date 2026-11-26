@@ -4,6 +4,7 @@ import { TemplateUploader } from './TemplateUploader'
 import { TextTool, TEXT_TOOLS } from './TextTool'
 import { SkillFileTree } from './SkillFileTree'
 import { toolName } from './toolNames'
+import { useOffice } from '../store'
 import { ToolIntroduction } from './ToolIntroduction'
 import { useEffect, useState } from 'react'
 import { hub, sourceLabel, type HubExecution } from '../hubApi'
@@ -71,7 +72,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
       )}
       {tab === 'stats' && <StatsTab id={id} />}
       {tab === 'reviews' && <ReviewsTab id={id} onChanged={d.reload} />}
-      {tab === 'run' && (runtime.kind === 'builtin-local' && s.status === 'APPROVED' && TEXT_TOOLS[s.name] ? <TextTool key={id} skillId={id} name={s.name} /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' ? <BusinessTools key={id} skillId={id} kind={s.name === 'cen-fp-estimator' ? 'fp' : 'proposal'} /> : <RunTab target={{ skillId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={s.status === 'APPROVED'} sample={current?.exampleInput} />)}
+      {tab === 'run' && (runtime.kind === 'builtin-local' && s.status === 'APPROVED' && TEXT_TOOLS[s.name] ? <TextTool key={id} skillId={id} name={s.name} /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' && s.name === 'skill-creator' ? <CreatorRun /> : runtime.kind === 'builtin-local' && s.status === 'APPROVED' ? <BusinessTools key={id} skillId={id} kind="fp" /> : <RunTab target={{ skillId: id }} runtimeReady={runtime.state === 'RUNTIME_AVAILABLE'} approved={s.status === 'APPROVED'} sample={current?.exampleInput} />)}
     </div>
   )
 }
@@ -225,5 +226,19 @@ export function RunTab({ target, runtimeReady, approved, sample }: { target: { s
         <Card title="내 실행 이력"><ul className="text-xs space-y-1">{hist.data.items.map((e) => <li key={e.id}><span className="text-slate-500">{fmtTime(e.requestedAt)}</span> · {e.status}{e.simulated ? ' (시뮬레이션)' : ''}{sourceLabel(e) ? ` · ${sourceLabel(e)}` : ''} — {e.input?.slice(0, 50)}</li>)}</ul></Card>
       )}
     </div>
+  )
+}
+
+/** skill-creator 는 대화형이라 '스킬 만들기' 화면(또는 홈의 /skill-creator)에서 쓴다 */
+function CreatorRun() {
+  const setPage = useOffice((st) => st.setWorkspacePage)
+  const go = () => { setPage('hub-register'); window.dispatchEvent(new Event('hub-navigation')) }
+  return (
+    <Card title="AI와 대화하며 스킬 만들기">
+      <p className="text-sm text-slate-400 mb-3">만들고 싶은 업무를 한 줄로 말하면, AI가 1~2개만 물어본 뒤 SKILL.md 초안을 써 줍니다. 홈에서 <code>/skill-creator</code> 로 시작해도 됩니다.</p>
+      <p className="text-xs text-slate-500 mb-1">예시</p>
+      <pre className="whitespace-pre-wrap rounded-lg bg-[#101c30] border border-white/8 p-3 text-sm text-slate-200 mb-3">매주 쓰는 주간 보고서를 스킬로 만들고 싶어. 메모를 붙여 넣으면 완료·진행·예정·이슈로 정리해 줬으면 해.</pre>
+      <Btn onClick={go}>스킬 만들기로 가기</Btn>
+    </Card>
   )
 }

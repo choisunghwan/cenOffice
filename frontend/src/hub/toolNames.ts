@@ -3,8 +3,8 @@ const NAMES: Record<string, string> = {
   'cen-log-analyzer': '오류 로그 분석',
   'cen-sql-reviewer': 'SQL 점검',
   'cen-meeting-minutes': '회의록 정리',
-  'cen-weekly-report': '주간 업무보고 정리',
-  'cen-test-case-writer': '테스트 케이스 초안',
+  'cen-weekly-report': '주간 업무보고 작성',
+  'cen-test-case-writer': '테스트 케이스 작성',
   'requirement-analyst': '요구사항 분석 도우미',
   'error-detective': '오류 원인 추적 도우미',
 }

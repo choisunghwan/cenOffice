@@ -20,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Order(12)
 public class OfficialSkillSeeder implements CommandLineRunner {
     public static final String OWNER = "hub-official";
-    public static final List<String> NAMES = List.of("cen-code-review", "cen-modern-web", "cen-lean-mode", "cen-skill-check");
+    /** 규칙 내장 스킬이었다가 AI 스킬로 다시 만든 것. 이미 설치된 서버에서는 같은 스킬(이름·기록·평가)을 이어받아 AI 스킬로 바꾼다 */
+    public static final List<String> PROMOTED = List.of("cen-weekly-report", "cen-test-case-writer");
+    public static final List<String> NAMES = List.of("cen-code-review", "cen-modern-web", "cen-lean-mode", "cen-skill-check", "cen-weekly-report", "cen-test-case-writer");
 
     private final HubSkillRepository skills;
     private final HubSkillVersionRepository versions;
@@ -37,6 +39,10 @@ public class OfficialSkillSeeder implements CommandLineRunner {
             // 스킬 폴더(SKILL.md + references·templates·examples)를 ZIP 패키지로 묶어 직원 업로드와 같은 검사를 거친다
             SkillPackageReader.Parsed p = reader.readZip(bundle(name));
             var existing = skills.findByName(name).orElse(null);
+            if (existing != null && BuiltinSkillSeeder.OWNER.equals(existing.owner) && PROMOTED.contains(name)) {
+                existing.owner = OWNER; // 규칙 내장 스킬 → 기본 AI 스킬 (아래에서 새 버전을 공개한다)
+                audit.log(OWNER, "HUB_BUILTIN_PROMOTED", "hub-skill:" + existing.id, name);
+            }
             if (existing != null && !OWNER.equals(existing.owner)) continue; // 직원이 먼저 쓴 이름이면 그대로 둔다
             if (existing != null && versions.findBySkillIdAndVersion(existing.id, p.meta().version()).isPresent()) continue;
             var now = Instant.now();

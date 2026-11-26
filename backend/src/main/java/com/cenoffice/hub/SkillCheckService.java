@@ -100,6 +100,16 @@ public class SkillCheckService {
         SECTIONS.put("주의할 점", "주의|제한|한계|caution");
     }
 
+    /** 화면과 같은 규칙으로 예시를 찾는다: SKILL.md 의 예시 섹션, 없으면 examples/ 첫 파일 */
+    private static String exampleOf(HubSkillVersion v) {
+        String md = v.skillMd == null ? "" : v.skillMd;
+        String ex = SkillService.section(md, "실행 예시|예시|example|examples");
+        if (ex == null && "ZIP".equals(v.packageKind))
+            for (var f : SkillPackageReader.textFiles(v.packageData).entrySet())
+                if (f.getKey().startsWith("examples/")) return f.getValue();
+        return ex;
+    }
+
     List<Issue> ruleIssues(HubSkill s, HubSkillVersion v) {
         List<Issue> out = new ArrayList<>();
         String md = v.skillMd == null ? "" : v.skillMd;
@@ -110,6 +120,8 @@ public class SkillCheckService {
         for (var e : SECTIONS.entrySet())
             if (!Pattern.compile("(?im)^#{1,4}\\s*.*(?:" + e.getValue() + ")").matcher(body).find())
                 out.add(new Issue("완결성", e.getKey().equals("주의할 점") ? "낮음" : "중간", "'" + e.getKey() + "' 내용이 없음", "## " + e.getKey() + " 제목으로 추가"));
+        if (SkillService.exampleInput(exampleOf(v)) == null)
+            out.add(new Issue("쓸모", "중간", "예시 입력이 없음 — '예시 입력 넣기' 버튼이 보이지 않음", "## 예시 아래에 ### 입력(실제 입력 그대로)과 ### 결과를 추가"));
         if (body.strip().length() < 200) out.add(new Issue("쓸모", "중간", "지침 본문이 너무 짧음(" + body.strip().length() + "자)", "진행 단계와 결과 형식을 구체적으로"));
         if (md.length() > 20000) out.add(new Issue("명확성", "낮음", "SKILL.md 가 김(" + md.length() + "자)", "자세한 내용은 references/ 파일로 나누기"));
         Set<String> files = new HashSet<>();

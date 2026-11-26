@@ -4,6 +4,16 @@ import { hub, type HubExecution } from '../hubApi'
 import { ExportButtons } from './ExportButtons'
 import { Btn, Card, ErrorNote, errMsg } from '../workspace/kit'
 
+/** '예시 자료 넣기' 용 요구사항 목록(한 줄에 기능 하나) */
+const FP_SAMPLE = `고객 정보를 등록한다
+고객 정보를 수정한다
+고객 목록을 조회한다
+월별 매출 통계 보고서를 출력한다
+주문 내역을 엑셀로 내려받는다
+고객 마스터 정보를 관리한다
+외부 결제 시스템의 승인 결과를 연계한다
+`
+
 /** Actual authenticated file execution for bundled tools, not a separate demo catalogue. */
 export function BusinessTools({ skillId, kind }: { skillId: number; kind: 'fp' | 'proposal' }) {
   const [files, setFiles] = useState<File[]>([])
@@ -45,6 +55,7 @@ export function BusinessTools({ skillId, kind }: { skillId: number; kind: 'fp' |
       if (picked.length > 3 || picked.reduce((sum, f) => sum + f.size, 0) > 5 * 1024 * 1024 || picked.some((f) => !extensions.some((ext) => f.name.toLowerCase().endsWith(ext)))) { setError('지원 형식의 파일을 최대 3개, 합계 5MB 이하로 선택하세요.'); setFiles([]); e.target.value = ''; return }
       setFiles(picked); setError(null); setExecution(null)
     }} />
+    {kind === 'fp' && <div className="mt-3"><Btn small tone="ghost" disabled={busy || running} onClick={() => { setFiles([new File([FP_SAMPLE], '예시-요구사항.txt', { type: 'text/plain' })]); setError(null); setExecution(null) }}>예시 자료 넣기</Btn></div>}
     <p className="text-xs text-slate-400 mt-3">최대 3개·합계 5MB·텍스트 80행/12,000자. PDF·이미지·소스 ZIP은 지원하지 않습니다. 수식은 계산하지 않습니다.</p>
     {!!files.length && <ul className="text-sm text-sky-200 mt-4 space-y-2">{files.map((f, i) => <li key={i}>▤ {f.name} <span className="text-xs text-slate-400">{Math.ceil(f.size / 1024)} KB</span></li>)}</ul>}
     <details className="hub-advanced mt-5"><summary>검토 메모 남기기 · 선택</summary><textarea aria-label="검토 메모" rows={3} maxLength={2000} value={instructions} onChange={(e) => setInstructions(e.target.value)} className="w-full rounded-lg p-3 bg-slate-950/40 mt-3" placeholder="초안 작성 후 사람이 확인할 사항을 적어주세요. 자유문 지시를 실행하는 기능은 아닙니다." /></details>
