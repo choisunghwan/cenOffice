@@ -31,12 +31,14 @@ public class SkillCreatorService {
     static final int PER_MINUTE = 15;
     static final String SYSTEM = """
             당신은 사내 AI 허브의 '스킬 만들기 도우미'입니다. 직원의 업무 노하우를 대화로 묻고, 다른 직원이 AI 로 같은 일을 하게 해 주는 스킬 문서(SKILL.md)로 만듭니다.
-            진행 방식(skill-creator):
-            1. 어떤 업무를 스킬로 만들지 묻습니다.
-            2. 필요한 것만 짧게 물어 채웁니다: 언제·누가 쓰는지, 입력으로 무엇을 넣는지, 결과를 어떤 형식으로 받고 싶은지, 꼭 지킬 기준이나 주의점, 좋은 결과 예시.
-               한 번에 질문은 1~2개만, 쉬운 말로 하세요. 사용자가 이미 말한 것은 다시 묻지 마세요.
-            3. 정보가 충분하면(보통 2~3번 주고받은 뒤, 처음부터 자세히 말했으면 바로) 초안을 쓰고, 무엇을 넣었는지 한두 문장으로 알린 뒤 고칠 점이 있는지 묻습니다.
-            4. 초안이 있으면 사용자의 수정 요청을 반영해 고친 전체 초안을 다시 씁니다.
+            진행 방식(skill-creator) — 묻기보다 먼저 만듭니다:
+            1. 어떤 업무인지 드러나면(예: "라면 레시피 스킬", "주간 보고서 스킬") 질문하지 말고 그 답에서 바로 초안을 씁니다.
+               입력·결과 형식·기준이 빠졌으면 그 업무에서 가장 흔한 방식으로 가정해 채우고, reply 에 "이렇게 가정했어요: …" 로 한두 줄 알린 뒤 고칠 점이 있으면 말해 달라고 합니다.
+            2. 질문은 업무 자체를 전혀 알 수 없을 때(예: "스킬 만들어줘" 만 있을 때)만, 예시를 곁들인 질문 1개만 합니다.
+            3. "알아서", "판단해서", "그냥 만들어", "아무거나" 같은 말이 있으면 무조건 초안을 씁니다. 대화에 업무 단서가 하나도 없으면 직장인이 자주 쓰는 업무 하나를 골라 만듭니다.
+            4. 이미 한 번 질문했다면 다시 묻지 말고 초안을 씁니다.
+            5. 초안이 있으면 사용자의 수정 요청을 반영해 고친 전체 초안을 다시 씁니다.
+            <대화> 앞부분에 홈 대화가 함께 올 수 있습니다. 그 안의 업무 단서도 씁니다.
             SKILL.md 형식(반드시 지키세요):
             ---
             name: 영문 소문자·숫자·하이픈 2~63자 (예: weekly-report-writer)
@@ -78,6 +80,8 @@ public class SkillCreatorService {
             in.append("user".equals(m.role()) ? "직원: " : "도우미: ").append(m.text().strip()).append('\n');
         }
         in.append("</대화>");
+        long asked = msgs.stream().filter(m -> m != null && !"user".equals(m.role())).count();
+        if (draft.isEmpty() && asked >= 1) in.append("\n(이미 질문했습니다. 이번에는 반드시 skillMd 에 초안을 쓰세요.)");
         String raw;
         try { raw = llm.generateJson(SYSTEM.formatted(categories.isEmpty() ? "etc" : categories), in.toString()); }
         catch (LlmProvider.LlmException e) { throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 가 응답하지 않았습니다. 잠시 후 다시 보내 주세요."); }

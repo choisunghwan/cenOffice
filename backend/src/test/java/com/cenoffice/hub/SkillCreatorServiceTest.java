@@ -67,4 +67,20 @@ class SkillCreatorServiceTest {
         assertFalse(r.ai());
         assertTrue(r.reply().contains("파일로 등록"));
     }
+
+    /** 묻기보다 먼저 만든다: 지침에 그렇게 적혀 있고, 한 번 물은 뒤에는 반드시 초안을 쓰라고 덧붙인다 */
+    @Test void draftsInsteadOfAskingAgain() throws Exception {
+        var llm = mock(LlmProvider.class);
+        when(llm.isReal()).thenReturn(true);
+        when(llm.generateJson(anyString(), anyString())).thenReturn("{\"reply\":\"\",\"skillMd\":\"\"}");
+        svc(llm).assist("u", new SkillCreatorService.Request(List.of(
+                new SkillCreatorService.Message("user", "라면 레시피 스킬을 만들어줘"),
+                new SkillCreatorService.Message("assistant", "어떤 라면인가요?"),
+                new SkillCreatorService.Message("user", "너가 판단해서 만들어줘")), null));
+        var sys = ArgumentCaptor.forClass(String.class);
+        var in = ArgumentCaptor.forClass(String.class);
+        verify(llm).generateJson(sys.capture(), in.capture());
+        assertTrue(sys.getValue().contains("질문하지 말고 그 답에서 바로 초안"));
+        assertTrue(in.getValue().contains("반드시 skillMd 에 초안"));
+    }
 }

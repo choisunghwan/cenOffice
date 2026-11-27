@@ -25,6 +25,7 @@ export type Turn =
 
 const EXAMPLES = ['오늘 브리핑 해줘', '내일 오후 3시에 팀 회의 잡아줘', '내일 오후 2시에 회의실 예약해줘', '내 할 일 보여줘', '회의 메모를 회의록으로 정리해줘', '쓸 만한 스킬 뭐 있어?']
 const CREATOR = 'skill-creator'
+const WANTS_SKILL = /스킬\s*(?:을|를|로|하나|좀)?\s*(?:만들|생성|제작|짜\s*줘)/
 const CREATOR_HELLO = '스킬 만들기 도우미예요. 어떤 업무를 스킬로 만들까요? 평소 하시는 방법을 편하게 말씀해 주세요.\n예: 매주 쓰는 주간 보고서, 고객 문의 답변 초안, 코드 리뷰 체크리스트'
 const bare = (intent: Reply['intent'], message: string): Reply => ({ intent, message, draft: null, ambiguous: [], unresolved: [], entries: [], ai: true, source: '', tool: null, alternatives: [] })
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -94,6 +95,13 @@ export function AssistantBox() {
     if (!value || busy) return
     if (value.startsWith('/') && raw === undefined) { setText(''); return void runSlash(value) }
     if (creator && raw === undefined) { setText(''); return void sendCreator(value) }
+    // '라면 레시피 스킬 만들어줘' 처럼 스킬을 만들어 달라는 말은 바로 스킬 만들기 도우미로 넘긴다
+    if (!skill && raw === undefined && WANTS_SKILL.test(value) && !/어떻게|방법|하는\s*법|\?$/.test(value)) {
+      setText('')
+      setTurns((cur) => [...cur, { id: nextId.current++, role: 'user', text: value } as Turn])
+      startCreator(value)
+      return
+    }
     if (skill && raw === undefined) {
       // '/스킬' 만 보내 대기 중인 스킬: 이번 말을 그 스킬로 처리한다
       setText('')
@@ -181,7 +189,9 @@ export function AssistantBox() {
   /** 스킬 만들기 도우미 대화를 연다. 첫 말이 함께 오면 바로 이어서 보낸다 */
   const startCreator = (first: string) => {
     setSkill(null)
-    setCreator({ msgs: [{ role: 'assistant', text: CREATOR_HELLO }] })
+    // 앞서 홈에서 나눈 말(예: '매운 라면 레시피를 원해')도 도우미가 알도록 함께 넘긴다
+    const recent = turns.slice(-6).map((t) => ({ role: t.role, text: (t.role === 'user' ? t.text : t.reply.message).slice(0, 600) })).filter((h) => h.text.trim() && !h.text.startsWith('/'))
+    setCreator({ msgs: [{ role: 'assistant', text: CREATOR_HELLO }, ...recent] })
     if (first) creatorFirst.current = first
     else say(CREATOR_HELLO)
   }
