@@ -132,6 +132,7 @@ export const hub = {
   updateMeta: (id: number, b: { category?: string; tags?: string[]; icon?: string; visibility?: string }) =>
     req<HubSkillDetail>(`/api/hub/skills/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   archive: (id: number) => req<void>(`/api/hub/skills/${id}`, { method: 'DELETE' }),
+  purge: (id: number) => req<{ deleted: boolean }>(`/api/hub/skills/${id}/purge`, { method: 'DELETE' }),
   submitVersion: (id: number, vid: number) => req<HubSkillDetail>(`/api/hub/skills/${id}/versions/${vid}/submit`, { method: 'POST' }),
   approve: (id: number, vid: number, comment?: string) => req<HubSkillDetail>(`/api/hub/skills/${id}/versions/${vid}/approve`, { method: 'POST', body: JSON.stringify({ comment }) }),
   reject: (id: number, vid: number, comment: string) => req<HubSkillDetail>(`/api/hub/skills/${id}/versions/${vid}/reject`, { method: 'POST', body: JSON.stringify({ comment }) }),

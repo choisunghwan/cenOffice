@@ -271,6 +271,27 @@ class HubApiTest {
 
     // ───────────── 승인 / 가시성 / 검색 ─────────────
 
+    /** 관리자만 완전 삭제할 수 있다: 평가·태그·이력까지 지워지고 같은 이름을 다시 쓸 수 있다. 기본 스킬은 보관 처리 */
+    @Test
+    void adminCanDeleteSkillCompletely() throws Exception {
+        Acct owner = account("개발팀"), r1 = account("개발팀"), admin = admin();
+        String name = uniq();
+        JsonNode d = registerApproved(owner, admin, name, "PUBLIC");
+        call(post("/api/hub/skills/" + sid(d) + "/reviews"), r1, "{\"rating\":4}").andExpect(status().isOk());
+        call(delete("/api/hub/skills/" + sid(d) + "/purge"), owner, null).andExpect(status().isForbidden());
+        assertTrue(read(call(delete("/api/hub/skills/" + sid(d) + "/purge"), admin, null).andExpect(status().isOk())).get("deleted").asBoolean());
+        assertTrue(skillRepo.findById(sid(d)).isEmpty());
+        assertEquals(0, jdbc.queryForObject("select count(*) from hub_skill_reviews where skill_id = " + sid(d), Integer.class));
+        assertEquals(0, jdbc.queryForObject("select count(*) from hub_skill_versions where skill_id = " + sid(d), Integer.class));
+        call(get("/api/hub/skills/" + sid(d)), admin, null).andExpect(status().isNotFound());
+        register(owner, skillMd(name, null, "dev", null), false, null); // 이름을 다시 쓸 수 있다
+
+        var builtin = skillRepo.findByName("cen-sql-reviewer").orElseThrow();
+        assertFalse(read(call(delete("/api/hub/skills/" + builtin.id + "/purge"), admin, null).andExpect(status().isOk())).get("deleted").asBoolean());
+        assertEquals("ARCHIVED", skillRepo.findById(builtin.id).orElseThrow().status);
+        builtin = skillRepo.findById(builtin.id).orElseThrow(); builtin.status = "APPROVED"; skillRepo.save(builtin); // 다른 테스트를 위해 되돌린다
+    }
+
     @Test
     void newSkillIsPrivateUntilAdminApprovesAndSelfApprovalIsBlocked() throws Exception {
         Acct owner = account("개발팀"), other = account("개발팀"), admin = admin();

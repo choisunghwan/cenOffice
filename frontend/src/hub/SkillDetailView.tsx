@@ -19,6 +19,7 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
   const d = useLoad(() => hub.skill(id, versionId), [id, versionId])
   const [tab, setTab] = useState<Tab>(startWithRun ? 'run' : 'overview')
   const [err, setErr] = useState<string | null>(null)
+  const isAdmin = useOffice((st) => st.user?.role === 'ADMIN')
 
   const act = async (fn: () => Promise<unknown>, done?: () => void) => {
     try { await fn(); setErr(null); d.reload(); onChanged(); done?.() } catch (x) { setErr(errMsg(x)) }
@@ -46,6 +47,10 @@ export function SkillDetailView({ id, onBack, onChanged, startWithRun = false }:
         <div className="flex gap-2 flex-wrap">
           <Btn tone="ghost" onClick={() => act(() => hub.download(id, versionId))}>다운로드</Btn>
           {canEdit && s.status !== 'ARCHIVED' && <Btn tone="ghost" onClick={() => { void askConfirm({ title: '보관할까요?', message: '이 업무 지침을 보관(비공개) 처리합니다. 보관하면 동료들이 더 이상 찾을 수 없습니다.', okText: '보관', danger: true }).then((ok) => { if (ok) void act(() => hub.archive(id), onBack) }) }}>보관</Btn>}
+          {isAdmin && <Btn tone="danger" onClick={() => { void askConfirm({ title: `‘${s.title ?? s.name}’ 스킬을 삭제할까요?`, message: '버전·실행 기록·평가까지 모두 지워지고 되돌릴 수 없습니다. 기본 스킬은 서버가 다시 설치하지 않도록 보관 처리합니다.', okText: '삭제', danger: true }).then(async (ok) => {
+            if (!ok) return
+            try { await hub.purge(id); onChanged(); onBack() } catch (x) { setErr(errMsg(x)) }
+          }) }}>삭제</Btn>}
         </div>
       </div>
       <ErrorNote message={err ?? d.error} />

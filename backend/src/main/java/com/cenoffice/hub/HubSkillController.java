@@ -89,6 +89,10 @@ public class HubSkillController {
     @DeleteMapping("/skills/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize(WRITE)
     public void archive(@PathVariable Long id, Authentication a) { skills.archive(id, a.getName(), admin(a)); }
 
+    /** 관리자 전용 완전 삭제(기본 스킬은 보관) */
+    @DeleteMapping("/skills/{id}/purge") @PreAuthorize("hasRole('ADMIN')")
+    public java.util.Map<String, Boolean> purge(@PathVariable Long id, Authentication a) { return java.util.Map.of("deleted", skills.delete(id, a.getName(), admin(a))); }
+
     @GetMapping("/skills/{id}/versions")
     public List<VersionView> versions(@PathVariable Long id, Authentication a) { return skills.versions(id, a.getName(), admin(a)); }
 

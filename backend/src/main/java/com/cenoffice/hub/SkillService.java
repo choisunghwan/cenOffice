@@ -287,6 +287,39 @@ public class SkillService {
         audit.log(actor, "HUB_SKILL_ARCHIVED", "hub-skill:" + skillId, s.name);
     }
 
+    /**
+     * 관리자 전용 완전 삭제: 버전·실행 기록·평가·태그·양식까지 지운다.
+     * 기본 스킬(규칙 내장·기본 AI)은 지워도 서버가 다시 깔기 때문에 보관 처리한다. 반환값: 실제로 지웠으면 true
+     */
+    public boolean delete(Long skillId, String actor, boolean admin) {
+        if (!admin) throw new ApiException(HttpStatus.FORBIDDEN, "스킬 삭제는 관리자만 할 수 있습니다.");
+        HubSkill s = em.find(HubSkill.class, skillId);
+        if (s == null) throw new ApiException(HttpStatus.NOT_FOUND, "스킬을 찾을 수 없습니다.");
+        if (ownership.system(s.owner)) {
+            s.status = "ARCHIVED"; touch(s, actor);
+            hist("SKILL", skillId, null, "ARCHIVED", actor, "기본 스킬 삭제 요청 — 보관 처리");
+            audit.log(actor, "HUB_SKILL_ARCHIVED", "hub-skill:" + skillId, s.name);
+            return false;
+        }
+        String name = s.name;
+        for (String sql : List.of(
+                "DELETE FROM hub_usage_events WHERE skill_id = :id",
+                "DELETE FROM hub_executions WHERE skill_id = :id",
+                "DELETE FROM hub_approval_history WHERE target_type = 'SKILL' AND target_id = :id",
+                "DELETE FROM hub_agent_skills WHERE skill_id = :id",
+                "DELETE FROM hub_skill_templates WHERE skill_id = :id",
+                "DELETE FROM hub_skill_reviews WHERE skill_id = :id",
+                "DELETE FROM hub_skill_tags WHERE skill_id = :id",
+                "UPDATE meeting_projects SET skill_id = NULL, version_id = NULL WHERE skill_id = :id",
+                "UPDATE hub_skills SET published_version_id = NULL WHERE id = :id",
+                "DELETE FROM hub_skill_versions WHERE skill_id = :id",
+                "DELETE FROM hub_skills WHERE id = :id"))
+            em.createNativeQuery(sql).setParameter("id", skillId).executeUpdate();
+        em.detach(s);
+        audit.log(actor, "HUB_SKILL_DELETED", "hub-skill:" + skillId, name);
+        return true;
+    }
+
     // ───────────────────────── 조회 ─────────────────────────
 
     public record SearchQuery(String text, String category, String owner, String tag, String status, boolean mine, String sort, int page, int size) {}
