@@ -83,4 +83,24 @@ class SkillCreatorServiceTest {
         assertTrue(sys.getValue().contains("질문하지 말고 그 답에서 바로 초안"));
         assertTrue(in.getValue().contains("반드시 skillMd 에 초안"));
     }
+
+    /** 답이 잘리거나 JSON 이 깨지면 한 번 다시 요청한다. 문자열 안의 날 줄바꿈도 읽는다 */
+    @Test void retriesOnceWhenAnswerIsBrokenAndReadsRawNewlines() throws Exception {
+        var llm = mock(LlmProvider.class);
+        when(llm.isReal()).thenReturn(true);
+        when(llm.generateJson(anyString(), anyString()))
+                .thenThrow(new LlmProvider.LlmException("LLM 답이 출력 한도에서 잘렸습니다"))
+                .thenReturn("{\"reply\":\"초안\nOK\",\"skillMd\":\"\"}");
+        var r = svc(llm).assist("u", new SkillCreatorService.Request(List.of(new SkillCreatorService.Message("user", "라면 레시피 스킬을 만들어줘")), null));
+        assertEquals("초안\nOK", r.reply());
+        var in = ArgumentCaptor.forClass(String.class);
+        verify(llm, times(2)).generateJson(anyString(), in.capture());
+        assertTrue(in.getAllValues().get(1).contains("간결하게"));
+
+        var bad = mock(LlmProvider.class);
+        when(bad.isReal()).thenReturn(true);
+        when(bad.generateJson(anyString(), anyString())).thenReturn("{\"reply\": \"잘린");
+        assertThrows(ApiException.class, () -> svc(bad).assist("u", new SkillCreatorService.Request(List.of(new SkillCreatorService.Message("user", "x")), null)));
+        verify(bad, times(2)).generateJson(anyString(), anyString());
+    }
 }

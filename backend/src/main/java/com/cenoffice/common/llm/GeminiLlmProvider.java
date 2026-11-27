@@ -70,8 +70,11 @@ public class GeminiLlmProvider implements LlmProvider {
                 throw new LlmException("LLM 호출 실패 (HTTP " + res.statusCode() + (status.isEmpty() ? "" : ", " + status) + ")");
             }
             StringBuilder text = new StringBuilder();
-            for (JsonNode part : mapper.readTree(res.body()).path("candidates").path(0).path("content").path("parts"))
-                text.append(part.path("text").asText(""));
+            JsonNode cand = mapper.readTree(res.body()).path("candidates").path(0);
+            for (JsonNode part : cand.path("content").path("parts"))
+                if (!part.path("thought").asBoolean(false)) text.append(part.path("text").asText(""));
+            // JSON 답이 출력 한도에서 잘리면 끝이 없는 JSON 이 되어 읽을 수 없다: 잘렸다고 알려 다시 시도하게 한다
+            if (json && "MAX_TOKENS".equals(cand.path("finishReason").asText(""))) throw new LlmException("LLM 답이 출력 한도에서 잘렸습니다");
             if (text.length() == 0) throw new LlmException("LLM 응답이 비어 있습니다 (안전 필터 등으로 차단되었을 수 있습니다)");
             return text.toString();
         } catch (LlmException e) {
@@ -90,8 +93,10 @@ public class GeminiLlmProvider implements LlmProvider {
     Map<String, Object> generationConfig(boolean json, boolean quick) {
         Map<String, Object> gen = new LinkedHashMap<>();
         if (json) gen.put("responseMimeType", "application/json");
-        gen.put("maxOutputTokens", json ? 8192 : quick ? 400 : 800);
+        // Gemini 2.5 는 '생각' 토큰도 출력 한도에 들어간다: JSON(긴 초안)은 한도를 넉넉히 두고 생각은 짧게 묶는다
+        gen.put("maxOutputTokens", json ? 16384 : quick ? 400 : 800);
         if (quick && thinkingOff(model)) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
+        else if (json && thinkingOff(model)) gen.put("thinkingConfig", Map.of("thinkingBudget", 1024));
         return gen;
     }
 }

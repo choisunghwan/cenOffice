@@ -56,6 +56,11 @@ public class SkillCreatorService {
             반드시 아래 JSON 하나로만 답하세요: {"reply":"사용자에게 할 말","skillMd":"전체 초안 또는 빈 문자열"}
             초안을 새로 쓰거나 고친 때만 skillMd 를 채우고, 질문만 할 때는 빈 문자열로 두세요.""";
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SkillCreatorService.class);
+    /** 문자열 안의 줄바꿈·탭을 그대로 쓴 JSON 도 읽는다(모델이 가끔 이렇게 낸다) */
+    private static final ObjectMapper LENIENT = com.fasterxml.jackson.databind.json.JsonMapper.builder()
+            .enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS)
+            .enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER).build();
     private final LlmProvider llm;
     private final SkillPackageReader reader;
     private final SkillService skills;
@@ -82,10 +87,20 @@ public class SkillCreatorService {
         in.append("</대화>");
         long asked = msgs.stream().filter(m -> m != null && !"user".equals(m.role())).count();
         if (draft.isEmpty() && asked >= 1) in.append("\n(이미 질문했습니다. 이번에는 반드시 skillMd 에 초안을 쓰세요.)");
-        String raw;
-        try { raw = llm.generateJson(SYSTEM.formatted(categories.isEmpty() ? "etc" : categories), in.toString()); }
-        catch (LlmProvider.LlmException e) { throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 가 응답하지 않았습니다. 잠시 후 다시 보내 주세요."); }
-        return check(raw);
+        String system = SYSTEM.formatted(categories.isEmpty() ? "etc" : categories);
+        // 긴 초안은 가끔 잘리거나 JSON 이 깨진다: 한 번은 '짧고 올바른 JSON' 을 다시 요청한다
+        for (int attempt = 0; ; attempt++) {
+            String ask = attempt == 0 ? in.toString() : in + "\n(직전 답이 잘렸거나 올바른 JSON 이 아니었습니다. 초안을 더 간결하게(3000자 이내) 줄여 JSON 하나로만 답하세요.)";
+            try {
+                return check(llm.generateJson(system, ask));
+            } catch (LlmProvider.LlmException e) {
+                log.warn("skill-creator LLM 실패(시도 {}): {}", attempt + 1, e.getMessage());
+                if (attempt >= 1) throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 가 응답하지 않았습니다. 잠시 후 다시 보내 주세요.");
+            } catch (ApiException e) {
+                if (attempt >= 1 || e.status() != HttpStatus.BAD_GATEWAY) throw e;
+                log.warn("skill-creator 답 해석 실패, 다시 요청");
+            }
+        }
     }
 
     /** AI 응답을 꺼내고, 초안이 있으면 실제 등록 규칙으로 검사한다 */
@@ -93,7 +108,7 @@ public class SkillCreatorService {
         int a = raw == null ? -1 : raw.indexOf('{'), b = raw == null ? -1 : raw.lastIndexOf('}');
         if (a < 0 || b <= a) throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 답을 이해하지 못했습니다. 다시 보내 주세요.");
         JsonNode n;
-        try { n = json.readTree(raw.substring(a, b + 1)); } catch (Exception e) { throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 답을 이해하지 못했습니다. 다시 보내 주세요."); }
+        try { n = LENIENT.readTree(raw.substring(a, b + 1)); } catch (Exception e) { throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 답을 이해하지 못했습니다. 다시 보내 주세요."); }
         String reply = n.path("reply").asText("").strip();
         String md = n.path("skillMd").asText("").strip();
         if (reply.length() > 2000) reply = reply.substring(0, 2000);
